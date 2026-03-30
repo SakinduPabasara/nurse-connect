@@ -26,6 +26,13 @@ app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/notices', require('./routes/noticeBoardRoutes'));
 app.use('/api/drugs', require('./routes/drugRoutes'));
 app.use('/api/equipment', require('./routes/equipmentRoutes'));
+app.use('/api/leave', require('./routes/leaveRoutes'));
+app.use('/api/transfers', require('./routes/transferRoutes'));
+app.use('/api/news', require('./routes/newsRoutes'));
+app.use('/api/opportunities', require('./routes/opportunityRoutes'));
+app.use('/api/community', require('./routes/communityRoutes'));
+app.use('/api/documents', require('./routes/documentRoutes'));
+app.use('/api/overtime', require('./routes/overtimeRoutes'));
 
 // Test route
 app.get('/', (req, res) => {
