@@ -5,11 +5,38 @@ const userSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
+    trim: true,
   },
-  email: {
+  nic: {
     type: String,
     required: true,
     unique: true,
+    trim: true,
+  },
+  address: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  telephone: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  hospital: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  ward: {
+    type: String,
+    default: '',
+    trim: true,
+  },
+  email: {
+    type: String,
+    default: '',
+    trim: true,
   },
   password: {
     type: String,
@@ -20,22 +47,17 @@ const userSchema = new mongoose.Schema({
     enum: ['nurse', 'admin'],
     default: 'nurse',
   },
-  ward: {
-    type: String,
-    default: '',
-  },
-  hospital: {
-    type: String,
-    default: '',
+  isVerified: {
+    type: Boolean,
+    default: false,
   },
 }, { timestamps: true });
 
 // Hash password before saving
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+userSchema.pre('save', async function () {
+  if (!this.isModified('password')) return;
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
-  next();
 });
 
 // Method to check password

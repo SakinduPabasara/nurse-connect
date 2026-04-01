@@ -1,9 +1,11 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const dns = require('node:dns');
 
 dotenv.config();
 
-// ✅ Use the REAL User model (includes the pre-save hash hook)
+dns.setServers(['1.1.1.1', '8.8.8.8']); // Fix MongoDB SRV DNS resolution
+
 const User = require('./models/User');
 
 const connectDB = async () => {
@@ -20,24 +22,25 @@ const seedAdmin = async () => {
   await connectDB();
 
   try {
-    // Remove existing admin with same email
-    await User.deleteOne({ email: 'admin@nurseconnect.com' });
+    // Remove existing admin with same NIC
+    await User.deleteOne({ nic: 'ADMIN000000' });
 
-    // ✅ Just create with plain password — the model's pre-save hook hashes it automatically
     await User.create({
       name: 'Super Admin',
-      email: 'admin@nurseconnect.com',
+      nic: 'ADMIN000000',
+      address: 'Admin Office, General Hospital',
+      telephone: '0112345678',
+      hospital: 'General Hospital',
       password: 'Admin@1234',
       role: 'admin',
-      ward: 'Admin',
-      hospital: 'General Hospital',
+      isVerified: true,  // Admin is always verified
     });
 
     console.log('');
     console.log('✅ Admin created successfully!');
     console.log('-----------------------------------');
-    console.log('   Email   : admin@nurseconnect.com');
-    console.log('   Password: Admin@1234');
+    console.log('   NIC      : ADMIN000000');
+    console.log('   Password : Admin@1234');
     console.log('-----------------------------------');
     console.log('Run: npm run dev  to start the server');
     process.exit(0);
