@@ -5,12 +5,14 @@ import { notify } from "../../utils/toast";
 import { useConfirm } from "../../context/ConfirmContext";
 
 const SHIFTS = ["7AM-1PM", "1PM-7PM", "7AM-7PM", "7PM-7AM"];
-const shiftColor = (s) =>
-  s === "7PM-7AM"
-    ? "badge-cyan"
-    : s === "7AM-7PM"
-      ? "badge-yellow"
-      : "badge-blue";
+const SHIFT_MAP = {
+  "7AM-1PM": { label: "M", title: "Morning (7AM-1PM)", color: "#60a5fa", bg: "rgba(37,99,235,0.12)", border: "rgba(37,99,235,0.3)" },
+  "1PM-7PM": { label: "A", title: "Afternoon (1PM-7PM)", color: "#22d3ee", bg: "rgba(6,182,212,0.12)", border: "rgba(6,182,212,0.3)" },
+  "7AM-7PM": { label: "F", title: "Full Day (7AM-7PM)", color: "#fbbf24", bg: "rgba(245,158,11,0.12)", border: "rgba(245,158,11,0.3)" },
+  "7PM-7AM": { label: "N", title: "Night (7PM-7AM)", color: "#a78bfa", bg: "rgba(139,92,246,0.12)", border: "rgba(139,92,246,0.3)" },
+};
+
+const shiftColor = (s) => (SHIFT_MAP[s] ? `badge-${SHIFT_MAP[s].color === '#fbbf24' ? 'yellow' : SHIFT_MAP[s].color === '#a78bfa' ? 'cyan' : 'blue'}` : 'badge-gray');
 const emptyDay = "";
 
 const getDaysInMonth = (monthStr) => {
@@ -42,6 +44,7 @@ export default function RosterManagementPage() {
   });
   const [hospitals, setHospitals] = useState([]);
   const [selectedHospital, setSelectedHospital] = useState("");
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState({ type: "", text: "" });
   useToastMessage(msg);
@@ -68,6 +71,7 @@ export default function RosterManagementPage() {
   }, []);
 
   const fetchRoster = async () => {
+    setLoading(true);
     try {
       const params = new URLSearchParams();
       if (month) params.append("month", month);
@@ -76,6 +80,8 @@ export default function RosterManagementPage() {
       setRoster(data);
     } catch {
       setRoster([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -201,7 +207,93 @@ export default function RosterManagementPage() {
   };
 
   return (
-    <div>
+    <div style={{ animation: "fadeInUp 0.35s ease" }}>
+      <style>{`
+        @keyframes fadeInUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+        .roster-grid-wrap {
+          overflow-x: auto;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 16px;
+          margin-top: 16px;
+          box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+        }
+        .roster-grid {
+          border-collapse: separate;
+          border-spacing: 0;
+          width: 100%;
+          font-size: 0.82rem;
+        }
+        .roster-grid th, .roster-grid td {
+          border-bottom: 1px solid var(--border);
+          border-right: 1px solid var(--border);
+          padding: 10px;
+          text-align: center;
+          min-width: 44px;
+        }
+        .roster-grid th {
+          background: rgba(15,23,42,0.6);
+          color: var(--text2);
+          font-weight: 700;
+          text-transform: uppercase;
+          font-size: 0.65rem;
+          letter-spacing: 0.05em;
+        }
+        .roster-grid .sticky-col {
+          position: sticky;
+          left: 0;
+          background: #0f172a;
+          z-index: 10;
+          min-width: 180px;
+          text-align: left;
+          border-right: 2px solid var(--border);
+          font-weight: 600;
+          color: var(--text);
+        }
+        .shift-marker {
+          width: 28px;
+          height: 28px;
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.75rem;
+          font-weight: 800;
+          cursor: pointer;
+          transition: transform 0.1s;
+          position: relative;
+        }
+        .shift-marker:hover { transform: scale(1.15); z-index: 5; }
+        .shift-marker .del-btn {
+          position: absolute;
+          top: -6px;
+          right: -6px;
+          width: 14px;
+          height: 14px;
+          background: #ef4444;
+          color: #fff;
+          border-radius: 50%;
+          font-size: 8px;
+          display: none;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid #fff;
+        }
+        .shift-marker:hover .del-btn { display: flex; }
+        
+        .legend-grid {
+          display: flex;
+          gap: 16px;
+          flex-wrap: wrap;
+          margin-top: 16px;
+          padding: 14px 20px;
+          background: rgba(30,41,59,0.4);
+          border-radius: 12px;
+          border: 1px dashed var(--border);
+        }
+        .legend-item { display: flex; alignItems: center; gap: 8px; font-size: 0.75rem; color: var(--text2); }
+        .legend-box { width: 14px; height: 14px; border-radius: 3px; }
+      `}</style>
       <div className="page-header">
         <div>
           <div className="page-title">📅 Roster Management</div>
@@ -404,90 +496,125 @@ export default function RosterManagementPage() {
 
       {tab === "view" && (
         <>
-          <div className="filter-bar">
-            <select
-              className="form-select"
-              style={{ minWidth: 180 }}
-              value={rosterWard}
-              onChange={(e) => setRosterWard(e.target.value)}
-            >
-              <option value="">All Wards</option>
-              {wards.map((w) => (
-                <option key={w} value={w}>{w}</option>
+          <div className="filter-bar" style={{ gap: 12 }}>
+            <div style={{ flex: 1, display: 'flex', gap: 10 }}>
+              <select
+                className="form-select"
+                style={{ width: 180 }}
+                value={rosterWard}
+                onChange={(e) => setRosterWard(e.target.value)}
+              >
+                <option value="">All Wards</option>
+                {wards.map((w) => (
+                  <option key={w} value={w}>{w}</option>
+                ))}
+              </select>
+              <input
+                type="month"
+                className="form-input"
+                style={{ width: 160 }}
+                value={month}
+                onChange={(e) => setMonth(e.target.value)}
+              />
+            </div>
+            
+            <div className="legend-grid" style={{ 
+              marginTop: 0, 
+              padding: '12px 20px', 
+              background: 'rgba(15,23,42,0.6)', 
+              border: '1px solid var(--border)',
+              borderRadius: '12px',
+              display: 'flex',
+              gap: '20px',
+              alignItems: 'center'
+            }}>
+              <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: '0.05em' }}>Legend:</span>
+              {Object.entries(SHIFT_MAP).map(([key, cfg]) => (
+                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ 
+                    width: 24, height: 24, borderRadius: 6, 
+                    background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '0.7rem', fontWeight: 800
+                  }}>
+                    {cfg.label}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text)' }}>
+                      {cfg.title.split(' (')[0]}
+                    </span>
+                    <span style={{ fontSize: '0.62rem', color: 'var(--text3)', fontWeight: 500 }}>
+                      {key}
+                    </span>
+                  </div>
+                </div>
               ))}
-            </select>
-            <input
-              type="month"
-              className="form-input"
-              style={{ width: "auto" }}
-              value={month}
-              onChange={(e) => setMonth(e.target.value)}
-            />
+            </div>
           </div>
-          <div className="alert alert-info">
-            Viewing all rosters
-            {rosterWard.trim() ? ` filtered by ward: ${rosterWard.trim()}` : ""}
-            .
+
+          <div className="alert alert-info" style={{ marginTop: 12, marginBottom: 0, padding: '10px 16px', fontSize: '0.85rem' }}>
+             📅 {new Date(month + '-01').toLocaleString('default', { month: 'long', year: 'numeric' })} Roster View 
+             {rosterWard.trim() ? ` — Filtered by: ${rosterWard.trim()}` : ""}
           </div>
-          {roster.length === 0 ? (
-            <div className="empty-state">
+
+          {loading ? (
+            <div className="loading-center" style={{ minHeight: 300 }}>
+              <div className="spinner" />
+            </div>
+          ) : roster.length === 0 ? (
+            <div className="empty-state" style={{ minHeight: 320 }}>
               <div className="empty-state-icon">📅</div>
               <div className="empty-state-text">
-                No roster entries for the selected filters.
+                No roster entries found for this month/ward.
               </div>
             </div>
           ) : (
-            <div className="card">
-              <div className="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Nurse</th>
-                      <th>Date</th>
-                      <th>Shift</th>
-                      <th>Ward</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {roster.map((r) => (
-                      <tr key={r._id}>
-                        <td>
-                          {r.nurse?.name || r.nurseName || "Deleted user"}
-                        </td>
-                        <td>{r.date}</td>
-                        <td>
-                          <span className={`badge ${shiftColor(r.shift)}`}>
-                            {r.shift}
-                          </span>
-                        </td>
-                        <td>
-                          <span style={{ 
-                            background: 'rgba(139,92,246,0.1)', 
-                            color: '#a78bfa', 
-                            border: '1px solid rgba(139,92,246,0.22)', 
-                            borderRadius: 999, 
-                            padding: '4px 12px', 
-                            fontSize: '0.72rem', 
-                            fontWeight: 600, 
-                            whiteSpace: 'nowrap' 
-                          }}>
-                            {r.ward}
-                          </span>
-                        </td>
-                        <td>
-                          <button
-                            className="btn btn-danger btn-sm"
-                            onClick={() => handleDelete(r._id)}
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
+            <div className="roster-grid-wrap">
+              <table className="roster-grid">
+                <thead>
+                  <tr>
+                    <th className="sticky-col">Nurse Name</th>
+                    {getDaysInMonth(month).map(d => (
+                      <th key={d}>{d}</th>
                     ))}
-                  </tbody>
-                </table>
-              </div>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(() => {
+                    const grouped = {};
+                    roster.forEach(r => {
+                      const name = r.nurse?.name || r.nurseName || "Unknown Nurse";
+                      if (!grouped[name]) grouped[name] = {};
+                      const day = parseInt(r.date.split('-').pop());
+                      grouped[name][day] = r;
+                    });
+
+                    return Object.entries(grouped).sort().map(([name, days]) => (
+                      <tr key={name}>
+                        <td className="sticky-col">{name}</td>
+                        {getDaysInMonth(month).map(d => {
+                          const entry = days[parseInt(d)];
+                          const cfg = entry ? SHIFT_MAP[entry.shift] : null;
+                          return (
+                            <td key={d}>
+                              {entry && cfg ? (
+                                <div 
+                                  className="shift-marker" 
+                                  title={`${cfg.title}\nWard: ${entry.ward}`}
+                                  style={{ background: cfg.bg, color: cfg.color, border: `1.1px solid ${cfg.border}` }}
+                                >
+                                  {cfg.label}
+                                  <div className="del-btn" onClick={() => handleDelete(entry._id)}>✕</div>
+                                </div>
+                              ) : null}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ));
+                  })()}
+                </tbody>
+              </table>
             </div>
           )}
         </>
