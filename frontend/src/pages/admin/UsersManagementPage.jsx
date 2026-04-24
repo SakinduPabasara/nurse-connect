@@ -40,6 +40,7 @@ export default function UsersManagementPage() {
         u.nic?.toLowerCase().includes(keyword) ||
         u.hospital?.toLowerCase().includes(keyword) ||
         u.ward?.toLowerCase().includes(keyword) ||
+        u.telephone?.toLowerCase().includes(keyword) ||
         u.role?.toLowerCase().includes(keyword),
     );
   }, [users, search]);
@@ -117,6 +118,7 @@ export default function UsersManagementPage() {
                 <tr>
                   <th>Name</th>
                   <th>NIC</th>
+                  <th>Phone</th>
                   <th>Role</th>
                   <th>Verified</th>
                   <th>Hospital</th>
@@ -132,6 +134,7 @@ export default function UsersManagementPage() {
                     <tr key={u._id}>
                       <td>{u.name}</td>
                       <td>{u.nic}</td>
+                      <td>{u.telephone || "-"}</td>
                       <td>
                         <span className={`badge ${roleBadgeClass(u.role)}`}>
                           {u.role}
