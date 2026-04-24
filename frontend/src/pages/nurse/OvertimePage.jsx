@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import API from '../../api/axios';
 import useToastMessage from '../../hooks/useToastMessage';
 import { notify } from '../../utils/toast';
+import { useConfirm } from '../../context/ConfirmContext';
 
 /* ─────────────────────────────────── constants ── */
 const OT_HOURLY_RATE = 150; // LKR per hour — update to match hospital policy
@@ -72,6 +73,7 @@ function SkeletonCard() {
 
 /* ══════════════════════════════════════════════════════════════════ */
 export default function OvertimePage() {
+  const confirm = useConfirm();
   const [tab, setTab] = useState('my');
   const [data, setData] = useState({ totalApprovedHours: 0, pendingCount: 0, records: [] });
   const [loading, setLoading] = useState(true);
@@ -187,7 +189,8 @@ export default function OvertimePage() {
 
   /* ── withdraw ── */
   const handleWithdraw = async (id) => {
-    if (!window.confirm('Withdraw this OT application? This cannot be undone.')) return;
+    const isConfirmed = await confirm({ title: "Withdraw Application", message: "Withdraw this OT application? This cannot be undone.", confirmText: "Withdraw" });
+    if (!isConfirmed) return;
     setWithdrawingId(id);
     try {
       await API.delete(`/overtime/withdraw/${id}`);

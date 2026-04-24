@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import API from "../../api/axios";
 import useToastMessage from "../../hooks/useToastMessage";
 import { notify } from "../../utils/toast";
+import { useConfirm } from "../../context/ConfirmContext";
 
 const SHIFTS = ["7AM-1PM", "1PM-7PM", "7AM-7PM", "7PM-7AM"];
 const shiftColor = (s) =>
@@ -22,6 +23,7 @@ const getDaysInMonth = (monthStr) => {
 };
 
 export default function RosterManagementPage() {
+  const confirm = useConfirm();
   const [nurses, setNurses] = useState([]);
   const [wards, setWards] = useState([]);
   const [roster, setRoster] = useState([]);
@@ -175,7 +177,8 @@ export default function RosterManagementPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this entry?")) return;
+    const isConfirmed = await confirm({ title: "Delete Entry", message: "Are you sure you want to delete this roster entry? This action cannot be undone.", confirmText: "Delete Entry" });
+    if (!isConfirmed) return;
     try {
       await API.delete(`/roster/${id}`);
       fetchRoster();

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import API from "../../api/axios";
 import useToastMessage from "../../hooks/useToastMessage";
 import { notify } from "../../utils/toast";
+import { useConfirm } from "../../context/ConfirmContext";
 
 const STATUSES = ["available", "maintenance", "unavailable"];
 const statusColor = {
@@ -11,6 +12,7 @@ const statusColor = {
 };
 
 export default function EquipmentManagementPage() {
+  const confirm = useConfirm();
   const [equipment, setEquipment] = useState([]);
   const [loading, setLoading] = useState(true);
   const [wards, setWards] = useState([]);
@@ -78,7 +80,8 @@ export default function EquipmentManagementPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete equipment?")) return;
+    const isConfirmed = await confirm({ title: "Delete Equipment", message: "Are you sure you want to delete this equipment from the system?", confirmText: "Delete Equipment" });
+    if (!isConfirmed) return;
     try {
       await API.delete(`/equipment/${id}`);
       fetchEq();

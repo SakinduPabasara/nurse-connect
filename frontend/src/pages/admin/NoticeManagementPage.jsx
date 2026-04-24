@@ -2,10 +2,12 @@ import { useState, useEffect } from "react";
 import API from "../../api/axios";
 import useToastMessage from "../../hooks/useToastMessage";
 import { notify } from "../../utils/toast";
+import { useConfirm } from "../../context/ConfirmContext";
 
 const CATS = ["circular", "training", "guideline", "alert"];
 
 export default function NoticeManagementPage() {
+  const confirm = useConfirm();
   const [notices, setNotices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("list");
@@ -58,7 +60,8 @@ export default function NoticeManagementPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete notice?")) return;
+    const isConfirmed = await confirm({ title: "Delete Notice", message: "Are you sure you want to delete this notice? This action cannot be undone.", confirmText: "Delete Notice" });
+    if (!isConfirmed) return;
     try {
       await API.delete(`/notices/${id}`);
       fetchNotices();

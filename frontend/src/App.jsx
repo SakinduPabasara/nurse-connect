@@ -6,6 +6,7 @@ import TopBar from "./components/TopBar";
 import { useAuth } from "./context/AuthContext";
 import { SidebarProvider } from "./context/SidebarContext";
 import { NotificationProvider } from "./context/NotificationContext";
+import { ConfirmProvider } from "./context/ConfirmContext";
 
 import RegisterPage from "./pages/auth/RegisterPage";
 import LoginPage from "./pages/auth/LoginPage";
@@ -43,17 +44,19 @@ import UsersManagementPage from "./pages/admin/UsersManagementPage";
 import WardManagementPage from "./pages/admin/WardManagementPage";
 
 const AppLayout = ({ children }) => (
-  <NotificationProvider>
-    <SidebarProvider>
-      <div className="app-layout">
-        <Sidebar />
-        <main className="main-content">
-          <TopBar />
-          <div className="page-container">{children}</div>
-        </main>
-      </div>
-    </SidebarProvider>
-  </NotificationProvider>
+  <ConfirmProvider>
+    <NotificationProvider>
+      <SidebarProvider>
+        <div className="app-layout">
+          <Sidebar />
+          <main className="main-content">
+            <TopBar />
+            <div className="page-container">{children}</div>
+          </main>
+        </div>
+      </SidebarProvider>
+    </NotificationProvider>
+  </ConfirmProvider>
 );
 
 const N = (role, El) => (

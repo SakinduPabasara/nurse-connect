@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import API from "../../api/axios";
 import useToastMessage from "../../hooks/useToastMessage";
 import { notify } from "../../utils/toast";
+import { useConfirm } from "../../context/ConfirmContext";
 
 export default function WardManagementPage() {
+  const confirm = useConfirm();
   const [wards, setWards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("list");
@@ -70,7 +72,8 @@ export default function WardManagementPage() {
   };
 
   const handleDelete = async (id, name) => {
-    if (!window.confirm(`Delete ward "${name}"? This cannot be undone.`)) return;
+    const isConfirmed = await confirm({ title: "Delete Ward", message: `Are you sure you want to delete ward "${name}"? This cannot be undone.`, confirmText: "Delete Ward" });
+    if (!isConfirmed) return;
     try {
       await API.delete(`/wards/${id}`);
       fetchWards();

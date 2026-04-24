@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import API from "../../api/axios";
 import useToastMessage from "../../hooks/useToastMessage";
 import { notify } from "../../utils/toast";
+import { useConfirm } from "../../context/ConfirmContext";
 
 const CATS = ["guideline", "protocol", "training", "reference", "other"];
 const catColor = {
@@ -13,6 +14,7 @@ const catColor = {
 };
 
 export default function DocumentsManagementPage() {
+  const confirm = useConfirm();
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("list");
@@ -88,7 +90,8 @@ export default function DocumentsManagementPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete document?")) return;
+    const isConfirmed = await confirm({ title: "Delete Document", message: "Are you sure you want to delete this document from the library?", confirmText: "Delete Document" });
+    if (!isConfirmed) return;
     try {
       await API.delete(`/documents/${id}`);
       fetchDocs();

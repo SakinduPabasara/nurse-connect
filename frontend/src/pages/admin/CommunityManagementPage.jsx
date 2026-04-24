@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import API from "../../api/axios";
 import { notify } from "../../utils/toast";
+import { useConfirm } from "../../context/ConfirmContext";
 
 export default function CommunityManagementPage() {
+  const confirm = useConfirm();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -23,7 +25,8 @@ export default function CommunityManagementPage() {
   }, []);
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this post?")) return;
+    const isConfirmed = await confirm({ title: "Delete Post", message: "Are you sure you want to delete this post?", confirmText: "Delete Post" });
+    if (!isConfirmed) return;
     try {
       await API.delete(`/community/${id}`);
       fetchPosts();
@@ -34,7 +37,8 @@ export default function CommunityManagementPage() {
   };
 
   const handleDeleteComment = async (postId, cid) => {
-    if (!window.confirm("Delete this comment?")) return;
+    const isConfirmed = await confirm({ title: "Delete Comment", message: "Are you sure you want to delete this comment?", confirmText: "Delete Comment" });
+    if (!isConfirmed) return;
     try {
       await API.delete(`/community/${postId}/comments/${cid}`);
       fetchPosts();

@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import API from "../../api/axios";
 import useToastMessage from "../../hooks/useToastMessage";
 import { notify } from "../../utils/toast";
+import { useConfirm } from "../../context/ConfirmContext";
 
 export default function DrugsManagementPage() {
+  const confirm = useConfirm();
   const [drugs, setDrugs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [wards, setWards] = useState([]);
@@ -79,7 +81,8 @@ export default function DrugsManagementPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete drug?")) return;
+    const isConfirmed = await confirm({ title: "Delete Drug", message: "Are you sure you want to delete this drug from inventory?", confirmText: "Delete Drug" });
+    if (!isConfirmed) return;
     try {
       await API.delete(`/drugs/${id}`);
       fetchDrugs();

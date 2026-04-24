@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import API from "../../api/axios";
 import useToastMessage from "../../hooks/useToastMessage";
+import { useConfirm } from "../../context/ConfirmContext";
 
 /* ── SVG Icons ── */
 const UserIcon = () => (
@@ -41,6 +42,7 @@ const ExpandIcon = () => (
 );
 
 export default function ProfilePage() {
+  const confirm = useConfirm();
   const { user, login } = useAuth();
   const [msg, setMsg] = useState({ type: "", text: "" });
   useToastMessage(msg);
@@ -121,7 +123,8 @@ export default function ProfilePage() {
   };
 
   const handleDeleteAvatar = async () => {
-    if (!window.confirm("Are you sure you want to remove your profile picture?")) return;
+    const isConfirmed = await confirm({ title: "Remove Profile Picture", message: "Are you sure you want to remove your profile picture?", confirmText: "Remove Picture" });
+    if (!isConfirmed) return;
     setLoadingAvatar(true);
     try {
       const { data } = await API.delete("/auth/avatar");

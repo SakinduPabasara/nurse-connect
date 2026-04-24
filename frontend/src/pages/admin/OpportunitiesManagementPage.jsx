@@ -2,10 +2,12 @@ import { useState, useEffect } from "react";
 import API from "../../api/axios";
 import useToastMessage from "../../hooks/useToastMessage";
 import { notify } from "../../utils/toast";
+import { useConfirm } from "../../context/ConfirmContext";
 
 const TYPES = ["international", "local", "training", "certification"];
 
 export default function OpportunitiesManagementPage() {
+  const confirm = useConfirm();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("list");
@@ -66,7 +68,8 @@ export default function OpportunitiesManagementPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete?")) return;
+    const isConfirmed = await confirm({ title: "Delete Opportunity", message: "Are you sure you want to delete this opportunity?", confirmText: "Delete" });
+    if (!isConfirmed) return;
     try {
       await API.delete(`/opportunities/${id}`);
       fetchItems();

@@ -2,10 +2,12 @@ import { useState, useEffect } from "react";
 import API from "../../api/axios";
 import useToastMessage from "../../hooks/useToastMessage";
 import { notify } from "../../utils/toast";
+import { useConfirm } from "../../context/ConfirmContext";
 
 const CATS = ["healthcare", "policy", "professional", "industry"];
 
 export default function NewsManagementPage() {
+  const confirm = useConfirm();
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("list");
@@ -59,7 +61,8 @@ export default function NewsManagementPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete article?")) return;
+    const isConfirmed = await confirm({ title: "Delete Article", message: "Are you sure you want to delete this article? This action cannot be undone.", confirmText: "Delete Article" });
+    if (!isConfirmed) return;
     try {
       await API.delete(`/news/${id}`);
       fetchNews();

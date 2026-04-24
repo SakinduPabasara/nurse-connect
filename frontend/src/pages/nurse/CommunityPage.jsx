@@ -3,6 +3,7 @@ import API from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import * as Ic from '../../components/icons';
 import { notify } from '../../utils/toast';
+import { useConfirm } from '../../context/ConfirmContext';
 
 const CAT = {
   discussion: { color: '#60a5fa', bg: 'rgba(37,99,235,0.1)', border: 'rgba(37,99,235,0.2)',  label: 'Discussion' },
@@ -40,6 +41,7 @@ function SkeletonPost() {
 }
 
 export default function CommunityPage() {
+  const confirm = useConfirm();
   const { user } = useAuth();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -82,14 +84,16 @@ export default function CommunityPage() {
   };
 
   const handleDelete = async id => {
-    if (!window.confirm('Delete this post?')) return;
+    const isConfirmed = await confirm({ title: "Delete Post", message: "Are you sure you want to delete this post?", confirmText: "Delete Post" });
+    if (!isConfirmed) return;
     await API.delete(`/community/${id}`).catch(() => {});
     setExpanded(null);
     fetchPosts();
   };
 
   const handleDeleteComment = async (pId, cId) => {
-    if (!window.confirm('Delete comment?')) return;
+    const isConfirmed = await confirm({ title: "Delete Comment", message: "Are you sure you want to delete this comment?", confirmText: "Delete Comment" });
+    if (!isConfirmed) return;
     await API.delete(`/community/${pId}/comments/${cId}`).catch(() => {});
     const { data } = await API.get(`/community/${pId}`);
     setDetail(d => ({ ...d, [pId]: data }));

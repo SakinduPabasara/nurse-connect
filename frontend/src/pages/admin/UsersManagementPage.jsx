@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import API from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 import { notify } from "../../utils/toast";
+import { useConfirm } from "../../context/ConfirmContext";
 
 const roleBadgeClass = (role) =>
   role === "admin" ? "badge-yellow" : "badge-blue";
 
 export default function UsersManagementPage() {
+  const confirm = useConfirm();
   const { user: loggedInUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -49,9 +51,11 @@ export default function UsersManagementPage() {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Delete user ${targetUser.name} (${targetUser.nic})? This action cannot be undone.`,
-    );
+    const confirmed = await confirm({
+      title: "Delete User",
+      message: `Are you sure you want to delete user ${targetUser.name} (${targetUser.nic})? This action cannot be undone.`,
+      confirmText: "Delete User"
+    });
     if (!confirmed) return;
 
     setDeletingId(targetUser._id);
