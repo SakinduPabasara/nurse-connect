@@ -142,7 +142,22 @@ export default function UsersManagementPage() {
                       </td>
                       <td>{u.isVerified ? "Yes" : "No"}</td>
                       <td>{u.hospital || "-"}</td>
-                      <td>{u.ward || "-"}</td>
+                      <td>
+                        {u.ward ? (
+                          <span style={{ 
+                            background: 'rgba(139,92,246,0.1)', 
+                            color: '#a78bfa', 
+                            border: '1px solid rgba(139,92,246,0.22)', 
+                            borderRadius: 999, 
+                            padding: '4px 12px', 
+                            fontSize: '0.72rem', 
+                            fontWeight: 600, 
+                            whiteSpace: 'nowrap' 
+                          }}>
+                            {u.ward}
+                          </span>
+                         ) : "-"}
+                      </td>
                       <td>
                         {u.createdAt
                           ? new Date(u.createdAt).toLocaleDateString()

@@ -13,6 +13,7 @@ export default function TransferPage() {
   const [transfers, setTransfers] = useState([]);
   const [matches, setMatches] = useState([]);
   const [wards, setWards] = useState([]);
+  const [hospitals, setHospitals] = useState([]);
   const [tab, setTab] = useState('my');
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -33,8 +34,19 @@ export default function TransferPage() {
 
   useEffect(() => {
     fetchTransfers();
-    API.get('/roster/wards').then(r => setWards(Array.isArray(r.data) ? r.data : [])).catch(() => {});
+    API.get('/wards').then(r => setWards(Array.isArray(r.data) ? r.data : [])).catch(() => {});
+    API.get('/hospitals').then(r => setHospitals(Array.isArray(r.data) ? r.data : [])).catch(() => {});
   }, [fetchTransfers]);
+
+  useEffect(() => {
+    if (user) {
+      setForm(prev => ({
+        ...prev,
+        currentHospital: user.hospital || '',
+        currentWard: user.ward || ''
+      }));
+    }
+  }, [user]);
 
   useEffect(() => {
     let socket;
@@ -123,28 +135,67 @@ export default function TransferPage() {
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Current Hospital *</label>
-                <input className="form-input" name="currentHospital" value={form.currentHospital} onChange={e => setForm({...form, currentHospital: e.target.value})} />
+                <select className="form-select" name="currentHospital" value={form.currentHospital} onChange={e => setForm({...form, currentHospital: e.target.value})}>
+                  <option value="">Select hospital</option>
+                  {hospitals.map(h => <option key={h._id} value={h.name}>{h.name}</option>)}
+                  {!hospitals.some(h => h.name === form.currentHospital) && form.currentHospital && (
+                    <option value={form.currentHospital}>{form.currentHospital}</option>
+                  )}
+                </select>
               </div>
               <div className="form-group">
                 <label className="form-label">Current Ward *</label>
                 <select className="form-select" name="currentWard" value={form.currentWard} onChange={e => setForm({...form, currentWard: e.target.value})}>
                   <option value="">Select ward</option>
-                  {wards.map(w => <option key={w} value={w}>{w}</option>)}
+                  {wards.map(w => <option key={w._id} value={w.name}>{w.name}</option>)}
+                  {!wards.some(w => w.name === form.currentWard) && form.currentWard && (
+                    <option value={form.currentWard}>{form.currentWard}</option>
+                  )}
                 </select>
               </div>
             </div>
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Desired Hospital *</label>
-                <input className="form-input" name="desiredHospital" placeholder="e.g. Kandy Hospital" value={form.desiredHospital} onChange={e => setForm({...form, desiredHospital: e.target.value})} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Desired Ward *</label>
-                <select className="form-select" name="desiredWard" value={form.desiredWard} onChange={e => setForm({...form, desiredWard: e.target.value})}>
-                  <option value="">Select ward</option>
-                  {wards.map(w => <option key={`d-${w}`} value={w}>{w}</option>)}
+                <select className="form-select" name="desiredHospital" value={form.desiredHospital} onChange={e => setForm({...form, desiredHospital: e.target.value})}>
+                  <option value="">Select hospital</option>
+                  {hospitals.map(h => <option key={`d-${h._id}`} value={h.name}>{h.name}</option>)}
                 </select>
               </div>
+            <div className="form-group">
+              <label className="form-label">Desired Ward *</label>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', 
+                gap: 10,
+                marginTop: 8
+              }}>
+                {wards.map(w => {
+                  const active = form.desiredWard === w.name;
+                  return (
+                    <div 
+                      key={`d-${w._id}`}
+                      onClick={() => setForm(f => ({ ...f, desiredWard: w.name }))}
+                      style={{
+                        background: active ? 'rgba(37,99,235,0.12)' : 'rgba(8,15,30,0.5)',
+                        border: `1.5px solid ${active ? '#3b82f6' : 'rgba(148,163,184,0.1)'}`,
+                        borderRadius: 12,
+                        padding: '12px 10px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        textAlign: 'center',
+                        boxShadow: active ? '0 4px 12px rgba(37,99,235,0.15)' : 'none',
+                        transform: active ? 'translateY(-2px)' : 'none'
+                      }}
+                    >
+                      <div style={{ fontSize: '1.2rem', marginBottom: 6 }}>🏥</div>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: active ? '#fff' : '#e8edf5', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{w.name}</div>
+                      <div style={{ fontSize: '0.65rem', color: active ? '#93c5fd' : 'rgba(148,163,184,0.4)', fontWeight: 600 }}>{w.userCount || 0} Nurses</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
             </div>
             <div className="form-row">
               <div className="form-group">

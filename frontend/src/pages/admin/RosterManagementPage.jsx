@@ -40,6 +40,8 @@ export default function RosterManagementPage() {
     shift: "7AM-1PM",
     month: "",
   });
+  const [hospitals, setHospitals] = useState([]);
+  const [selectedHospital, setSelectedHospital] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState({ type: "", text: "" });
   useToastMessage(msg);
@@ -51,6 +53,9 @@ export default function RosterManagementPage() {
   useEffect(() => {
     API.get("/auth/users?role=nurse&isVerified=true")
       .then((r) => setNurses(r.data))
+      .catch(() => {});
+    API.get("/hospitals")
+      .then((r) => setHospitals(r.data))
       .catch(() => {});
     // Merge managed wards (/api/wards) with wards already in roster entries
     Promise.all([
@@ -167,6 +172,11 @@ export default function RosterManagementPage() {
     }
   };
 
+  const handleHospitalChange = (hosp) => {
+    setSelectedHospital(hosp);
+    setForm(prev => ({ ...prev, nurse: "", ward: "" }));
+  };
+
   const handleNurseChange = (nurseId) => {
     const nurse = nurses.find((n) => n._id === nurseId);
     setForm((prev) => ({
@@ -217,24 +227,51 @@ export default function RosterManagementPage() {
             </div>
           )}
           <form onSubmit={handleCreate}>
-            <div className="form-group">
-              <label className="form-label">Select Nurse *</label>
-              <select
-                className="form-select"
-                value={form.nurse}
-                onChange={(e) => handleNurseChange(e.target.value)}
-              >
-                <option value="">-- Select Nurse --</option>
-                {nurses.map((n) => (
-                  <option key={n._id} value={n._id}>
-                    {n.name} ({n.hospital}) {n.ward ? `- ${n.ward}` : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label">Ward *</label>
+                <label className="form-label">Hospital *</label>
+                <select
+                  className="form-select"
+                  value={selectedHospital}
+                  onChange={(e) => handleHospitalChange(e.target.value)}
+                >
+                  <option value="">-- All Hospitals --</option>
+                  {hospitals.map((h) => (
+                    <option key={h._id} value={h.name}>{h.name}</option>
+                  ))}
+                </select>
+                <div className="form-hint" style={{ marginTop: 4 }}>
+                  Select hospital first to filter nurses.
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Nurse *</label>
+                <select
+                  className="form-select"
+                  value={form.nurse}
+                  onChange={(e) => handleNurseChange(e.target.value)}
+                  disabled={!selectedHospital && nurses.filter(n => !selectedHospital || n.hospital === selectedHospital).length > 20}
+                >
+                  <option value="">-- Select Nurse --</option>
+                  {nurses
+                    .filter((n) => !selectedHospital || n.hospital === selectedHospital)
+                    .map((n) => (
+                      <option key={n._id} value={n._id}>
+                        {n.name} {n.ward ? `[Ward: ${n.ward}]` : ""}
+                      </option>
+                    ))}
+                </select>
+                {!selectedHospital && (
+                  <div className="form-hint" style={{ marginTop: 4, color: 'var(--warning)' }}>
+                    Filter by hospital for a cleaner list.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Assigned Ward *</label>
                 <select
                   className="form-select"
                   value={form.ward}
@@ -247,13 +284,17 @@ export default function RosterManagementPage() {
                   ))}
                 </select>
                 {selectedNurseWard ? (
-                  <div className="form-hint" style={{ marginTop: 8 }}>
-                    Auto-filled from selected nurse profile.
+                  <div className="form-hint" style={{ marginTop: 6, color: '#34d399', fontWeight: 600 }}>
+                    ✓ Linked to nurse's profile.
                   </div>
-                ) : null}
+                ) : (
+                  <div className="form-hint" style={{ marginTop: 6 }}>
+                    Select manually if not in nurse profile.
+                  </div>
+                )}
               </div>
               <div className="form-group">
-                <label className="form-label">Month *</label>
+                <label className="form-label">Roster Month *</label>
                 <input
                   className="form-input"
                   type="month"
@@ -262,9 +303,10 @@ export default function RosterManagementPage() {
                 />
               </div>
             </div>
-            <div className="form-row">
+
+            <div className="form-row" style={{ alignItems: 'flex-end' }}>
               <div className="form-group">
-                <label className="form-label">Shift *</label>
+                <label className="form-label">Shift Type *</label>
                 <select
                   className="form-select"
                   value={form.shift}
@@ -275,61 +317,87 @@ export default function RosterManagementPage() {
                   ))}
                 </select>
               </div>
+              <div className="form-group">
+                 <div style={{ background: 'rgba(37,99,235,0.05)', border: '1px solid rgba(37,99,235,0.1)', borderRadius: 10, padding: '10px 14px', fontSize: '0.8rem', color: 'var(--text3)' }}>
+                    ℹ️ You can select multiple days for this shift in one go.
+                 </div>
+              </div>
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Duty Date/s (Day Only) *</label>
+            <div 
+              style={{ 
+                marginTop: 24, 
+                padding: 24, 
+                background: 'rgba(15,23,42,0.3)', 
+                borderRadius: 16, 
+                border: '1px solid var(--border)' 
+              }}
+            >
+              <label className="form-label" style={{ marginBottom: 16, display: 'block', fontSize: '0.9rem', fontWeight: 700 }}>
+                📅 Duty Date/s (Select multiple days)
+              </label>
+              
               {!form.month && (
-                <div className="form-hint" style={{ marginBottom: 8 }}>
-                  Select month first to choose day numbers.
+                <div className="alert alert-warning" style={{ fontSize: '0.8rem', padding: '10px 14px' }}>
+                  Please select the **Roster Month** above to enable date selection.
                 </div>
               )}
-              {form.dates.map((dayValue, index) => (
-                <div
-                  key={index}
-                  className="flex gap-2"
-                  style={{ marginBottom: 10 }}
-                >
-                  <select
-                    className="form-select"
-                    value={dayValue}
-                    onChange={(e) => updateDateAt(index, e.target.value)}
-                    disabled={!form.month}
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                {form.dates.map((dayValue, index) => (
+                  <div
+                    key={index}
+                    className="flex gap-2"
+                    style={{ alignItems: 'center' }}
                   >
-                    <option value="">Select day</option>
-                    {dayOptions.map((day) => (
-                      <option key={day} value={day}>
-                        {day}
-                      </option>
-                    ))}
-                  </select>
-                  {form.dates.length > 1 && (
-                    <button
-                      type="button"
-                      className="btn btn-danger btn-sm"
-                      onClick={() => removeDateInput(index)}
+                    <select
+                      className="form-select"
+                      value={dayValue}
+                      onChange={(e) => updateDateAt(index, e.target.value)}
+                      disabled={!form.month}
                     >
-                      Remove
-                    </button>
-                  )}
-                </div>
-              ))}
+                      <option value="">Day</option>
+                      {dayOptions.map((day) => (
+                        <option key={day} value={day}>
+                          {day}
+                        </option>
+                      ))}
+                    </select>
+                    {form.dates.length > 1 && (
+                      <button
+                        type="button"
+                        className="btn btn-danger btn-sm"
+                        style={{ padding: '8px 12px' }}
+                        onClick={() => removeDateInput(index)}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              
               <button
                 type="button"
-                className="btn btn-secondary btn-sm"
+                className="btn btn-outline btn-sm"
+                style={{ marginTop: 16, borderColor: 'rgba(148,163,184,0.3)' }}
                 onClick={addDateInput}
+                disabled={!form.month}
               >
                 + Add Another Date
               </button>
             </div>
 
-            <button
-              className="btn btn-primary"
-              type="submit"
-              disabled={submitting}
-            >
-              {submitting ? "Creating..." : "Create Duties"}
-            </button>
+            <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                className="btn btn-primary"
+                type="submit"
+                disabled={submitting}
+                style={{ minWidth: 160, height: 46, fontSize: '1rem' }}
+              >
+                {submitting ? "Creating..." : "✓ Create Roster Duties"}
+              </button>
+            </div>
           </form>
         </div>
       )}
@@ -393,7 +461,20 @@ export default function RosterManagementPage() {
                             {r.shift}
                           </span>
                         </td>
-                        <td>{r.ward}</td>
+                        <td>
+                          <span style={{ 
+                            background: 'rgba(139,92,246,0.1)', 
+                            color: '#a78bfa', 
+                            border: '1px solid rgba(139,92,246,0.22)', 
+                            borderRadius: 999, 
+                            padding: '4px 12px', 
+                            fontSize: '0.72rem', 
+                            fontWeight: 600, 
+                            whiteSpace: 'nowrap' 
+                          }}>
+                            {r.ward}
+                          </span>
+                        </td>
                         <td>
                           <button
                             className="btn btn-danger btn-sm"

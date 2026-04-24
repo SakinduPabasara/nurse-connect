@@ -65,6 +65,14 @@ export default function ProfilePage() {
     confirmPassword: "",
   });
 
+  const [hospitals, setHospitals] = useState([]);
+  const [wards, setWards] = useState([]);
+
+  useEffect(() => {
+    API.get("/hospitals").then(r => setHospitals(Array.isArray(r.data) ? r.data : [])).catch(() => {});
+    API.get("/wards").then(r => setWards(Array.isArray(r.data) ? r.data : [])).catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (user) {
       setPersonalForm({
@@ -443,25 +451,66 @@ export default function ProfilePage() {
             <div className="form-row" style={{ marginTop: "24px" }}>
               <div className="form-group">
                 <label className="form-label">Assigned Hospital</label>
-                <input 
-                  className="form-input" 
-                  type="text" 
-                  name="hospital" 
-                  value={personalForm.hospital} 
-                  onChange={handlePersonalChange} 
-                  required 
-                />
+                <select
+                  className="form-input"
+                  name="hospital"
+                  value={personalForm.hospital}
+                  onChange={handlePersonalChange}
+                  required
+                  style={{ cursor: 'pointer' }}
+                >
+                  <option value="">Select Hospital</option>
+                  {hospitals.map(h => (
+                    <option key={h._id} value={h.name}>{h.name}</option>
+                  ))}
+                  {!hospitals.some(h => h.name === personalForm.hospital) && personalForm.hospital && (
+                    <option value={personalForm.hospital}>{personalForm.hospital} (Current)</option>
+                  )}
+                </select>
               </div>
-              <div className="form-group">
+              <div className="form-group" style={{ flex: 2 }}>
                 <label className="form-label">Ward / Unit</label>
-                <input 
-                  className="form-input" 
-                  type="text" 
-                  name="ward" 
-                  value={personalForm.ward} 
-                  onChange={handlePersonalChange} 
-                  placeholder="e.g., ICU, OP-1" 
-                />
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', 
+                  gap: 10,
+                  marginTop: 8
+                }}>
+                  {wards.map(w => {
+                    const active = personalForm.ward === w.name;
+                    return (
+                      <div 
+                        key={w._id}
+                        onClick={() => setPersonalForm(p => ({ ...p, ward: w.name }))}
+                        style={{
+                          background: active ? 'rgba(37,99,235,0.12)' : 'rgba(8,15,30,0.3)',
+                          border: `1.5px solid ${active ? '#3b82f6' : 'rgba(148,163,184,0.1)'}`,
+                          borderRadius: 10,
+                          padding: '10px 8px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          textAlign: 'center',
+                          boxShadow: active ? '0 4px 12px rgba(37,99,235,0.15)' : 'none'
+                        }}
+                      >
+                        <div style={{ fontSize: '1rem', marginBottom: 4 }}>🏥</div>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 700, color: active ? '#fff' : '#e8edf5', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{w.name}</div>
+                        <div style={{ fontSize: '0.62rem', color: active ? '#93c5fd' : 'rgba(148,163,184,0.4)', fontWeight: 600 }}>{w.userCount || 0} Nurses</div>
+                      </div>
+                    );
+                  })}
+                  {!wards.some(w => w.name === personalForm.ward) && personalForm.ward && (
+                    <div style={{
+                      background: 'rgba(37,99,235,0.12)',
+                      border: '1.5px solid #3b82f6',
+                      borderRadius: 10, padding: '10px 8px', textAlign: 'center'
+                    }}>
+                      <div style={{ fontSize: '1rem', marginBottom: 4 }}>🏥</div>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#fff' }}>{personalForm.ward}</div>
+                      <div style={{ fontSize: '0.62rem', color: '#93c5fd', fontWeight: 600 }}>Current</div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 

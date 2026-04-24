@@ -488,52 +488,61 @@ export default function RegisterPage() {
                       )}
                     </div>
 
-                    {/* Ward — required dropdown from /api/wards */}
+                    {/* Ward Selection Grid — Interactive Chips */}
                     <div style={{ marginBottom: 16 }}>
-                      <div style={{
-                        position: 'relative',
-                        border: `1.5px solid ${errors.ward ? 'rgba(239,68,68,0.6)' : form.ward ? 'rgba(37,99,235,0.7)' : 'rgba(148,163,184,0.12)'}`,
-                        borderRadius: 11,
-                        background: 'rgba(8,15,30,0.5)',
-                        boxShadow: errors.ward ? '0 0 0 3px rgba(239,68,68,0.08)' : 'none',
-                        transition: 'all 0.18s ease',
+                      <label style={{
+                        display: 'block',
+                        fontSize: '0.62rem', fontWeight: 700,
+                        color: errors.ward ? '#f87171' : '#93c5fd',
+                        letterSpacing: '0.06em', textTransform: 'uppercase',
+                        marginBottom: 10, paddingLeft: 4
+                      }}>Select Your Ward *</label>
+                      
+                      <div style={{ 
+                        display: 'grid', 
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', 
+                        gap: 10,
+                        maxHeight: 220,
+                        overflowY: 'auto',
+                        padding: '4px',
+                        marginBottom: 8
                       }}>
-                        <label style={{
-                          display: 'block',
-                          position: 'absolute', left: 13, top: 7,
-                          fontSize: '0.62rem', fontWeight: 700,
-                          color: errors.ward ? '#f87171' : '#93c5fd',
-                          letterSpacing: '0.06em', textTransform: 'uppercase',
-                          pointerEvents: 'none', zIndex: 1,
-                        }}>Ward *</label>
-                        <select
-                          id="ward"
-                          value={form.ward}
-                          onChange={e => set('ward', e.target.value)}
-                          style={{
-                            width: '100%', background: 'transparent', border: 'none', outline: 'none',
-                            color: form.ward ? '#e8edf5' : 'rgba(100,116,139,0.5)',
-                            fontSize: '0.88rem', fontFamily: "'Inter',sans-serif",
-                            paddingTop: 22, paddingBottom: 6,
-                            paddingLeft: 13, paddingRight: 13,
-                            cursor: 'pointer', appearance: 'none',
-                          }}
-                        >
-                          <option value="">— Select your ward —</option>
-                          {wards.map(w => (
-                            <option key={w._id} value={w.name}>{w.name}</option>
-                          ))}
-                        </select>
-                        {/* Dropdown chevron */}
-                        <div style={{ position: 'absolute', right: 13, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'rgba(100,116,139,0.55)' }}>
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m6 9 6 6 6-6"/></svg>
-                        </div>
+                        {wards.map(w => {
+                          const active = form.ward === w.name;
+                          return (
+                            <div 
+                              key={w._id}
+                              onClick={() => set('ward', w.name)}
+                              style={{
+                                background: active ? 'rgba(37,99,235,0.15)' : 'rgba(8,15,30,0.5)',
+                                border: `1.5px solid ${active ? '#3b82f6' : 'rgba(148,163,184,0.12)'}`,
+                                borderRadius: 12,
+                                padding: '12px 10px',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                textAlign: 'center',
+                                boxShadow: active ? '0 4px 12px rgba(37,99,235,0.2)' : 'none',
+                                transform: active ? 'translateY(-2px)' : 'none'
+                              }}
+                            >
+                              <div style={{ fontSize: '1.2rem', marginBottom: 6 }}>🏥</div>
+                              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: active ? '#fff' : '#e8edf5', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{w.name}</div>
+                              <div style={{ fontSize: '0.65rem', fontWeight: 600, color: active ? '#93c5fd' : 'rgba(148,163,184,0.5)' }}>
+                                {w.userCount || 0} Nurses
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
+                      
                       {wards.length === 0 && (
-                        <div style={{ fontSize: '0.72rem', color: 'rgba(245,158,11,0.7)', marginTop: 4, paddingLeft: 2 }}>
-                          ⚠️ No wards configured yet. Contact your administrator.
+                        <div style={{ background: 'rgba(245,158,11,0.06)', border: '1px dashed rgba(245,158,11,0.25)', borderRadius: 11, padding: '16px', textAlign: 'center' }}>
+                           <span style={{ fontSize: '0.78rem', color: 'rgba(245,158,11,0.7)' }}>
+                             ⚠️ No wards configured yet. Contact your administrator.
+                           </span>
                         </div>
                       )}
+                      
                       {errors.ward && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 5, color: '#f87171', fontSize: '0.73rem', fontWeight: 500 }}>
                           <AlertIcon />{errors.ward}
