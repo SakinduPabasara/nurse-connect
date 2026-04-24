@@ -112,11 +112,112 @@ function RejectModal({ nurse, onCancel, onConfirm, loading }) {
   );
 }
 
+/* ─────────────────────────────────── Verify Modal ── */
+function VerifyModal({ nurse, onCancel, onConfirm, loading }) {
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    if (nurse) {
+      setMessage(`Hello ${nurse.name}, your Nurse Connect account has been verified by the admin. You can now log in using your NIC.`);
+    }
+  }, [nurse]);
+
+  if (!nurse) return null;
+
+  return (
+    <div className="modal-overlay" onClick={onCancel}>
+      <div
+        className="modal"
+        style={{ maxWidth: 460 }}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+      >
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
+          <div style={{
+            width: 46, height: 46, borderRadius: 50, flexShrink: 0,
+            background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem',
+          }}>
+            ✅
+          </div>
+          <div>
+            <div className="modal-title" style={{ marginBottom: 2 }}>Verify Registration</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text3)' }}>
+              This will activate the nurse's account
+            </div>
+          </div>
+        </div>
+
+        {/* Nurse summary card */}
+        <div style={{
+          background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.18)',
+          borderRadius: 12, padding: '14px 16px', marginBottom: 18,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{
+              width: 38, height: 38, borderRadius: 50, flexShrink: 0,
+              background: 'linear-gradient(135deg,rgba(16,185,129,0.4),rgba(52,211,153,0.3))',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontWeight: 700, color: '#fff', fontSize: '0.95rem',
+            }}>
+              {nurse.name?.charAt(0).toUpperCase() || '?'}
+            </div>
+            <div>
+              <div style={{ fontWeight: 700, color: 'var(--text)', fontSize: '0.9rem' }}>{nurse.name}</div>
+              <div style={{ fontSize: '0.77rem', color: 'var(--text3)', marginTop: 2, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                <span>NIC: <strong style={{ color: 'var(--text2)' }}>{nurse.nic}</strong></span>
+                {nurse.hospital && <span>🏥 {nurse.hospital}</span>}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Message input */}
+        <div className="form-group">
+          <label className="form-label">
+            Verification Message
+            <span style={{ color: 'var(--text3)', fontWeight: 400, textTransform: 'none', letterSpacing: 0, marginLeft: 6 }}>(Sent via SMS)</span>
+          </label>
+          <textarea
+            className="form-textarea"
+            rows={3}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            disabled={loading}
+            style={{ minHeight: 80 }}
+          />
+          <div className="form-hint">This message will be sent to the nurse's registered telephone number.</div>
+        </div>
+
+        <div className="modal-footer">
+          <button className="btn btn-outline" onClick={onCancel} disabled={loading}>
+            Cancel
+          </button>
+          <button
+            className="btn btn-success"
+            onClick={() => onConfirm(message)}
+            disabled={loading}
+          >
+            {loading ? (
+              <><div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid #fff', borderRadius: 50, animation: 'spin 0.7s linear infinite' }} />Verifying…</>
+            ) : (
+              <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>Send Verification</>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ══════════════════════════════════════════════════════════════════ */
 export default function PendingVerificationsPage() {
   const [nurses, setNurses] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [verifyingId, setVerifyingId] = useState(null);
+  const [verifyTarget, setVerifyTarget] = useState(null);
+  const [verifyLoading, setVerifyLoading] = useState(false);
   const [rejectTarget, setRejectTarget] = useState(null);
   const [rejectLoading, setRejectLoading] = useState(false);
 
@@ -135,16 +236,18 @@ export default function PendingVerificationsPage() {
   useEffect(() => { fetchPending(); }, []);
 
   /* ── Verify ── */
-  const handleVerify = async (id) => {
-    setVerifyingId(id);
+  const handleVerify = async (message) => {
+    if (!verifyTarget) return;
+    setVerifyLoading(true);
     try {
-      await API.put(`/auth/verify/${id}`);
+      await API.put(`/auth/verify/${verifyTarget._id}`, { message });
       notify.success('Nurse verified successfully. SMS notification sent.');
+      setVerifyTarget(null);
       fetchPending();
     } catch (err) {
       notify.error(err.response?.data?.message || 'Failed to verify nurse.');
     } finally {
-      setVerifyingId(null);
+      setVerifyLoading(false);
     }
   };
 
@@ -348,22 +451,18 @@ export default function PendingVerificationsPage() {
                           {/* Verify button */}
                           <button
                             className="btn btn-success btn-sm"
-                            onClick={() => handleVerify(n._id)}
-                            disabled={verifyingId === n._id || rejectLoading}
+                            onClick={() => setVerifyTarget(n)}
+                            disabled={rejectLoading}
                             style={{ minWidth: 90 }}
                           >
-                            {verifyingId === n._id ? (
-                              <><div style={{ width: 12, height: 12, border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid #fff', borderRadius: 50, animation: 'spin 0.7s linear infinite' }} />Verifying…</>
-                            ) : (
-                              <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>Verify</>
-                            )}
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>Verify
                           </button>
 
                           {/* Reject button */}
                           <button
                             className="btn btn-danger btn-sm"
                             onClick={() => setRejectTarget(n)}
-                            disabled={verifyingId === n._id || rejectLoading}
+                            disabled={rejectLoading}
                             style={{ minWidth: 80 }}
                           >
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -389,6 +488,14 @@ export default function PendingVerificationsPage() {
         onCancel={() => setRejectTarget(null)}
         onConfirm={handleReject}
         loading={rejectLoading}
+      />
+
+      {/* ── Verify Confirmation Modal ── */}
+      <VerifyModal
+        nurse={verifyTarget}
+        onCancel={() => setVerifyTarget(null)}
+        onConfirm={handleVerify}
+        loading={verifyLoading}
       />
     </>
   );
