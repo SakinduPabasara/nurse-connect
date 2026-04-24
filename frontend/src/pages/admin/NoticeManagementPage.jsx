@@ -3,6 +3,7 @@ import API from "../../api/axios";
 import useToastMessage from "../../hooks/useToastMessage";
 import { notify } from "../../utils/toast";
 import { useConfirm } from "../../context/ConfirmContext";
+import SearchableSelect from "../../components/SearchableSelect";
 
 const CATS = ["circular", "training", "guideline", "alert"];
 
@@ -124,15 +125,12 @@ export default function NoticeManagementPage() {
             </div>
             <div className="form-group">
               <label className="form-label">Category</label>
-              <select
-                className="form-select"
+              <SearchableSelect
+                options={CATS.map(c => ({ value: c, label: c.charAt(0).toUpperCase() + c.slice(1) }))}
                 value={form.category}
-                onChange={(e) => setForm({ ...form, category: e.target.value })}
-              >
-                {CATS.map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </select>
+                onChange={(val) => setForm({ ...form, category: val })}
+                placeholder="Select Category..."
+              />
             </div>
             <button
               className="btn btn-primary"

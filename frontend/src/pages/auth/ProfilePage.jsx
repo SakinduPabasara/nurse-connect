@@ -3,6 +3,7 @@ import { useAuth } from "../../context/AuthContext";
 import API from "../../api/axios";
 import useToastMessage from "../../hooks/useToastMessage";
 import { useConfirm } from "../../context/ConfirmContext";
+import SearchableSelect from "../../components/SearchableSelect";
 
 /* ── SVG Icons ── */
 const UserIcon = () => (
@@ -451,22 +452,17 @@ export default function ProfilePage() {
             <div className="form-row" style={{ marginTop: "24px" }}>
               <div className="form-group">
                 <label className="form-label">Assigned Hospital</label>
-                <select
-                  className="form-input"
-                  name="hospital"
+                <SearchableSelect
+                  options={[
+                    ...hospitals.map(h => ({ value: h.name, label: h.name })),
+                    ...(!hospitals.some(h => h.name === personalForm.hospital) && personalForm.hospital 
+                        ? [{ value: personalForm.hospital, label: `${personalForm.hospital} (Current)` }] 
+                        : [])
+                  ]}
                   value={personalForm.hospital}
-                  onChange={handlePersonalChange}
-                  required
-                  style={{ cursor: 'pointer' }}
-                >
-                  <option value="">Select Hospital</option>
-                  {hospitals.map(h => (
-                    <option key={h._id} value={h.name}>{h.name}</option>
-                  ))}
-                  {!hospitals.some(h => h.name === personalForm.hospital) && personalForm.hospital && (
-                    <option value={personalForm.hospital}>{personalForm.hospital} (Current)</option>
-                  )}
-                </select>
+                  onChange={(val) => setPersonalForm({ ...personalForm, hospital: val })}
+                  placeholder="Search Hospital..."
+                />
               </div>
               <div className="form-group" style={{ flex: 2 }}>
                 <label className="form-label">Ward / Unit</label>

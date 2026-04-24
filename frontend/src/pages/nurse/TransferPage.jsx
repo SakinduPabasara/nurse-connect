@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import API from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import useToastMessage from '../../hooks/useToastMessage';
+import SearchableSelect from '../../components/SearchableSelect';
 
 const STATUS_CFG = {
   open:    { color: '#34d399', bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)' },
@@ -135,32 +136,38 @@ export default function TransferPage() {
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Current Hospital *</label>
-                <select className="form-select" name="currentHospital" value={form.currentHospital} onChange={e => setForm({...form, currentHospital: e.target.value})}>
-                  <option value="">Select hospital</option>
-                  {hospitals.map(h => <option key={h._id} value={h.name}>{h.name}</option>)}
-                  {!hospitals.some(h => h.name === form.currentHospital) && form.currentHospital && (
-                    <option value={form.currentHospital}>{form.currentHospital}</option>
-                  )}
-                </select>
+                <SearchableSelect
+                  options={[
+                    ...hospitals.map(h => ({ value: h.name, label: h.name })),
+                    ...(!hospitals.some(h => h.name === form.currentHospital) && form.currentHospital ? [{ value: form.currentHospital, label: form.currentHospital }] : [])
+                  ]}
+                  value={form.currentHospital}
+                  onChange={val => setForm({...form, currentHospital: val})}
+                  placeholder="Search current hospital..."
+                />
               </div>
               <div className="form-group">
                 <label className="form-label">Current Ward *</label>
-                <select className="form-select" name="currentWard" value={form.currentWard} onChange={e => setForm({...form, currentWard: e.target.value})}>
-                  <option value="">Select ward</option>
-                  {wards.map(w => <option key={w._id} value={w.name}>{w.name}</option>)}
-                  {!wards.some(w => w.name === form.currentWard) && form.currentWard && (
-                    <option value={form.currentWard}>{form.currentWard}</option>
-                  )}
-                </select>
+                <SearchableSelect
+                  options={[
+                    ...wards.map(w => ({ value: w.name, label: w.name })),
+                    ...(!wards.some(w => w.name === form.currentWard) && form.currentWard ? [{ value: form.currentWard, label: form.currentWard }] : [])
+                  ]}
+                  value={form.currentWard}
+                  onChange={val => setForm({...form, currentWard: val})}
+                  placeholder="Search current ward..."
+                />
               </div>
             </div>
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Desired Hospital *</label>
-                <select className="form-select" name="desiredHospital" value={form.desiredHospital} onChange={e => setForm({...form, desiredHospital: e.target.value})}>
-                  <option value="">Select hospital</option>
-                  {hospitals.map(h => <option key={`d-${h._id}`} value={h.name}>{h.name}</option>)}
-                </select>
+                <SearchableSelect
+                  options={hospitals.map(h => ({ value: h.name, label: h.name }))}
+                  value={form.desiredHospital}
+                  onChange={val => setForm({...form, desiredHospital: val})}
+                  placeholder="Search desired hospital..."
+                />
               </div>
             <div className="form-group">
               <label className="form-label">Desired Ward *</label>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import API from '../../api/axios';
+import SearchableSelect from '../../components/SearchableSelect';
 
 const STATUS_CFG = {
   available:   { color: '#34d399', bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)', icon: '✅' },
@@ -97,17 +98,14 @@ export default function EquipmentPage() {
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           <input className="equip-search" placeholder="Search equipment…" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <select
-          className="form-select"
-          style={{ width: 170 }}
+        <SearchableSelect
+          className="compact"
+          style={{ width: 220 }}
+          options={wards.map(w => ({ value: w.name, label: w.name }))}
           value={ward}
-          onChange={e => setWard(e.target.value)}
-        >
-          <option value="">All Wards</option>
-          {wards.map(w => (
-            <option key={w._id} value={w.name}>{w.name}</option>
-          ))}
-        </select>
+          onChange={setWard}
+          placeholder="All Wards"
+        />
         {['all','available','maintenance','unavailable'].map(s => {
           const cfg = s === 'all' ? { color: '#60a5fa', bg: 'rgba(37,99,235,0.12)', border: 'rgba(37,99,235,0.3)' } : getCfg(s);
           const active = statusFilter === s;

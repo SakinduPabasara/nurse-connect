@@ -3,6 +3,7 @@ import API from "../../api/axios";
 import useToastMessage from "../../hooks/useToastMessage";
 import { notify } from "../../utils/toast";
 import { useConfirm } from "../../context/ConfirmContext";
+import SearchableSelect from "../../components/SearchableSelect";
 
 const SHIFTS = ["7AM-1PM", "1PM-7PM", "7AM-7PM", "7PM-7AM"];
 const SHIFT_MAP = {
@@ -322,37 +323,28 @@ export default function RosterManagementPage() {
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Hospital *</label>
-                <select
-                  className="form-select"
+                <SearchableSelect
+                  options={hospitals.map(h => ({ value: h.name, label: h.name }))}
                   value={selectedHospital}
-                  onChange={(e) => handleHospitalChange(e.target.value)}
-                >
-                  <option value="">-- All Hospitals --</option>
-                  {hospitals.map((h) => (
-                    <option key={h._id} value={h.name}>{h.name}</option>
-                  ))}
-                </select>
+                  onChange={handleHospitalChange}
+                  placeholder="-- Search Hospital --"
+                />
                 <div className="form-hint" style={{ marginTop: 4 }}>
                   Select hospital first to filter nurses.
                 </div>
               </div>
               <div className="form-group">
                 <label className="form-label">Nurse *</label>
-                <select
-                  className="form-select"
-                  value={form.nurse}
-                  onChange={(e) => handleNurseChange(e.target.value)}
-                  disabled={!selectedHospital && nurses.filter(n => !selectedHospital || n.hospital === selectedHospital).length > 20}
-                >
-                  <option value="">-- Select Nurse --</option>
-                  {nurses
+                <SearchableSelect
+                  options={nurses
                     .filter((n) => !selectedHospital || n.hospital === selectedHospital)
-                    .map((n) => (
-                      <option key={n._id} value={n._id}>
-                        {n.name} {n.ward ? `[Ward: ${n.ward}]` : ""}
-                      </option>
-                    ))}
-                </select>
+                    .map(n => ({ value: n._id, label: `${n.name} ${n.ward ? `[Ward: ${n.ward}]` : ""}` }))
+                  }
+                  value={form.nurse}
+                  onChange={handleNurseChange}
+                  placeholder="-- Search Nurse --"
+                  disabled={!selectedHospital && nurses.length > 50}
+                />
                 {!selectedHospital && (
                   <div className="form-hint" style={{ marginTop: 4, color: 'var(--warning)' }}>
                     Filter by hospital for a cleaner list.
@@ -364,17 +356,13 @@ export default function RosterManagementPage() {
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Assigned Ward *</label>
-                <select
-                  className="form-select"
+                <SearchableSelect
+                  options={wards.map(w => ({ value: w, label: w }))}
                   value={form.ward}
-                  onChange={(e) => setForm({ ...form, ward: e.target.value })}
+                  onChange={(val) => setForm({ ...form, ward: val })}
+                  placeholder="-- Search Ward --"
                   disabled={Boolean(selectedNurseWard)}
-                >
-                  <option value="">— Select Ward —</option>
-                  {wards.map((w) => (
-                    <option key={w} value={w}>{w}</option>
-                  ))}
-                </select>
+                />
                 {selectedNurseWard ? (
                   <div className="form-hint" style={{ marginTop: 6, color: '#34d399', fontWeight: 600 }}>
                     ✓ Linked to nurse's profile.
@@ -497,22 +485,18 @@ export default function RosterManagementPage() {
       {tab === "view" && (
         <>
           <div className="filter-bar" style={{ gap: 12 }}>
-            <div style={{ flex: 1, display: 'flex', gap: 10 }}>
-              <select
-                className="form-select"
-                style={{ width: 180 }}
+            <div style={{ flex: 1, display: 'flex', gap: 10, alignItems: 'center' }}>
+              <SearchableSelect
+                className="compact"
+                options={wards.map(w => ({ value: w, label: w }))}
                 value={rosterWard}
-                onChange={(e) => setRosterWard(e.target.value)}
-              >
-                <option value="">All Wards</option>
-                {wards.map((w) => (
-                  <option key={w} value={w}>{w}</option>
-                ))}
-              </select>
+                onChange={setRosterWard}
+                placeholder="All Wards"
+              />
               <input
                 type="month"
                 className="form-input"
-                style={{ width: 160 }}
+                style={{ width: 160, height: 48 }}
                 value={month}
                 onChange={(e) => setMonth(e.target.value)}
               />

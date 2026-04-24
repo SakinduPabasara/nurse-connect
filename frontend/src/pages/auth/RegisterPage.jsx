@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import API from '../../api/axios';
+import SearchableSelect from '../../components/SearchableSelect';
 
 /* ── Icons ── */
 const ChevR = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m9 18 6-6-6-6"/></svg>;
@@ -454,27 +455,22 @@ export default function RegisterPage() {
                           letterSpacing: '0.06em', textTransform: 'uppercase',
                           pointerEvents: 'none', zIndex: 1,
                         }}>Hospital Name *</label>
-                        <select
-                          id="hospital"
+                        <SearchableSelect
+                          options={hospitals.map(h => ({ value: h.name, label: h.name }))}
                           value={form.hospital}
-                          onChange={e => set('hospital', e.target.value)}
-                          style={{
-                            width: '100%', background: 'transparent', border: 'none', outline: 'none',
-                            color: form.hospital ? '#e8edf5' : 'rgba(100,116,139,0.5)',
-                            fontSize: '0.88rem', fontFamily: "'Inter',sans-serif",
-                            paddingTop: 22, paddingBottom: 6,
-                            paddingLeft: 13, paddingRight: 13,
-                            cursor: 'pointer', appearance: 'none',
-                          }}
-                        >
-                          <option value="">— Select Hospital —</option>
-                          {hospitals.map(h => (
-                            <option key={h._id} value={h.name}>{h.name}</option>
-                          ))}
-                        </select>
-                        <div style={{ position: 'absolute', right: 13, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'rgba(100,116,139,0.55)' }}>
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m6 9 6 6 6-6"/></svg>
-                        </div>
+                          onChange={val => set('hospital', val)}
+                          placeholder="Search Hospital..."
+                          className="registration-select"
+                        />
+                        <style>{`
+                          .registration-select .searchable-select-trigger {
+                            background: transparent !important;
+                            border: none !important;
+                            padding-top: 22px !important;
+                            padding-bottom: 6px !important;
+                            min-height: 48px !important;
+                          }
+                        `}</style>
                       </div>
                       {hospitals.length === 0 && (
                         <div style={{ fontSize: '0.72rem', color: 'rgba(148,163,184,0.4)', marginTop: 4, paddingLeft: 2 }}>
