@@ -300,51 +300,50 @@ export default function PendingVerificationsPage() {
                     >
                       {/* Nurse column with avatar */}
                       <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <div className="pv-avatar">{(n.name || '?').charAt(0).toUpperCase()}</div>
                           <div>
-                            <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text)' }}>{n.name}</div>
-                            {n.email && <div style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>{n.email}</div>}
+                            <div style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text)' }}>{n.name}</div>
+                            {n.email && <div style={{ fontSize: '0.72rem', color: 'var(--text3)' }}>{n.email}</div>}
                           </div>
                         </div>
                       </td>
 
                       {/* NIC */}
                       <td>
-                        <span style={{
-                          background: 'rgba(34,211,238,0.1)', padding: '5px 10px',
-                          borderRadius: 6, fontSize: '0.8rem', letterSpacing: '0.04em',
-                          color: '#22d3ee', fontWeight: 600, whiteSpace: 'nowrap',
-                          border: '1px solid rgba(34,211,238,0.15)'
-                        }}>{n.nic}</span>
+                        <code style={{
+                          background: 'rgba(0,0,0,0.3)', padding: '2px 8px',
+                          borderRadius: 4, fontSize: '0.8rem', letterSpacing: '0.03em',
+                          color: '#22d3ee',
+                        }}>{n.nic}</code>
                       </td>
 
                       {/* Hospital */}
-                      <td style={{ fontWeight: 500, fontSize: '0.875rem', color: 'var(--text2)', whiteSpace: 'nowrap' }}>{n.hospital || '—'}</td>
+                      <td style={{ fontWeight: 500, fontSize: '0.875rem', color: 'var(--text2)' }}>{n.hospital || '—'}</td>
 
                       {/* Ward */}
                       <td>
                         {n.ward ? (
-                          <span style={{ background: 'rgba(139,92,246,0.1)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.22)', borderRadius: 999, padding: '4px 12px', fontSize: '0.72rem', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                          <span style={{ background: 'rgba(139,92,246,0.1)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.22)', borderRadius: 999, padding: '2px 10px', fontSize: '0.75rem', fontWeight: 600 }}>
                             {n.ward}
                           </span>
                         ) : <span style={{ color: 'var(--text3)' }}>—</span>}
                       </td>
 
                       {/* Address */}
-                      <td className="text-muted text-sm" style={{ maxWidth: 160, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={n.address}>{n.address || '—'}</td>
+                      <td className="text-muted text-sm" style={{ maxWidth: 180 }}>{n.address || '—'}</td>
 
                       {/* Telephone */}
-                      <td style={{ fontSize: '0.875rem', fontWeight: 500, whiteSpace: 'nowrap' }}>{n.telephone || '—'}</td>
+                      <td style={{ fontSize: '0.875rem', fontWeight: 500 }}>{n.telephone || '—'}</td>
 
                       {/* Registered */}
-                      <td className="text-muted text-sm" style={{ whiteSpace: 'nowrap' }}>
+                      <td className="text-muted text-sm">
                         {new Date(n.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </td>
 
                       {/* Actions */}
-                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', whiteSpace: 'nowrap' }}>
+                      <td style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                           {/* Verify button */}
                           <button
                             className="btn btn-success btn-sm"
