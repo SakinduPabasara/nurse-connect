@@ -1,11 +1,24 @@
 const Ward = require('../models/Ward');
+const User = require('../models/User');
 const mongoose = require('mongoose');
 
-// @GET /api/wards  — PUBLIC (used by registration page)
+// @GET /api/wards  — PUBLIC/ADMIN (includes user counts)
 const getWards = async (req, res) => {
   try {
-    const wards = await Ward.find().sort({ name: 1 }).select('name description');
-    res.json(wards);
+    const wards = await Ward.find().sort({ name: 1 });
+    
+    // Get user counts for each ward
+    const wardWithCounts = await Promise.all(
+      wards.map(async (w) => {
+        const count = await User.countDocuments({ ward: w.name });
+        return {
+          ...w.toObject(),
+          userCount: count,
+        };
+      })
+    );
+
+    res.json(wardWithCounts);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -264,11 +264,16 @@ export default function WardManagementPage() {
                         )}
                       </div>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 6 }}>
-                      <span style={{ fontSize: "0.72rem", color: "var(--text3)" }}>
-                        Added {new Date(ward.createdAt).toLocaleDateString()}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 9px', background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.15)', borderRadius: 8 }}>
+                         <span style={{ fontSize: '10px' }}>👥</span>
+                         <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#34d399' }}>{ward.userCount || 0} Nurses</span>
+                      </div>
+                      <span style={{ fontSize: "0.7rem", color: "var(--text4)", fontWeight: 500 }}>
+                        {ward.createdAt ? `Joined ${new Date(ward.createdAt).toLocaleDateString()}` : "—"}
                       </span>
-                      <div style={{ display: "flex", gap: 8 }}>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(148,163,184,0.06)' }}>
                         <button
                           className="btn btn-warning btn-sm"
                           onClick={() => startEdit(ward)}
@@ -281,7 +286,6 @@ export default function WardManagementPage() {
                         >
                           Delete
                         </button>
-                      </div>
                     </div>
                   </>
                 )}
