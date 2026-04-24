@@ -196,12 +196,12 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [wards, setWards] = useState([]);
+  const [hospitals, setHospitals] = useState([]);
 
-  // Fetch system wards for the dropdown (public endpoint — no token needed)
+  // Fetch system data for dropdowns (public endpoints)
   useEffect(() => {
-    API.get('/wards')
-      .then(r => setWards(Array.isArray(r.data) ? r.data : []))
-      .catch(() => setWards([]));
+    API.get('/wards').then(r => setWards(Array.isArray(r.data) ? r.data : [])).catch(() => setWards([]));
+    API.get('/hospitals').then(r => setHospitals(Array.isArray(r.data) ? r.data : [])).catch(() => setHospitals([]));
   }, []);
 
   const set = useCallback((name, value) => {
@@ -436,7 +436,57 @@ export default function RegisterPage() {
                 {/* ─── Step 1: Professional Details ─── */}
                 {step === 1 && (
                   <div className="step-content">
-                    <Field id="hospital" label="Hospital Name" value={form.hospital} onChange={e => set('hospital', e.target.value)} error={errors.hospital} autoComplete="organization" hint="e.g. National Hospital Colombo" />
+                    {/* Hospital dropdown */}
+                    <div style={{ marginBottom: 16 }}>
+                      <div style={{
+                        position: 'relative',
+                        border: `1.5px solid ${errors.hospital ? 'rgba(239,68,68,0.6)' : form.hospital ? 'rgba(37,99,235,0.7)' : 'rgba(148,163,184,0.12)'}`,
+                        borderRadius: 11,
+                        background: 'rgba(8,15,30,0.5)',
+                        boxShadow: errors.hospital ? '0 0 0 3px rgba(239,68,68,0.08)' : 'none',
+                        transition: 'all 0.18s ease',
+                      }}>
+                        <label style={{
+                          display: 'block',
+                          position: 'absolute', left: 13, top: 7,
+                          fontSize: '0.62rem', fontWeight: 700,
+                          color: errors.hospital ? '#f87171' : '#93c5fd',
+                          letterSpacing: '0.06em', textTransform: 'uppercase',
+                          pointerEvents: 'none', zIndex: 1,
+                        }}>Hospital Name *</label>
+                        <select
+                          id="hospital"
+                          value={form.hospital}
+                          onChange={e => set('hospital', e.target.value)}
+                          style={{
+                            width: '100%', background: 'transparent', border: 'none', outline: 'none',
+                            color: form.hospital ? '#e8edf5' : 'rgba(100,116,139,0.5)',
+                            fontSize: '0.88rem', fontFamily: "'Inter',sans-serif",
+                            paddingTop: 22, paddingBottom: 6,
+                            paddingLeft: 13, paddingRight: 13,
+                            cursor: 'pointer', appearance: 'none',
+                          }}
+                        >
+                          <option value="">— Select Hospital —</option>
+                          {hospitals.map(h => (
+                            <option key={h._id} value={h.name}>{h.name}</option>
+                          ))}
+                        </select>
+                        <div style={{ position: 'absolute', right: 13, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'rgba(100,116,139,0.55)' }}>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m6 9 6 6 6-6"/></svg>
+                        </div>
+                      </div>
+                      {hospitals.length === 0 && (
+                        <div style={{ fontSize: '0.72rem', color: 'rgba(148,163,184,0.4)', marginTop: 4, paddingLeft: 2 }}>
+                          No hospitals initialized in system.
+                        </div>
+                      )}
+                      {errors.hospital && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 5, color: '#f87171', fontSize: '0.73rem', fontWeight: 500 }}>
+                          <AlertIcon />{errors.hospital}
+                        </div>
+                      )}
+                    </div>
 
                     {/* Ward — required dropdown from /api/wards */}
                     <div style={{ marginBottom: 16 }}>

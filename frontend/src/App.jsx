@@ -42,6 +42,7 @@ import DocumentsManagementPage from "./pages/admin/DocumentsManagementPage";
 import CommunityManagementPage from "./pages/admin/CommunityManagementPage";
 import UsersManagementPage from "./pages/admin/UsersManagementPage";
 import WardManagementPage from "./pages/admin/WardManagementPage";
+import HospitalManagementPage from "./pages/admin/HospitalManagementPage";
 
 const AppLayout = ({ children }) => (
   <ConfirmProvider>
@@ -142,6 +143,7 @@ function App() {
           element={N("admin", CommunityManagementPage)}
         />
         <Route path="/admin/wards" element={N("admin", WardManagementPage)} />
+        <Route path="/admin/hospitals" element={N("admin", HospitalManagementPage)} />
 
         <Route
           path="/"

@@ -24,6 +24,7 @@ const QUICK_ACTIONS = [
   { to: '/admin/overtime', icon: '⏰', label: 'Log Overtime',      desc: 'Record extra hours for nurses',   color: '#22d3ee', bg: 'rgba(6,182,212,0.1)' },
   { to: '/admin/notices',  icon: '📋', label: 'Post Notice',       desc: 'Publish circular or guideline',   color: '#a78bfa', bg: 'rgba(139,92,246,0.1)' },
   { to: '/admin/news',     icon: '📰', label: 'Post News',         desc: 'Share healthcare news updates',   color: '#fbbf24', bg: 'rgba(245,158,11,0.1)' },
+  { to: '/admin/hospitals',icon: '🏥', label: 'Hospitals',         desc: 'Manage healthcare facilities',    color: '#34d399', bg: 'rgba(52,211,153,0.1)' },
 ];
 
 export default function AdminDashboardPage() {

@@ -37,6 +37,7 @@ app.use("/api/community", require("./routes/communityRoutes"));
 app.use("/api/documents", require("./routes/documentRoutes"));
 app.use("/api/overtime", require("./routes/overtimeRoutes"));
 app.use("/api/wards", require("./routes/wardRoutes"));
+app.use("/api/hospitals", require("./routes/hospitalRoutes"));
 
 // Test route
 app.get("/", (req, res) => {
