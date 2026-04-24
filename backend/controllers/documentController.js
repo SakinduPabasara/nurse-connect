@@ -1,32 +1,65 @@
-const Document = require('../models/Document');
-const mongoose = require('mongoose');
+const Document = require("../models/Document");
+const mongoose = require("mongoose");
+const fs = require("fs");
+const path = require("path");
 
-const VALID_CATEGORIES = ['guideline', 'protocol', 'training', 'reference'];
+const VALID_CATEGORIES = [
+  "guideline",
+  "protocol",
+  "training",
+  "reference",
+  "other",
+];
+
+const buildPublicFileUrl = (req, fileName) => {
+  return `${req.protocol}://${req.get("host")}/uploads/documents/${fileName}`;
+};
 
 // @POST /api/documents  — Admin uploads/links a document
 const uploadDocument = async (req, res) => {
-  const { title, description, category, fileUrl } = req.body;
+  const body = req.body || {};
+  const { title, description, category, fileUrl } = body;
 
-  if (!title || !fileUrl) {
-    return res.status(400).json({ message: 'Please provide both title and fileUrl' });
+  if (!title) {
+    return res.status(400).json({ message: "Please provide title" });
   }
   if (title.trim().length < 3) {
-    return res.status(400).json({ message: 'Title must be at least 3 characters' });
+    return res
+      .status(400)
+      .json({ message: "Title must be at least 3 characters" });
   }
   if (category && !VALID_CATEGORIES.includes(category)) {
-    return res.status(400).json({ message: `Category must be one of: ${VALID_CATEGORIES.join(', ')}` });
+    return res
+      .status(400)
+      .json({
+        message: `Category must be one of: ${VALID_CATEGORIES.join(", ")}`,
+      });
+  }
+
+  if (!req.file && (!fileUrl || !fileUrl.trim())) {
+    return res
+      .status(400)
+      .json({ message: "Please upload a file or provide a URL" });
   }
 
   try {
+    const normalizedUrl = fileUrl ? fileUrl.trim() : "";
+    const documentUrl = req.file
+      ? buildPublicFileUrl(req, req.file.filename)
+      : normalizedUrl;
+
     const doc = await Document.create({
       title: title.trim(),
-      description: description ? description.trim() : '',
-      category: category || 'reference',
-      fileUrl: fileUrl.trim(),
+      description: description ? description.trim() : "",
+      category: category || "reference",
+      fileUrl: documentUrl,
+      fileName: req.file ? req.file.originalname : "",
+      fileMimeType: req.file ? req.file.mimetype : "",
+      fileSize: req.file ? req.file.size : 0,
       uploadedBy: req.user._id,
     });
 
-    const populated = await doc.populate('uploadedBy', 'name');
+    const populated = await doc.populate("uploadedBy", "name");
     res.status(201).json(populated);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -41,11 +74,11 @@ const getAllDocuments = async (req, res) => {
       filter.category = req.query.category;
     }
     if (req.query.search) {
-      filter.title = { $regex: req.query.search, $options: 'i' };
+      filter.title = { $regex: req.query.search, $options: "i" };
     }
 
     const documents = await Document.find(filter)
-      .populate('uploadedBy', 'name')
+      .populate("uploadedBy", "name")
       .sort({ createdAt: -1 });
     res.json(documents);
   } catch (error) {
@@ -56,13 +89,77 @@ const getAllDocuments = async (req, res) => {
 // @GET /api/documents/:id  — Get a single document
 const getDocumentById = async (req, res) => {
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-    return res.status(400).json({ message: 'Invalid document ID' });
+    return res.status(400).json({ message: "Invalid document ID" });
   }
 
   try {
-    const doc = await Document.findById(req.params.id).populate('uploadedBy', 'name');
-    if (!doc) return res.status(404).json({ message: 'Document not found' });
+    const doc = await Document.findById(req.params.id).populate(
+      "uploadedBy",
+      "name",
+    );
+    if (!doc) return res.status(404).json({ message: "Document not found" });
     res.json(doc);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @GET /api/documents/:id/download  — Authenticated download for nurses/admins
+const downloadDocument = async (req, res) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({ message: "Invalid document ID" });
+  }
+
+  try {
+    const doc = await Document.findById(req.params.id);
+    if (!doc) return res.status(404).json({ message: "Document not found" });
+
+    const safeTitle = (doc.title || "document")
+      .replace(/[^a-zA-Z0-9-_]+/g, "_")
+      .slice(0, 80);
+    const preferredName = doc.fileName?.trim() || safeTitle;
+    const localPrefix = "/uploads/documents/";
+
+    if (doc.fileUrl && doc.fileUrl.includes(localPrefix)) {
+      const fileName = doc.fileUrl.split(localPrefix)[1];
+      const filePath = path.join(
+        __dirname,
+        "..",
+        "uploads",
+        "documents",
+        fileName || "",
+      );
+      if (!fileName || !fs.existsSync(filePath)) {
+        return res
+          .status(404)
+          .json({ message: "Uploaded file not found on server" });
+      }
+      return res.download(filePath, preferredName);
+    }
+
+    if (doc.fileUrl && /^https?:\/\//i.test(doc.fileUrl)) {
+      const remote = await fetch(doc.fileUrl);
+      if (!remote.ok) {
+        return res
+          .status(502)
+          .json({ message: "Could not fetch remote document" });
+      }
+
+      const contentType =
+        remote.headers.get("content-type") || "application/octet-stream";
+      const fileBuffer = Buffer.from(await remote.arrayBuffer());
+
+      res.setHeader("Content-Type", contentType);
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${preferredName}"`,
+      );
+      return res.send(fileBuffer);
+    }
+
+    return res
+      .status(400)
+      .json({ message: "No downloadable source found for this document" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -71,16 +168,42 @@ const getDocumentById = async (req, res) => {
 // @DELETE /api/documents/:id  — Admin deletes a document
 const deleteDocument = async (req, res) => {
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-    return res.status(400).json({ message: 'Invalid document ID' });
+    return res.status(400).json({ message: "Invalid document ID" });
   }
 
   try {
-    const doc = await Document.findByIdAndDelete(req.params.id);
-    if (!doc) return res.status(404).json({ message: 'Document not found' });
-    res.json({ message: 'Document deleted successfully' });
+    const doc = await Document.findById(req.params.id);
+    if (!doc) return res.status(404).json({ message: "Document not found" });
+
+    const localPrefix = "/uploads/documents/";
+    if (doc.fileUrl && doc.fileUrl.includes(localPrefix)) {
+      const fileName = doc.fileUrl.split(localPrefix)[1];
+      if (fileName) {
+        const filePath = path.join(
+          __dirname,
+          "..",
+          "uploads",
+          "documents",
+          fileName,
+        );
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      }
+    }
+
+    await doc.deleteOne();
+
+    res.json({ message: "Document deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-module.exports = { uploadDocument, getAllDocuments, getDocumentById, deleteDocument };
+module.exports = {
+  uploadDocument,
+  getAllDocuments,
+  getDocumentById,
+  downloadDocument,
+  deleteDocument,
+};

@@ -39,4 +39,29 @@ const markAsRead = async (req, res) => {
   }
 };
 
-module.exports = { getNotifications, markAsRead };
+// @GET /api/notifications/unread-count
+const getUnreadCount = async (req, res) => {
+  try {
+    const count = await Notification.countDocuments({
+      recipient: req.user._id,
+      isRead: false,
+    });
+    res.json({ count });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+// @PUT /api/notifications/mark-all-read
+const markAllRead = async (req, res) => {
+  try {
+    await Notification.updateMany(
+      { recipient: req.user._id, isRead: false },
+      { $set: { isRead: true } }
+    );
+    res.json({ message: 'All notifications marked as read' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { getNotifications, markAsRead, getUnreadCount, markAllRead };

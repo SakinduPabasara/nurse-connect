@@ -1,6 +1,8 @@
 const Leave = require('../models/Leave');
 const Notification = require('../models/Notification');
 const mongoose = require('mongoose');
+const { getIO } = require('../utils/socketManager');
+const User = require('../models/User');
 
 const VALID_TYPES = ['annual', 'sick', 'casual', 'overtime_comp'];
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
@@ -32,6 +34,28 @@ const applyLeave = async (req, res) => {
     });
 
     const populated = await leave.populate('nurse', 'name email ward');
+    
+    // Notify all admins via DB Notification
+    const admins = await User.find({ role: 'admin' }).select('_id');
+    const adminNotifs = admins.map(a => ({
+      recipient: a._id,
+      message: `${req.user.name} applied for ${leaveType} leave from ${startDate} to ${endDate}.`,
+      type: 'leave'
+    }));
+    if (adminNotifs.length > 0) {
+      await Notification.insertMany(adminNotifs);
+    }
+    
+    try {
+      getIO().to('admin').emit('leave:created', populated);
+      // For the notification bell badge updates
+      adminNotifs.forEach(n => {
+        getIO().to('admin').emit('notification:new', { ...n, isRead: false, createdAt: new Date() });
+      });
+    } catch (err) {
+      console.error('Socket emit error:', err.message);
+    }
+
     res.status(201).json(populated);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -100,11 +124,19 @@ const updateLeaveStatus = async (req, res) => {
     await leave.save();
 
     // Notify the nurse
-    await Notification.create({
+    const notif = await Notification.create({
       recipient: leave.nurse._id,
       message: `Your leave request from ${leave.startDate} to ${leave.endDate} has been ${status}.`,
-      type: 'announcement',
+      type: 'leave',
     });
+
+    try {
+      getIO().to('user:' + leave.nurse._id.toString()).emit('notification:new', notif);
+      getIO().to('user:' + leave.nurse._id.toString()).emit('leave:updated', leave);
+      getIO().to('admin').emit('leave:updated', leave);
+    } catch (err) {
+      console.error('Socket emit error:', err.message);
+    }
 
     res.json({ message: `Leave request ${status} successfully`, leave });
   } catch (error) {

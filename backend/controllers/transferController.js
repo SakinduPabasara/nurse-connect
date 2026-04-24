@@ -1,7 +1,7 @@
 const TransferRequest = require('../models/TransferRequest');
 const Notification = require('../models/Notification');
 const mongoose = require('mongoose');
-
+const { getIO } = require('../utils/socketManager');
 // @POST /api/transfers  — Nurse posts a transfer request
 const createTransfer = async (req, res) => {
   const { currentHospital, currentWard, desiredHospital, desiredWard, transferTimeframe, reason } = req.body;
@@ -24,6 +24,13 @@ const createTransfer = async (req, res) => {
     });
 
     const populated = await transfer.populate('requester', 'name email ward hospital');
+    
+    try {
+      getIO().to('all_users').emit('transfer:updated');
+    } catch (err) {
+      console.error('Socket emit error:', err.message);
+    }
+    
     res.status(201).json(populated);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -81,13 +88,10 @@ const getMatchingTransfers = async (req, res) => {
     });
 
     if (myRequests.length === 0) {
-      return res.json({
-        message: 'You have no open transfer requests. Create one first to find matches.',
-        matches: [],
-      });
+      return res.json([]); // Always return an array for the frontend
     }
 
-    const matchResults = [];
+    const matchSet = new Map(); // deduplicate by _id
 
     for (const myReq of myRequests) {
       // Find others who want to go where I am, and are currently where I want to go
@@ -98,13 +102,10 @@ const getMatchingTransfers = async (req, res) => {
         desiredHospital: myReq.currentHospital,
       }).populate('requester', 'name email ward hospital');
 
-      matchResults.push({
-        myRequest: myReq,
-        potentialMatches,
-      });
+      potentialMatches.forEach(m => matchSet.set(m._id.toString(), m));
     }
 
-    res.json(matchResults);
+    res.json([...matchSet.values()]);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -146,11 +147,23 @@ const updateTransferStatus = async (req, res) => {
 
     // Notify requester if not the one making this change
     if (!isOwner) {
-      await Notification.create({
+      const notif = await Notification.create({
         recipient: transfer.requester._id,
         message: `Your transfer request to ${transfer.desiredHospital} has been updated to: ${status}.`,
-        type: 'announcement',
+        type: 'transfer',
       });
+      try {
+        getIO().to('user:' + transfer.requester._id.toString()).emit('notification:new', notif);
+        getIO().to('all_users').emit('transfer:updated');
+      } catch (err) {
+        console.error('Socket emit error:', err.message);
+      }
+    }
+
+    try {
+      getIO().to('all_users').emit('transfer:updated');
+    } catch (err) {
+      console.error('Socket emit error:', err.message);
     }
 
     res.json({ message: `Transfer request updated to ${status}`, transfer });

@@ -1,12 +1,24 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { createRoster, getMyRoster, getWardRoster, deleteRoster, getDashboardSummary } = require('../controllers/rosterController');
-const { protect, adminOnly } = require('../middleware/authMiddleware');
+const {
+  createRoster,
+  createRosterBulk,
+  getMyRoster,
+  getAllRosters,
+  getWardRoster,
+  getWardNames,
+  deleteRoster,
+  getDashboardSummary,
+} = require("../controllers/rosterController");
+const { protect, adminOnly } = require("../middleware/authMiddleware");
 
-router.post('/', protect, adminOnly, createRoster);
-router.get('/my/summary', protect, getDashboardSummary);
-router.get('/my', protect, getMyRoster);
-router.get('/ward/:ward', protect, getWardRoster);
-router.delete('/:id', protect, adminOnly, deleteRoster);
+router.post("/", protect, adminOnly, createRoster);
+router.post("/bulk", protect, adminOnly, createRosterBulk);
+router.get("/my/summary", protect, getDashboardSummary);
+router.get("/my", protect, getMyRoster);
+router.get("/all", protect, adminOnly, getAllRosters);
+router.get("/wards", protect, getWardNames);
+router.get("/ward/:ward", protect, getWardRoster);
+router.delete("/:id", protect, adminOnly, deleteRoster);
 
 module.exports = router;

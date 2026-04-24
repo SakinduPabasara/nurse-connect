@@ -1,11 +1,24 @@
 const express = require('express');
 const router = express.Router();
-const { addOvertime, getMyOvertime, getAllOvertime, deleteOvertime } = require('../controllers/overtimeController');
+
+const {
+  applyOvertime,
+  withdrawOvertime,
+  getMyOvertime,
+  getAllOvertime,
+  reviewOvertime,
+  deleteOvertime,
+} = require('../controllers/overtimeController');
+
 const { protect, adminOnly } = require('../middleware/authMiddleware');
 
-router.post('/', protect, adminOnly, addOvertime);          // Admin records overtime
-router.get('/my', protect, getMyOvertime);                  // Nurse views own overtime
-router.get('/', protect, adminOnly, getAllOvertime);         // Admin views all overtime
-router.delete('/:id', protect, adminOnly, deleteOvertime);  // Admin deletes a record
+// NOTE: specific routes (/my, /withdraw/:id) MUST be declared before parameterised /:id
+router.post('/', protect, applyOvertime);                          // Nurse — submit OT application
+router.get('/my', protect, getMyOvertime);                         // Nurse — view own records
+router.delete('/withdraw/:id', protect, withdrawOvertime);         // Nurse — withdraw own pending application
+
+router.get('/', protect, adminOnly, getAllOvertime);                // Admin — all OT records (filter by ?status=)
+router.put('/:id', protect, adminOnly, reviewOvertime);            // Admin — approve or reject
+router.delete('/:id', protect, adminOnly, deleteOvertime);         // Admin — hard delete
 
 module.exports = router;

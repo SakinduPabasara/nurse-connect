@@ -2,6 +2,7 @@ const SwapRequest = require('../models/SwapRequest');
 const Notification = require('../models/Notification');
 const Roster = require('../models/Roster');
 const mongoose = require('mongoose');
+const { getIO } = require('../utils/socketManager');
 
 const VALID_SHIFTS = ['7AM-1PM', '1PM-7PM', '7AM-7PM', '7PM-7AM'];
 
@@ -35,11 +36,18 @@ const createSwap = async (req, res) => {
       reason: reason || '',
     });
 
-    await Notification.create({
+    const notif = await Notification.create({
       recipient: targetNurse,
       message: `${req.user.name} has sent you a shift swap request for ${requesterShiftDate}.`,
       type: 'swap',
     });
+
+    try {
+      getIO().to('user:' + targetNurse.toString()).emit('notification:new', notif);
+      getIO().to('user:' + targetNurse.toString()).emit('swap:updated');
+    } catch (err) {
+      console.error('Socket emit error:', err.message);
+    }
 
     res.status(201).json(swap);
   } catch (error) {
@@ -129,11 +137,22 @@ const respondToSwap = async (req, res) => {
     }
 
     // Notify the requester of the response
-    await Notification.create({
+    const notif = await Notification.create({
       recipient: swap.requester._id,
       message: `Your shift swap request for ${swap.requesterShiftDate} has been ${status} by ${req.user.name}.`,
       type: 'swap',
     });
+
+    try {
+      getIO().to('user:' + swap.requester._id.toString()).emit('notification:new', notif);
+      getIO().to('user:' + swap.requester._id.toString()).emit('swap:updated');
+      if (status === 'approved') {
+         getIO().to('user:' + swap.requester._id.toString()).emit('roster:updated');
+         getIO().to('user:' + swap.targetNurse._id.toString()).emit('roster:updated');
+      }
+    } catch (err) {
+      console.error('Socket emit error:', err.message);
+    }
 
     res.json({
       message: `Swap request ${status} successfully`,

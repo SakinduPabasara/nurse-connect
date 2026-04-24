@@ -1,8 +1,13 @@
-const Roster = require('../models/Roster');
-const Notification = require('../models/Notification');
-const mongoose = require('mongoose');
+const Roster = require("../models/Roster");
+const Notification = require("../models/Notification");
+const User = require("../models/User");
+const Drug = require("../models/Drug");
+const Equipment = require("../models/Equipment");
+const mongoose = require("mongoose");
+const { getIO } = require("../utils/socketManager");
+const VALID_SHIFTS = ["7AM-1PM", "1PM-7PM", "7AM-7PM", "7PM-7AM"];
 
-const VALID_SHIFTS = ['7AM-1PM', '1PM-7PM', '7AM-7PM', '7PM-7AM'];
+const isValidISODate = (date) => /^\d{4}-\d{2}-\d{2}$/.test(date);
 
 // @POST /api/roster
 const createRoster = async (req, res) => {
@@ -10,28 +15,157 @@ const createRoster = async (req, res) => {
 
   // --- Validation ---
   if (!nurse || !ward || !date || !shift || !month) {
-    return res.status(400).json({ message: 'Please provide nurse, ward, date, shift, and month' });
+    return res
+      .status(400)
+      .json({ message: "Please provide nurse, ward, date, shift, and month" });
   }
   if (!mongoose.Types.ObjectId.isValid(nurse)) {
-    return res.status(400).json({ message: 'Invalid nurse ID' });
+    return res.status(400).json({ message: "Invalid nurse ID" });
   }
   if (!VALID_SHIFTS.includes(shift)) {
-    return res.status(400).json({ message: `Shift must be one of: ${VALID_SHIFTS.join(', ')}` });
+    return res
+      .status(400)
+      .json({ message: `Shift must be one of: ${VALID_SHIFTS.join(", ")}` });
   }
   // ------------------
 
   try {
-    const entry = await Roster.create({ nurse, ward, date, shift, month });
-    const populated = await entry.populate('nurse', 'name email');
+    const nurseUser = await User.findById(nurse).select("name");
+    if (!nurseUser) {
+      return res.status(404).json({ message: "Nurse not found" });
+    }
+
+    const entry = await Roster.create({
+      nurse,
+      nurseName: nurseUser.name,
+      ward,
+      date,
+      shift,
+      month,
+    });
+    const populated = await entry.populate("nurse", "name email");
 
     // Notify the assigned nurse about their new roster entry
-    await Notification.create({
+    const notif = await Notification.create({
       recipient: nurse,
       message: `A new roster entry has been assigned to you: ${shift} on ${date} (Ward: ${ward}).`,
-      type: 'roster',
+      type: "roster",
     });
 
+    try {
+      getIO().to("user:" + nurse.toString()).emit("notification:new", notif);
+    } catch (err) {
+      console.error("Socket emit error:", err.message);
+    }
+
     res.status(201).json(populated);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @POST /api/roster/bulk
+const createRosterBulk = async (req, res) => {
+  const { nurse, ward, shift, month, dates } = req.body;
+
+  if (!nurse || !ward || !shift || !month || !Array.isArray(dates)) {
+    return res.status(400).json({
+      message: "Please provide nurse, ward, shift, month, and dates[]",
+    });
+  }
+  if (!mongoose.Types.ObjectId.isValid(nurse)) {
+    return res.status(400).json({ message: "Invalid nurse ID" });
+  }
+  if (!VALID_SHIFTS.includes(shift)) {
+    return res
+      .status(400)
+      .json({ message: `Shift must be one of: ${VALID_SHIFTS.join(", ")}` });
+  }
+  if (!/^\d{4}-\d{2}$/.test(month)) {
+    return res.status(400).json({ message: "Month must be in YYYY-MM format" });
+  }
+
+  const cleanedDates = [
+    ...new Set(dates.map((d) => String(d || "").trim()).filter(Boolean)),
+  ];
+  if (cleanedDates.length === 0) {
+    return res
+      .status(400)
+      .json({ message: "Please provide at least one valid date" });
+  }
+
+  if (
+    !cleanedDates.every((d) => isValidISODate(d) && d.startsWith(`${month}-`))
+  ) {
+    return res.status(400).json({
+      message:
+        "All dates must be in YYYY-MM-DD format and match the selected month",
+    });
+  }
+
+  try {
+    const nurseUser = await User.findById(nurse).select("name");
+    if (!nurseUser) {
+      return res.status(404).json({ message: "Nurse not found" });
+    }
+
+    const existing = await Roster.find({
+      nurse,
+      ward,
+      shift,
+      month,
+      date: { $in: cleanedDates },
+    }).select("date");
+
+    const existingDates = new Set(existing.map((r) => r.date));
+    const toCreateDates = cleanedDates.filter((d) => !existingDates.has(d));
+
+    if (toCreateDates.length === 0) {
+      return res.status(200).json({
+        createdCount: 0,
+        skippedCount: cleanedDates.length,
+        skippedDates: cleanedDates,
+        entries: [],
+        message:
+          "All selected dates already exist for this nurse/ward/shift/month",
+      });
+    }
+
+    const docs = toCreateDates.map((date) => ({
+      nurse,
+      nurseName: nurseUser.name,
+      ward: ward.trim(),
+      date,
+      shift,
+      month,
+    }));
+    const created = await Roster.insertMany(docs);
+
+    const entries = await Roster.find({
+      _id: { $in: created.map((c) => c._id) },
+    })
+      .populate("nurse", "name email")
+      .sort({ date: 1 });
+
+    const bulkNotif = await Notification.create({
+      recipient: nurse,
+      message: `New roster duties were assigned: ${toCreateDates.length} date(s) in ${month} (${shift}, Ward: ${ward}).`,
+      type: "roster",
+    });
+
+    try {
+      getIO().to("user:" + nurse.toString()).emit("notification:new", bulkNotif);
+    } catch (err) {
+      console.error("Socket emit error:", err.message);
+    }
+
+    const skippedDates = cleanedDates.filter((d) => existingDates.has(d));
+    res.status(201).json({
+      createdCount: toCreateDates.length,
+      skippedCount: skippedDates.length,
+      skippedDates,
+      entries,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -44,7 +178,7 @@ const getMyRoster = async (req, res) => {
     if (req.query.month) filter.month = req.query.month;
 
     const roster = await Roster.find(filter)
-      .populate('nurse', 'name email')
+      .populate("nurse", "name email")
       .sort({ date: 1 });
     res.json(roster);
   } catch (error) {
@@ -55,17 +189,82 @@ const getMyRoster = async (req, res) => {
 // @GET /api/roster/ward/:ward
 const getWardRoster = async (req, res) => {
   if (!req.params.ward) {
-    return res.status(400).json({ message: 'Please provide a ward name' });
+    return res.status(400).json({ message: "Please provide a ward name" });
   }
 
   try {
-    const filter = { ward: req.params.ward };
+    const filter = {};
+    if (req.params.ward !== "all") {
+      filter.ward = req.params.ward;
+    }
     if (req.query.month) filter.month = req.query.month;
 
-    const roster = await Roster.find(filter)
-      .populate('nurse', 'name email')
+    const rosterDocs = await Roster.find(filter)
+      .populate("nurse", "name email")
       .sort({ date: 1 });
+
+    const roster = rosterDocs.map((entry) => {
+      const obj = entry.toObject();
+      if (!obj.nurse && obj.nurseName) {
+        obj.nurse = { name: obj.nurseName };
+      }
+      return obj;
+    });
+
     res.json(roster);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @GET /api/roster/all
+const getAllRosters = async (req, res) => {
+  try {
+    const filter = {};
+    if (req.query.month) filter.month = req.query.month;
+    if (req.query.ward) filter.ward = req.query.ward;
+    if (req.query.nurse && mongoose.Types.ObjectId.isValid(req.query.nurse)) {
+      filter.nurse = req.query.nurse;
+    }
+
+    const rosterDocs = await Roster.find(filter)
+      .populate("nurse", "name email hospital ward")
+      .sort({ date: 1, ward: 1 });
+
+    const roster = rosterDocs.map((entry) => {
+      const obj = entry.toObject();
+      if (!obj.nurse && obj.nurseName) {
+        obj.nurse = { name: obj.nurseName };
+      }
+      return obj;
+    });
+
+    res.json(roster);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @GET /api/roster/wards
+const getWardNames = async (req, res) => {
+  try {
+    const [rosterWards, userWards, drugWards, equipmentWards] =
+      await Promise.all([
+        Roster.distinct("ward", { ward: { $exists: true, $ne: null } }),
+        User.distinct("ward", { ward: { $exists: true, $ne: null } }),
+        Drug.distinct("ward", { ward: { $exists: true, $ne: null } }),
+        Equipment.distinct("ward", { ward: { $exists: true, $ne: null } }),
+      ]);
+
+    const wards = [
+      ...new Set(
+        [...rosterWards, ...userWards, ...drugWards, ...equipmentWards]
+          .map((name) => String(name).trim())
+          .filter(Boolean),
+      ),
+    ].sort((a, b) => a.localeCompare(b));
+
+    res.json(wards);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -74,24 +273,30 @@ const getWardRoster = async (req, res) => {
 // @DELETE /api/roster/:id
 const deleteRoster = async (req, res) => {
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-    return res.status(400).json({ message: 'Invalid roster entry ID' });
+    return res.status(400).json({ message: "Invalid roster entry ID" });
   }
 
   try {
     const entry = await Roster.findById(req.params.id);
     if (!entry) {
-      return res.status(404).json({ message: 'Roster entry not found' });
+      return res.status(404).json({ message: "Roster entry not found" });
     }
 
     // Notify nurse before deleting
-    await Notification.create({
+    const delNotif = await Notification.create({
       recipient: entry.nurse,
       message: `Your roster entry for ${entry.shift} on ${entry.date} (Ward: ${entry.ward}) has been removed.`,
-      type: 'roster',
+      type: "roster",
     });
 
+    try {
+      getIO().to("user:" + entry.nurse.toString()).emit("notification:new", delNotif);
+    } catch (err) {
+      console.error("Socket emit error:", err.message);
+    }
+
     await entry.deleteOne();
-    res.json({ message: 'Roster entry deleted successfully' });
+    res.json({ message: "Roster entry deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -105,31 +310,42 @@ const getDashboardSummary = async (req, res) => {
 
     // Current month in "YYYY-MM" format
     const now = new Date();
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
     // All shifts this month
-    const monthlyShifts = await Roster.find({ nurse: nurseId, month: currentMonth });
+    const monthlyShifts = await Roster.find({
+      nurse: nurseId,
+      month: currentMonth,
+    });
 
     // Night shifts this month (7PM–7AM)
-    const nightShifts = monthlyShifts.filter(s => s.shift === '7PM-7AM');
+    const nightShifts = monthlyShifts.filter((s) => s.shift === "7PM-7AM");
 
     // Upcoming shifts: today or later (next 7 days)
-    const todayStr = now.toISOString().split('T')[0]; // "YYYY-MM-DD"
+    const todayStr = now.toISOString().split("T")[0]; // "YYYY-MM-DD"
     const in7Days = new Date(now);
     in7Days.setDate(in7Days.getDate() + 7);
-    const in7DaysStr = in7Days.toISOString().split('T')[0];
+    const in7DaysStr = in7Days.toISOString().split("T")[0];
 
-    const upcomingShifts = monthlyShifts.filter(s => s.date >= todayStr && s.date <= in7DaysStr);
+    const upcomingShifts = monthlyShifts.filter(
+      (s) => s.date >= todayStr && s.date <= in7DaysStr,
+    );
 
     // Leave stats (all time)
-    const Leave = require('../models/Leave');
-    const approvedLeaves = await Leave.find({ nurse: nurseId, status: 'approved' });
-    const pendingLeaves = await Leave.find({ nurse: nurseId, status: 'pending' });
+    const Leave = require("../models/Leave");
+    const approvedLeaves = await Leave.find({
+      nurse: nurseId,
+      status: "approved",
+    });
+    const pendingLeaves = await Leave.find({
+      nurse: nurseId,
+      status: "pending",
+    });
 
     // Overtime stats
     let overtimeTotal = 0;
     try {
-      const Overtime = require('../models/Overtime');
+      const Overtime = require("../models/Overtime");
       const overtimeRecords = await Overtime.find({ nurse: nurseId });
       overtimeTotal = overtimeRecords.reduce((sum, o) => sum + o.extraHours, 0);
     } catch (_) {
@@ -151,4 +367,13 @@ const getDashboardSummary = async (req, res) => {
   }
 };
 
-module.exports = { createRoster, getMyRoster, getWardRoster, deleteRoster, getDashboardSummary };
+module.exports = {
+  createRoster,
+  createRosterBulk,
+  getMyRoster,
+  getAllRosters,
+  getWardRoster,
+  getWardNames,
+  deleteRoster,
+  getDashboardSummary,
+};
