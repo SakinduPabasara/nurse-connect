@@ -3,11 +3,12 @@ import API from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import useToastMessage from '../../hooks/useToastMessage';
 import SearchableSelect from '../../components/SearchableSelect';
+import * as Ic from '../../components/icons';
 
 const STATUS_CFG = {
-  open:    { color: '#34d399', bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)' },
-  matched: { color: '#22d3ee', bg: 'rgba(6,182,212,0.12)',  border: 'rgba(6,182,212,0.3)'  },
-  closed:  { color: '#94a3b8', bg: 'rgba(148,163,184,0.1)', border: 'rgba(148,163,184,0.2)' },
+  open:    { color: '#10b981', bg: 'rgba(16,185,129,0.1)', border: 'rgba(16,185,129,0.2)' },
+  matched: { color: '#06b6d4', bg: 'rgba(6,182,212,0.1)',  border: 'rgba(6,182,212,0.2)'  },
+  closed:  { color: '#64748b', bg: 'rgba(100,116,139,0.1)', border: 'rgba(100,116,139,0.2)' },
 };
 
 export default function TransferPage() {
@@ -41,11 +42,7 @@ export default function TransferPage() {
 
   useEffect(() => {
     if (user) {
-      setForm(prev => ({
-        ...prev,
-        currentHospital: user.hospital || '',
-        currentWard: user.ward || ''
-      }));
+      setForm(prev => ({ ...prev, currentHospital: user.hospital || '', currentWard: user.ward || '' }));
     }
   }, [user]);
 
@@ -62,241 +59,293 @@ export default function TransferPage() {
   const handleSubmit = async e => {
     e.preventDefault();
     if (!form.desiredHospital || !form.desiredWard || !form.transferTimeframe) {
-      setMsg({ type:'error', text:'Please fill all required fields.' }); return;
+      setMsg({ type:'error', text:'Mandatory fields missing.' }); return;
     }
     setSubmitting(true);
     try {
       await API.post('/transfers', form);
-      setMsg({ type:'success', text:'Transfer request posted!' });
+      setMsg({ type:'success', text:'Transfer request initiated.' });
       fetchTransfers(); setTab('my'); setShowForm(false);
     } catch (err) { setMsg({ type:'error', text: err.response?.data?.message || 'Failed.' }); }
     finally { setSubmitting(false); }
   };
 
   return (
-    <div style={{ animation: 'fadeInUp 0.35s ease' }}>
+    <div className="transfer-page-container" style={{ animation: 'fadeIn 0.5s ease-out' }}>
       <style>{`
-        @keyframes fadeInUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-        .transfer-card {
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: 14px;
-          padding: 20px 24px;
-          backdrop-filter: blur(12px);
-          transition: all 0.2s;
+        .route-card {
+           background: var(--surface);
+           border: 1px solid var(--border);
+           border-radius: 20px;
+           padding: 24px;
+           margin-bottom: 16px;
+           transition: all 0.3s ease;
+           position: relative;
+           overflow: hidden;
         }
-        .transfer-card:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.25); }
-        .match-card {
-          background: rgba(6,182,212,0.06);
-          border: 1px solid rgba(6,182,212,0.2);
-          border-radius: 14px;
-          padding: 20px 24px;
-          backdrop-filter: blur(12px);
-          transition: all 0.2s;
+        .route-card:hover {
+           transform: translateY(-4px);
+           border-color: var(--primary-light);
+           box-shadow: 0 12px 30px rgba(0,0,0,0.4);
         }
-        .match-card:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.25); }
-        .hosp-arrow { font-size: 1.4rem; color: var(--text3); }
+        .route-visual {
+           display: flex;
+           align-items: center;
+           gap: 24px;
+           background: var(--bg2);
+           padding: 20px;
+           border-radius: 16px;
+           margin: 16px 0;
+           border: 1px solid var(--border);
+        }
+        .hosp-point {
+           flex: 1;
+        }
+        .point-label {
+           font-size: 0.65rem;
+           font-weight: 800;
+           text-transform: uppercase;
+           color: var(--text3);
+           margin-bottom: 4px;
+        }
+        .point-name {
+           font-size: 0.95rem;
+           font-weight: 700;
+           color: var(--text);
+        }
+        .point-sub {
+           font-size: 0.75rem;
+           color: var(--info);
+        }
+        .route-line {
+           flex: 0 0 40px;
+           height: 2px;
+           background: linear-gradient(90deg, var(--primary), var(--info));
+           position: relative;
+        }
+        .route-line::after {
+           content: '';
+           position: absolute;
+           right: -4px;
+           top: -4px;
+           width: 10px;
+           height: 10px;
+           border-radius: 50%;
+           background: var(--info);
+           box-shadow: 0 0 10px var(--info);
+        }
+        
+        .match-glow {
+           border-color: var(--info) !important;
+           background: rgba(6,182,212,0.03) !important;
+        }
+        .match-glow::before {
+           content: 'MATCH FOUND';
+           position: absolute;
+           top: 0;
+           right: 0;
+           background: var(--info);
+           color: #fff;
+           font-size: 0.6rem;
+           font-weight: 900;
+           padding: 4px 12px;
+           border-radius: 0 0 0 12px;
+        }
       `}</style>
 
       <div className="page-header">
         <div>
-          <div className="page-title">🚀 Inter-Hospital Transfer</div>
-          <div className="page-subtitle">Request transfers and find mutual matches</div>
+          <div className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg, var(--primary), var(--info))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+              <Ic.Transfer size={24} />
+            </div>
+            Hospital Transfer Portal
+          </div>
+          <div className="page-subtitle">Coordinate inter-hospital mobility and mutual staffing exchanges</div>
         </div>
-        <button className={`btn ${showForm ? 'btn-outline' : 'btn-primary'} btn-sm`} onClick={() => setShowForm(p => !p)}>
-          {showForm ? '✕ Hide Form' : '+ New Request'}
+        <button className={`btn ${showForm ? 'btn-outline' : 'btn-primary'}`} style={{ borderRadius: 14 }} onClick={() => setShowForm(!showForm)}>
+          {showForm ? 'Cancel Request' : '+ Initiate Request'}
         </button>
       </div>
 
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, marginBottom: 24 }}>
-        {[
-          { label: 'My Requests', value: transfers.length, color: '#60a5fa', bg: 'rgba(37,99,235,0.12)', icon: '🚀' },
-          { label: 'Matches Found', value: matches.length, color: '#22d3ee', bg: 'rgba(6,182,212,0.12)', icon: '🎯' },
-          { label: 'Open', value: transfers.filter(t => t.status === 'open').length, color: '#34d399', bg: 'rgba(16,185,129,0.12)', icon: '🟢' },
-        ].map(s => (
-          <div key={s.label} style={{ background: s.bg, border: `1px solid ${s.bg.replace('0.12','0.3')}`, borderRadius: 14, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ fontSize: '1.4rem' }}>{s.icon}</div>
-            <div>
-              <div style={{ fontSize: '0.71rem', color: 'var(--text3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{s.label}</div>
-              <div style={{ fontSize: '1.55rem', fontWeight: 800, color: s.color }}>{s.value}</div>
-            </div>
-          </div>
-        ))}
-      </div>
+      {showForm ? (
+        <div className="form-card-premium" style={{ animation: 'fadeInUp 0.4s ease', maxWidth: 900, margin: '0 auto 40px' }}>
+           <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: 24 }}>New Transfer Intent</h3>
+           <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 24 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                 <div className="form-group">
+                    <label className="form-label">Current Deployment</label>
+                    <SearchableSelect
+                      options={hospitals.map(h => ({ value: h.name, label: h.name }))}
+                      value={form.currentHospital}
+                      onChange={val => setForm({...form, currentHospital: val})}
+                      placeholder="Current Hospital"
+                    />
+                 </div>
+                 <div className="form-group" style={{ marginTop: 24 }}>
+                    <SearchableSelect
+                      options={wards.map(w => ({ value: w.name, label: w.name }))}
+                      value={form.currentWard}
+                      onChange={val => setForm({...form, currentWard: val})}
+                      placeholder="Current Ward"
+                    />
+                 </div>
+              </div>
 
-      {showForm && (
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: '28px 32px', backdropFilter: 'blur(12px)', marginBottom: 24 }}>
-          <div style={{ fontSize: '1rem', fontWeight: 700, marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>🚀 Post Transfer Request</div>
-          <div style={{ background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.2)', borderRadius: 10, padding: '12px 16px', marginBottom: 20, fontSize: '0.85rem', color: '#60a5fa' }}>
-            ℹ️ Your current hospital/ward are pre-filled. Fill desired location to get matched.
-          </div>
-          {msg.text && <div className={`alert alert-${msg.type === 'error' ? 'error' : 'success'}`}>{msg.text}</div>}
-          <form onSubmit={handleSubmit}>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Current Hospital *</label>
-                <SearchableSelect
-                  options={[
-                    ...hospitals.map(h => ({ value: h.name, label: h.name })),
-                    ...(!hospitals.some(h => h.name === form.currentHospital) && form.currentHospital ? [{ value: form.currentHospital, label: form.currentHospital }] : [])
-                  ]}
-                  value={form.currentHospital}
-                  onChange={val => setForm({...form, currentHospital: val})}
-                  placeholder="Search current hospital..."
-                />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                 <div className="form-group">
+                    <label className="form-label">Desired Destination</label>
+                    <SearchableSelect
+                      options={hospitals.map(h => ({ value: h.name, label: h.name }))}
+                      value={form.desiredHospital}
+                      onChange={val => setForm({...form, desiredHospital: val})}
+                      placeholder="Target Hospital"
+                    />
+                 </div>
+                 <div className="form-group" style={{ marginTop: 24 }}>
+                    <SearchableSelect
+                      options={wards.map(w => ({ value: w.name, label: w.name }))}
+                      value={form.desiredWard}
+                      onChange={val => setForm({...form, desiredWard: val})}
+                      placeholder="Target Ward"
+                    />
+                 </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">Current Ward *</label>
-                <SearchableSelect
-                  options={[
-                    ...wards.map(w => ({ value: w.name, label: w.name })),
-                    ...(!wards.some(w => w.name === form.currentWard) && form.currentWard ? [{ value: form.currentWard, label: form.currentWard }] : [])
-                  ]}
-                  value={form.currentWard}
-                  onChange={val => setForm({...form, currentWard: val})}
-                  placeholder="Search current ward..."
-                />
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Desired Hospital *</label>
-                <SearchableSelect
-                  options={hospitals.map(h => ({ value: h.name, label: h.name }))}
-                  value={form.desiredHospital}
-                  onChange={val => setForm({...form, desiredHospital: val})}
-                  placeholder="Search desired hospital..."
-                />
-              </div>
-            <div className="form-group">
-              <label className="form-label">Desired Ward *</label>
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', 
-                gap: 10,
-                marginTop: 8
-              }}>
-                {wards.map(w => {
-                  const active = form.desiredWard === w.name;
-                  return (
-                    <div 
-                      key={`d-${w._id}`}
-                      onClick={() => setForm(f => ({ ...f, desiredWard: w.name }))}
-                      style={{
-                        background: active ? 'rgba(37,99,235,0.12)' : 'rgba(8,15,30,0.5)',
-                        border: `1.5px solid ${active ? '#3b82f6' : 'rgba(148,163,184,0.1)'}`,
-                        borderRadius: 12,
-                        padding: '12px 10px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        textAlign: 'center',
-                        boxShadow: active ? '0 4px 12px rgba(37,99,235,0.15)' : 'none',
-                        transform: active ? 'translateY(-2px)' : 'none'
-                      }}
-                    >
-                      <div style={{ fontSize: '1.2rem', marginBottom: 6 }}>🏥</div>
-                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: active ? '#fff' : '#e8edf5', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{w.name}</div>
-                      <div style={{ fontSize: '0.65rem', color: active ? '#93c5fd' : 'rgba(148,163,184,0.4)', fontWeight: 600 }}>{w.userCount || 0} Nurses</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Timeframe *</label>
-                <input className="form-input" type="month" name="transferTimeframe" value={form.transferTimeframe} onChange={e => setForm({...form, transferTimeframe: e.target.value})} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Reason (optional)</label>
-                <input className="form-input" name="reason" placeholder="Short reason…" value={form.reason} onChange={e => setForm({...form, reason: e.target.value})} />
-              </div>
-            </div>
-            <button className="btn btn-primary" type="submit" disabled={submitting}>{submitting ? 'Posting…' : '→ Post Request'}</button>
-          </form>
-        </div>
-      )}
 
-      <div className="tabs">
-        <button className={`tab-btn ${tab === 'my' ? 'active' : ''}`} onClick={() => setTab('my')}>My Requests ({transfers.length})</button>
-        <button className={`tab-btn ${tab === 'matches' ? 'active' : ''}`} onClick={() => setTab('matches')}>
-          🎯 Matches ({matches.length})
-        </button>
-      </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                 <div className="form-group">
+                    <label className="form-label">Target Timeframe</label>
+                    <input className="form-input" type="month" value={form.transferTimeframe} onChange={e => setForm({...form, transferTimeframe: e.target.value})} style={{ background: 'var(--bg2)', height: 44 }} />
+                 </div>
+                 <div className="form-group">
+                    <label className="form-label">Reasoning</label>
+                    <input className="form-input" placeholder="Optional context..." value={form.reason} onChange={e => setForm({...form, reason: e.target.value})} style={{ background: 'var(--bg2)', height: 44 }} />
+                 </div>
+              </div>
 
-      {tab === 'my' && (loading ? (
-        <div className="loading-center" style={{ flexDirection:'column', gap:16 }}>
-          <div className="spinner" style={{ margin:0 }} />
-        </div>
-      ) : transfers.length === 0 ? (
-        <div className="empty-state" style={{ padding:'70px 20px' }}>
-          <div className="empty-state-icon">🚀</div>
-          <div className="empty-state-text" style={{ fontWeight:600 }}>No transfer requests yet</div>
-          <button className="btn btn-primary btn-sm" style={{ marginTop:20 }} onClick={() => setShowForm(true)}>+ Post Request</button>
+              <button className="btn btn-primary" style={{ padding: '14px', borderRadius: 14, fontWeight: 700 }} type="submit" disabled={submitting}>
+                 {submitting ? 'Posting Intent...' : 'Broadcast Transfer Intent'}
+              </button>
+           </form>
         </div>
       ) : (
-        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-          {transfers.map(t => {
-            const cfg = STATUS_CFG[t.status] || STATUS_CFG.open;
-            return (
-              <div key={t._id} className="transfer-card" style={{ borderLeft:`3px solid ${cfg.color}` }}>
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
-                    <div>
-                      <div style={{ fontSize:'0.8rem', color:'var(--text3)', marginBottom:2 }}>From</div>
-                      <div style={{ fontWeight:700, color:'var(--text)' }}>{t.currentHospital}</div>
-                      <div style={{ fontSize:'0.78rem', color:'var(--text2)' }}>{t.currentWard}</div>
-                    </div>
-                    <span className="hosp-arrow">→</span>
-                    <div>
-                      <div style={{ fontSize:'0.8rem', color:'var(--text3)', marginBottom:2 }}>To</div>
-                      <div style={{ fontWeight:700, color:'var(--text)' }}>{t.desiredHospital}</div>
-                      <div style={{ fontSize:'0.78rem', color:'var(--text2)' }}>{t.desiredWard}</div>
-                    </div>
-                  </div>
-                  <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:6 }}>
-                    <span style={{ background:cfg.bg, color:cfg.color, border:`1px solid ${cfg.border}`, padding:'4px 12px', borderRadius:999, fontSize:'0.75rem', fontWeight:700, textTransform:'capitalize' }}>{t.status}</span>
-                    <span style={{ fontSize:'0.78rem', color:'var(--text3)' }}>📅 {t.transferTimeframe}</span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ))}
+        <>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 32 }}>
+            {[
+              { id: 'my', label: 'Registered Intents', count: transfers.length },
+              { id: 'matches', label: 'Mutual Matches', count: matches.length, highlight: true }
+            ].map(t => (
+              <button 
+                key={t.id} 
+                onClick={() => setTab(t.id)}
+                style={{
+                  padding: '12px 24px',
+                  borderRadius: 14,
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  border: '1px solid',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  background: tab === t.id ? (t.highlight ? 'var(--info)' : 'var(--primary)') : 'var(--bg2)',
+                  color: tab === t.id ? '#fff' : 'var(--text3)',
+                  borderColor: tab === t.id ? 'transparent' : 'var(--border)',
+                  boxShadow: tab === t.id ? `0 8px 20px ${t.highlight ? 'var(--info-glow)' : 'var(--primary-glow)'}` : 'none'
+                }}
+              >
+                {t.label} ({t.count})
+              </button>
+            ))}
+          </div>
 
-      {tab === 'matches' && (matches.length === 0 ? (
-        <div className="empty-state" style={{ padding:'70px 20px' }}>
-          <div className="empty-state-icon">🔍</div>
-          <div className="empty-state-text" style={{ fontWeight:600 }}>No mutual matches yet</div>
-          <div style={{ color:'var(--text3)', fontSize:'0.875rem', marginTop:8 }}>Post a transfer request to get matched</div>
-        </div>
-      ) : (
-        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-          {matches.map(m => (
-            <div key={m._id} className="match-card">
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
-                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                  <div style={{ width:38, height:38, borderRadius:'50%', background:'linear-gradient(135deg,#06b6d4,#2563eb)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.9rem', fontWeight:700, color:'#fff' }}>
-                    {(m.requester?.name || 'N')[0]}
-                  </div>
-                  <div>
-                    <div style={{ fontWeight:700, fontSize:'0.9rem' }}>{m.requester?.name}</div>
-                    <div style={{ fontSize:'0.78rem', color:'var(--text2)' }}>{m.currentHospital} → {m.desiredHospital}</div>
-                    <div style={{ fontSize:'0.75rem', color:'var(--text3)' }}>{m.currentWard} → {m.desiredWard}</div>
-                  </div>
-                </div>
-                <div style={{ textAlign:'right' }}>
-                  <span style={{ background:'rgba(6,182,212,0.15)', color:'#22d3ee', border:'1px solid rgba(6,182,212,0.3)', padding:'4px 12px', borderRadius:999, fontSize:'0.75rem', fontWeight:700 }}>🎯 Match</span>
-                  <div style={{ fontSize:'0.78rem', color:'var(--text3)', marginTop:4 }}>📅 {m.transferTimeframe}</div>
-                </div>
-              </div>
-            </div>
+          {loading ? (
+             <div style={{ display: 'grid', gap: 16 }}>
+                {Array.from({ length: 3 }).map((_, i) => <div key={i} className="skeleton-card" style={{ height: 180, borderRadius: 20 }} />)}
+             </div>
+          ) : (tab === 'my' ? (
+            transfers.length === 0 ? (
+               <div className="empty-state">
+                  <Ic.Transfer size={48} style={{ opacity: 0.1, marginBottom: 20 }} />
+                  <div className="empty-state-text">No active transfer requests</div>
+               </div>
+            ) : (
+               <div className="route-list">
+                  {transfers.map(t => {
+                     const cfg = STATUS_CFG[t.status] || STATUS_CFG.open;
+                     return (
+                        <div key={t._id} className="route-card">
+                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                              <div style={{ padding: '4px 12px', background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`, borderRadius: 8, fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase' }}>
+                                 {t.status}
+                              </div>
+                              <span style={{ fontSize: '0.8rem', color: 'var(--text3)' }}>Target: {t.transferTimeframe}</span>
+                           </div>
+
+                           <div className="route-visual">
+                              <div className="hosp-point">
+                                 <div className="point-label">Origin</div>
+                                 <div className="point-name">{t.currentHospital}</div>
+                                 <div className="point-sub">{t.currentWard}</div>
+                              </div>
+                              <div className="route-line" />
+                              <div className="hosp-point">
+                                 <div className="point-label">Destination</div>
+                                 <div className="point-name">{t.desiredHospital}</div>
+                                 <div className="point-sub">{t.desiredWard}</div>
+                              </div>
+                           </div>
+                           
+                           {t.reason && <div style={{ fontSize: '0.8rem', color: 'var(--text3)', fontStyle: 'italic', marginTop: 12 }}>"{t.reason}"</div>}
+                        </div>
+                     )
+                  })}
+               </div>
+            )
+          ) : (
+            matches.length === 0 ? (
+               <div className="empty-state">
+                  <Ic.Search size={48} style={{ opacity: 0.1, marginBottom: 20 }} />
+                  <div className="empty-state-text">Patiently monitoring for mutual matches...</div>
+               </div>
+            ) : (
+               <div className="route-list">
+                  {matches.map(m => (
+                     <div key={m._id} className="route-card match-glow">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                           <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--bg3)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
+                              {(m.requester?.name || 'N')[0]}
+                           </div>
+                           <div>
+                              <div style={{ fontSize: '0.9rem', fontWeight: 700 }}>{m.requester?.name}</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>Potential Transfer Exchange</div>
+                           </div>
+                        </div>
+
+                        <div className="route-visual">
+                           <div className="hosp-point">
+                              <div className="point-label">Their Current</div>
+                              <div className="point-name">{m.currentHospital}</div>
+                              <div className="point-sub">{m.currentWard}</div>
+                           </div>
+                           <div className="route-line" />
+                           <div className="hosp-point">
+                              <div className="point-label">Their Goal</div>
+                              <div className="point-name">{m.desiredHospital}</div>
+                              <div className="point-sub">{m.desiredWard}</div>
+                           </div>
+                        </div>
+                        
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+                           <span style={{ fontSize: '0.8rem', color: 'var(--text3)' }}>Synchronized Timeframe: {m.transferTimeframe}</span>
+                           <button className="btn btn-primary btn-sm">Contact Nurse</button>
+                        </div>
+                     </div>
+                  ))}
+               </div>
+            )
           ))}
-        </div>
-      ))}
+        </>
+      )}
     </div>
   );
 }
+

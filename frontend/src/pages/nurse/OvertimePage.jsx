@@ -3,93 +3,34 @@ import API from '../../api/axios';
 import useToastMessage from '../../hooks/useToastMessage';
 import { notify } from '../../utils/toast';
 import { useConfirm } from '../../context/ConfirmContext';
+import * as Ic from '../../components/icons';
 
-/* ─────────────────────────────────── constants ── */
-const OT_HOURLY_RATE = 150; // LKR per hour — update to match hospital policy
+const OT_HOURLY_RATE = 150;
 
-/* ─────────────────────────────────── helpers ── */
-const todayStr = () => new Date().toISOString().split('T')[0];
-
-const minDateStr = () => {
-  const d = new Date();
-  d.setMonth(d.getMonth() - 3);
-  return d.toISOString().split('T')[0];
-};
-
-const fmtDate = (ds) => {
-  if (!ds) return '—';
-  const [y, m, d] = ds.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
-  });
-};
-
-const fmtAmount = (hours) =>
-  `LKR ${(hours * OT_HOURLY_RATE).toLocaleString('en-LK', {
-    minimumFractionDigits: 2, maximumFractionDigits: 2,
-  })}`;
-
-const fmtMonthKey = (ds) => {
-  if (!ds) return '';
-  const [y, m] = ds.split('-').map(Number);
-  return new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-};
-
-/* ─────────────────────────────────── config maps ── */
 const SHIFTS = [
-  { id: 'morning', icon: '🌅', label: 'Morning', time: '6 AM – 2 PM',  color: '#fbbf24', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.3)'  },
-  { id: 'evening', icon: '🌇', label: 'Evening', time: '2 PM – 10 PM', color: '#fb923c', bg: 'rgba(249,115,22,0.12)',  border: 'rgba(249,115,22,0.3)'  },
-  { id: 'night',   icon: '🌙', label: 'Night',   time: '10 PM – 6 AM', color: '#818cf8', bg: 'rgba(99,102,241,0.12)',  border: 'rgba(99,102,241,0.3)'  },
-  { id: 'custom',  icon: '⚙️', label: 'Custom',  time: 'Other / split', color: '#94a3b8', bg: 'rgba(100,116,139,0.12)', border: 'rgba(100,116,139,0.3)' },
+  { id: 'morning', icon: <Ic.Calendar size={18} />, label: 'Morning', time: '6 AM – 2 PM',  color: '#fbbf24', bg: 'rgba(245,158,11,0.1)',  border: 'rgba(245,158,11,0.2)'  },
+  { id: 'evening', icon: <Ic.Clock size={18} />,    label: 'Evening', time: '2 PM – 10 PM', color: '#fb923c', bg: 'rgba(249,115,22,0.1)',  border: 'rgba(249,115,22,0.2)'  },
+  { id: 'night',   icon: <Ic.Transfer size={18} />, label: 'Night',   time: '10 PM – 6 AM', color: '#818cf8', bg: 'rgba(99,102,241,0.1)',  border: 'rgba(99,102,241,0.2)'  },
+  { id: 'custom',  icon: <Ic.User size={18} />,     label: 'Custom',  time: 'Other / split', color: '#94a3b8', bg: 'rgba(100,116,139,0.1)', border: 'rgba(100,116,139,0.2)' },
 ];
 
 const STATUS_CFG = {
-  pending:  { icon: '⏳', label: 'Pending Review', color: '#fbbf24', bg: 'rgba(245,158,11,0.1)',  border: 'rgba(245,158,11,0.25)'  },
-  approved: { icon: '✅', label: 'Approved',        color: '#34d399', bg: 'rgba(16,185,129,0.1)',  border: 'rgba(16,185,129,0.25)'  },
-  rejected: { icon: '❌', label: 'Rejected',         color: '#f87171', bg: 'rgba(239,68,68,0.1)',  border: 'rgba(239,68,68,0.25)'   },
+  pending:  { label: 'Awaiting Review', color: '#fbbf24', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.3)' },
+  approved: { label: 'Approved',       color: '#10b981', bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)' },
+  rejected: { label: 'Rejected',       color: '#f43f5e', bg: 'rgba(244,63,94,0.12)',  border: 'rgba(244,63,94,0.3)'  },
 };
 
-const getShift = (id) => SHIFTS.find((s) => s.id === id) || SHIFTS[3];
-
-/* ─────────────────────────────────── skeleton ── */
-function SkeletonCard() {
-  return (
-    <div className="ot-app-card" style={{ opacity: 0.45 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
-        <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(148,163,184,0.1)' }} />
-        <div>
-          <div style={{ width: 120, height: 12, borderRadius: 4, background: 'rgba(148,163,184,0.12)', marginBottom: 6 }} />
-          <div style={{ width: 80, height: 10, borderRadius: 4, background: 'rgba(148,163,184,0.08)' }} />
-        </div>
-        <div style={{ marginLeft: 'auto', width: 60, height: 22, borderRadius: 999, background: 'rgba(148,163,184,0.1)' }} />
-      </div>
-      <div style={{ display: 'flex', gap: 10 }}>
-        <div style={{ width: '45%', height: 10, borderRadius: 4, background: 'rgba(148,163,184,0.08)' }} />
-        <div style={{ width: '30%', height: 10, borderRadius: 4, background: 'rgba(148,163,184,0.06)' }} />
-      </div>
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════ */
 export default function OvertimePage() {
   const confirm = useConfirm();
   const [tab, setTab] = useState('my');
   const [data, setData] = useState({ totalApprovedHours: 0, pendingCount: 0, records: [] });
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
-
-  /* ── form ── */
-  const [form, setForm] = useState({ date: todayStr(), shift: 'morning', extraHours: '', reason: '' });
-  const [formErrors, setFormErrors] = useState({});
+  const [form, setForm] = useState({ date: new Date().toISOString().split('T')[0], shift: 'morning', extraHours: '', reason: '' });
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState({ type: '', text: '' });
   useToastMessage(msg);
 
-  /* ── withdraw ── */
-  const [withdrawingId, setWithdrawingId] = useState(null);
-
-  /* ── fetch ── */
   const fetchRecords = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
@@ -109,694 +50,233 @@ export default function OvertimePage() {
     import('../../utils/socketClient').then(({ getSocket }) => {
       socket = getSocket();
       if (!socket) return;
-      const onUpdate = () => fetchRecords(true);
-      socket.on('overtime:updated', onUpdate);
-      socket.on('overtime:deleted', onUpdate);
+      socket.on('overtime:updated', () => fetchRecords(true));
     });
-    return () => {
-      if (socket) {
-        socket.off('overtime:updated');
-        socket.off('overtime:deleted');
-      }
-    };
+    return () => { if (socket) socket.off('overtime:updated'); };
   }, [fetchRecords]);
 
-  /* ── derived stats ── */
-  const approved = useMemo(() => data.records.filter((r) => r.status === 'approved'), [data.records]);
-  const rejected = useMemo(() => data.records.filter((r) => r.status === 'rejected'), [data.records]);
-
-  /* Total earned: use actual admin-set approvedAmount from DB when available */
-  const totalApprovedAmount = useMemo(
-    () => approved.reduce((sum, r) =>
-      sum + (r.approvedAmount != null ? r.approvedAmount : r.extraHours * OT_HOURLY_RATE), 0),
-    [approved],
-  );
-
-  const curMonthKey = new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-  const thisMonthHours = useMemo(
-    () => approved.filter((r) => fmtMonthKey(r.date) === curMonthKey).reduce((s, r) => s + r.extraHours, 0),
-    [approved, curMonthKey],
-  );
-  /* This month earned amount using actual approvedAmount */
-  const thisMonthAmount = useMemo(
-    () => approved
-      .filter((r) => fmtMonthKey(r.date) === curMonthKey)
-      .reduce((s, r) => s + (r.approvedAmount != null ? r.approvedAmount : r.extraHours * OT_HOURLY_RATE), 0),
-    [approved, curMonthKey],
-  );
-
-  /* ── duplicate check ── */
-  const isDuplicate = useMemo(
-    () => data.records.some((r) => r.date === form.date && r.shift === form.shift),
-    [data.records, form.date, form.shift],
-  );
-
-  /* ── filtered list ── */
-  const filtered = useMemo(() => {
-    if (statusFilter === 'all') return data.records;
-    return data.records.filter((r) => r.status === statusFilter);
-  }, [data.records, statusFilter]);
-
-  /* ── form submit ── */
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
-    const errors = {};
-    if (!form.date) errors.date = 'Date is required.';
-    if (form.date > todayStr()) errors.date = 'Cannot apply OT for a future date.';
-    if (!form.extraHours || Number(form.extraHours) < 0.5) errors.extraHours = 'Minimum 0.5 hours.';
-    if (Number(form.extraHours) > 24) errors.extraHours = 'Cannot exceed 24 hours.';
-    if (isDuplicate) errors.shift = `You already have a ${form.shift} shift application for this date.`;
-    if (Object.keys(errors).length) { setFormErrors(errors); return; }
-    setFormErrors({});
+    if (!form.extraHours || Number(form.extraHours) <= 0) {
+       setMsg({ type: 'error', text: 'Valid work duration required.' }); return;
+    }
     setSubmitting(true);
     try {
-      await API.post('/overtime', {
-        date: form.date,
-        shift: form.shift,
-        extraHours: Number(form.extraHours),
-        reason: form.reason,
-      });
-      setMsg({ type: 'success', text: 'OT application submitted! Awaiting admin review.' });
-      setForm({ date: todayStr(), shift: 'morning', extraHours: '', reason: '' });
-      fetchRecords();
-      setTab('my');
+      await API.post('/overtime', { ...form, extraHours: Number(form.extraHours) });
+      setMsg({ type: 'success', text: 'Application recorded for verification.' });
+      setForm({ date: new Date().toISOString().split('T')[0], shift: 'morning', extraHours: '', reason: '' });
+      fetchRecords(); setTab('my');
     } catch (err) {
-      setMsg({ type: 'error', text: err.response?.data?.message || 'Failed to submit OT application.' });
-    } finally {
-      setSubmitting(false);
-    }
+      setMsg({ type: 'error', text: err.response?.data?.message || 'Submission failed.' });
+    } finally { setSubmitting(false); }
   };
 
-  /* ── withdraw ── */
-  const handleWithdraw = async (id) => {
-    const isConfirmed = await confirm({ title: "Withdraw Application", message: "Withdraw this OT application? This cannot be undone.", confirmText: "Withdraw" });
+  const handleWithdraw = async id => {
+    const isConfirmed = await confirm({ title: "Withdraw Overtime Entry", message: "This action will remove the record from verification.", confirmText: "Remove Entry" });
     if (!isConfirmed) return;
-    setWithdrawingId(id);
     try {
       await API.delete(`/overtime/withdraw/${id}`);
-      notify.success('OT application withdrawn.');
+      notify.success('Record removed.');
       fetchRecords();
-    } catch (err) {
-      notify.error(err.response?.data?.message || 'Failed to withdraw application.');
-    } finally {
-      setWithdrawingId(null);
-    }
+    } catch (err) { notify.error('Failed to remove.'); }
   };
 
-  /* ── potential earning preview ── */
-  const preview = form.extraHours && !isNaN(Number(form.extraHours))
-    ? fmtAmount(Number(form.extraHours))
-    : null;
+  const filtered = statusFilter === 'all' ? data.records : data.records.filter(r => r.status === statusFilter);
 
   return (
-    <div style={{ animation: 'fadeInUp 0.35s ease' }}>
+    <div className="overtime-page-container" style={{ animation: 'fadeIn 0.5s ease-out' }}>
       <style>{`
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(14px); }
-          to   { opacity: 1; transform: translateY(0); }
+        .stats-hero {
+           display: grid;
+           grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+           gap: 20px;
+           margin-bottom: 32px;
         }
-        @keyframes shimmer {
-          0%   { background-position: -400px 0; }
-          100% { background-position: 400px 0; }
+        .stat-card-premium {
+           background: var(--surface);
+           border: 1px solid var(--border);
+           border-radius: 24px;
+           padding: 28px;
+           backdrop-filter: blur(20px);
+           position: relative;
+           overflow: hidden;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* ── Stat cards ── */
-        .ot-n-stat {
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: 14px;
-          padding: 20px 22px;
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          backdrop-filter: blur(14px);
-          transition: transform 0.2s, box-shadow 0.2s;
+        .stat-card-premium::before {
+           content: '';
+           position: absolute;
+           top: -50px;
+           right: -50px;
+           width: 150px;
+           height: 150px;
+           background: var(--primary-glow);
+           filter: blur(80px);
+           opacity: 0.3;
         }
-        .ot-n-stat:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,0.3); }
-
-        /* ── Tab strip ── */
-        .ot-tabs {
-          display: flex;
-          gap: 4px;
-          background: rgba(0,0,0,0.3);
-          border: 1px solid var(--border);
-          border-radius: 12px;
-          padding: 4px;
-          margin-bottom: 24px;
-          width: fit-content;
+        
+        .ot-history-card {
+           background: var(--surface);
+           border: 1px solid var(--border);
+           border-radius: 20px;
+           padding: 24px;
+           margin-bottom: 12px;
+           display: flex;
+           align-items: center;
+           gap: 20px;
+           transition: all 0.3s ease;
         }
-        .ot-tab {
-          padding: 8px 22px;
-          border: none;
-          border-radius: 9px;
-          background: transparent;
-          color: var(--text3);
-          font-family: 'Inter', sans-serif;
-          font-size: 0.84rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.15s;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          white-space: nowrap;
+        .ot-history-card:hover {
+           transform: translateX(6px);
+           border-color: var(--primary-light);
         }
-        .ot-tab.active { background: var(--primary); color: #fff; box-shadow: 0 2px 10px rgba(37,99,235,0.35); }
-        .ot-tab:hover:not(.active) { color: var(--text); background: rgba(255,255,255,0.05); }
-        .ot-tab-badge {
-          background: rgba(255,255,255,0.2);
-          border-radius: 999px;
-          padding: 1px 7px;
-          font-size: 0.72rem;
-          font-weight: 700;
+        
+        .shift-picker {
+           display: grid;
+           grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+           gap: 12px;
         }
-        .ot-tab:not(.active) .ot-tab-badge {
-          background: rgba(245,158,11,0.15);
-          color: #fbbf24;
+        .shift-option {
+           background: var(--bg2);
+           border: 1px solid var(--border);
+           border-radius: 16px;
+           padding: 16px;
+           text-align: center;
+           cursor: pointer;
+           transition: all 0.2s;
         }
-
-        /* ── Status filter chips ── */
-        .ot-filter-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
-        .ot-chip {
-          padding: 5px 14px;
-          border-radius: 999px;
-          font-size: 0.78rem;
-          font-weight: 600;
-          cursor: pointer;
-          border: 1px solid var(--border);
-          background: transparent;
-          color: var(--text3);
-          font-family: 'Inter', sans-serif;
-          transition: all 0.15s;
-        }
-        .ot-chip:hover { color: var(--text); border-color: rgba(148,163,184,0.25); background: rgba(255,255,255,0.04); }
-        .ot-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 2px 8px rgba(37,99,235,0.3); }
-
-        /* ── Application card ── */
-        .ot-app-card {
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: 16px;
-          padding: 18px 22px;
-          margin-bottom: 10px;
-          backdrop-filter: blur(14px);
-          transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
-          position: relative;
-          overflow: hidden;
-        }
-        .ot-app-card:hover {
-          transform: translateX(3px);
-          box-shadow: 0 6px 24px rgba(0,0,0,0.28);
-        }
-
-        /* ── Shift pill ── */
-        .ot-shift-pill {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          padding: 3px 11px;
-          border-radius: 999px;
-          font-size: 0.75rem;
-          font-weight: 700;
-          border: 1px solid;
-        }
-
-        /* ── Form panel ── */
-        .ot-form-panel {
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: 18px;
-          padding: 28px 32px;
-          backdrop-filter: blur(16px);
-          box-shadow: var(--shadow);
-          animation: fadeInUp 0.25s ease;
-        }
-
-        /* ── Shift selector ── */
-        .ot-shift-btn {
-          padding: 10px 16px;
-          border-radius: 10px;
-          border: 1px solid var(--border);
-          background: transparent;
-          color: var(--text3);
-          font-family: 'Inter', sans-serif;
-          font-size: 0.82rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.15s;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 4px;
-          min-width: 82px;
-        }
-        .ot-shift-btn:hover { border-color: rgba(148,163,184,0.3); color: var(--text); background: rgba(255,255,255,0.04); }
-        .ot-shift-btn.selected { background: var(--bg3); }
-
-        /* ── Field error ── */
-        .ot-field-err { color: var(--danger); font-size: 0.76rem; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
-
-        /* ── Earning preview box ── */
-        .ot-preview-box {
-          background: rgba(16,185,129,0.07);
-          border: 1px solid rgba(16,185,129,0.2);
-          border-radius: 10px;
-          padding: 11px 16px;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          margin-bottom: 18px;
-          font-size: 0.84rem;
-        }
-
-        /* ── Admin note (rejected) ── */
-        .ot-admin-note {
-          background: rgba(239,68,68,0.06);
-          border: 1px solid rgba(239,68,68,0.2);
-          border-radius: 8px;
-          padding: 8px 12px;
-          font-size: 0.8rem;
-          color: #fca5a5;
-          margin-top: 10px;
-          display: flex;
-          gap: 7px;
-          align-items: flex-start;
-        }
-
-        /* ── Amount badge ── */
-        .ot-amount-badge {
-          background: rgba(16,185,129,0.12);
-          color: #34d399;
-          border: 1px solid rgba(16,185,129,0.28);
-          border-radius: 999px;
-          padding: 5px 16px;
-          font-size: 0.92rem;
-          font-weight: 800;
-          flex-shrink: 0;
-          letter-spacing: -0.02em;
-          font-family: 'DM Sans', sans-serif;
-        }
-
-        /* ── Hours bubble ── */
-        .ot-hours-big {
-          background: rgba(6,182,212,0.1);
-          color: #22d3ee;
-          border: 1px solid rgba(6,182,212,0.2);
-          border-radius: 10px;
-          padding: 10px 14px;
-          text-align: center;
-          min-width: 64px;
-          flex-shrink: 0;
-        }
-
-        /* ── Duplicate warning ── */
-        .ot-dup-warn {
-          background: rgba(245,158,11,0.1);
-          border: 1px solid rgba(245,158,11,0.25);
-          border-radius: 8px;
-          padding: 10px 14px;
-          font-size: 0.82rem;
-          color: #fbbf24;
-          display: flex;
-          gap: 8px;
-          align-items: center;
-          margin-bottom: 14px;
-        }
-
-        /* ── Responsive ── */
-        @media (max-width: 720px) {
-          .ot-stats-grid { grid-template-columns: 1fr 1fr !important; }
-          .ot-form-panel { padding: 20px; }
-          .ot-shift-btn { min-width: 70px; font-size: 0.75rem; }
-        }
-        @media (max-width: 420px) {
-          .ot-stats-grid { grid-template-columns: 1fr !important; }
+        .shift-option.active {
+           background: var(--primary-glow);
+           border-color: var(--primary);
+           box-shadow: 0 8px 20px rgba(37,99,235,0.2);
         }
       `}</style>
 
-      {/* ── Page Header ── */}
       <div className="page-header">
         <div>
-          <div className="page-title">⏰ My Overtime</div>
-          <div className="page-subtitle">Submit and track your overtime work sessions</div>
-        </div>
-        <button className="btn btn-primary btn-sm" onClick={() => setTab('apply')}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          Apply for OT
-        </button>
-      </div>
-
-      {/* ── Stats Row ── */}
-      <div className="ot-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 26 }}>
-        {[
-          { icon: '✅', label: 'Approved Hours',   value: `${data.totalApprovedHours}h`, sub: 'total all time',  color: '#34d399', bg: 'rgba(16,185,129,0.1)',  border: 'rgba(16,185,129,0.25)'  },
-          { icon: '💰', label: 'Total Earned',      value: loading ? '…' : `LKR ${totalApprovedAmount.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`, sub: 'admin-approved payout', color: '#22d3ee', bg: 'rgba(6,182,212,0.1)',   border: 'rgba(6,182,212,0.25)'   },
-          { icon: '⏳', label: 'Pending Review',    value: data.pendingCount,              sub: 'awaiting admin',  color: '#fbbf24', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.25)' },
-          { icon: '📅', label: 'This Month',        value: loading ? '…' : `LKR ${thisMonthAmount.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`, sub: `${thisMonthHours}h approved`,  color: '#a78bfa', bg: 'rgba(139,92,246,0.1)', border: 'rgba(139,92,246,0.25)' },
-        ].map((s) => (
-          <div key={s.label} className="ot-n-stat">
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: s.bg, border: `1px solid ${s.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', flexShrink: 0 }}>
-              {loading ? <div style={{ width: 20, height: 20, borderRadius: 50, background: 'rgba(148,163,184,0.15)' }} /> : s.icon}
+          <div className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg, #fbbf24, #f59e0b)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+              <Ic.Clock size={24} />
             </div>
-            <div>
-              <div style={{ fontSize: '0.68rem', color: 'var(--text3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>{s.label}</div>
-              {loading
-                ? <div style={{ width: 54, height: 20, borderRadius: 4, background: 'rgba(148,163,184,0.1)' }} />
-                : <div style={{ fontSize: '1.4rem', fontWeight: 800, color: s.color, lineHeight: 1, letterSpacing: '-0.03em', fontFamily: "'DM Sans', sans-serif" }}>{s.value}</div>
-              }
-              {!loading && <div style={{ fontSize: '0.72rem', color: 'var(--text3)', marginTop: 3 }}>{s.sub}</div>}
-            </div>
+            Occupational Overtime 
           </div>
-        ))}
+          <div className="page-subtitle">Verify and track additional duty hours and clinical compensation</div>
+        </div>
+        
+        <div className="tab-group" style={{ background: 'var(--bg2)', padding: 4, borderRadius: 14, border: '1px solid var(--border)' }}>
+          <button className={`btn btn-sm ${tab === 'my' ? 'btn-primary' : ''}`} style={{ borderRadius: 10 }} onClick={() => setTab('my')}>Work Journals</button>
+          <button className={`btn btn-sm ${tab === 'apply' ? 'btn-primary' : ''}`} style={{ borderRadius: 10 }} onClick={() => setTab('apply')}>+ Log Session</button>
+        </div>
       </div>
 
-      {/* ── Tab strip ── */}
-      <div className="ot-tabs">
-        <button className={`ot-tab ${tab === 'my' ? 'active' : ''}`} onClick={() => setTab('my')}>
-          📋 My Applications
-          {data.pendingCount > 0 && <span className="ot-tab-badge">{data.pendingCount}</span>}
-        </button>
-        <button className={`ot-tab ${tab === 'apply' ? 'active' : ''}`} onClick={() => setTab('apply')}>
-          ➕ Apply for OT
-        </button>
+      <div className="stats-hero">
+         <div className="stat-card-premium">
+            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 8 }}>Total Verified Hours</div>
+            <div style={{ fontSize: '2.5rem', fontWeight: 800 }}>{data.totalApprovedHours} <span style={{ fontSize: '1rem', color: 'var(--text3)' }}>Unit Hours</span></div>
+            <div style={{ marginTop: 12, fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 600 }}>Active duty cycle: April 2026</div>
+         </div>
+         <div className="stat-card-premium">
+            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 8 }}>Estimated Earnings</div>
+            <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#10b981' }}>{new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(data.totalApprovedHours * OT_HOURLY_RATE)}</div>
+            <div style={{ marginTop: 12, fontSize: '0.85rem', color: 'var(--text3)' }}>Calculated at standard hospital base rate</div>
+         </div>
       </div>
 
-      {/* ════════════════ TAB: MY APPLICATIONS ════════════════ */}
-      {tab === 'my' && (
+      {tab === 'apply' ? (
+        <div className="form-card-premium" style={{ animation: 'fadeInUp 0.4s ease', maxWidth: 800, margin: '0 auto' }}>
+           <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: 24 }}>Document Work Session</h3>
+           <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 24 }}>
+              <div className="form-group">
+                 <label className="form-label">Shift Identification</label>
+                 <div className="shift-picker">
+                    {SHIFTS.map(s => (
+                       <div key={s.id} className={`shift-option ${form.shift === s.id ? 'active' : ''}`} onClick={() => setForm({...form, shift: s.id})}>
+                          <div style={{ color: form.shift === s.id ? 'var(--primary)' : 'var(--text3)', marginBottom: 8 }}>{s.icon}</div>
+                          <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>{s.label}</div>
+                          <div style={{ fontSize: '0.65rem', color: 'var(--text3)' }}>{s.time}</div>
+                       </div>
+                    ))}
+                 </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                 <div className="form-group">
+                    <label className="form-label">Duty Date</label>
+                    <input className="form-input" type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} style={{ background: 'var(--bg2)', height: 44 }} />
+                 </div>
+                 <div className="form-group">
+                    <label className="form-label">Duration (Hours)</label>
+                    <input className="form-input" type="number" step="0.5" placeholder="e.g. 4.0" value={form.extraHours} onChange={e => setForm({...form, extraHours: e.target.value})} style={{ background: 'var(--bg2)', height: 44 }} />
+                 </div>
+              </div>
+
+              <div className="form-group">
+                 <label className="form-label">Log Description</label>
+                 <textarea className="form-input" placeholder="Justify the additional work period (e.g. Emergency support, staff shortage...)" value={form.reason} onChange={e => setForm({...form, reason: e.target.value})} style={{ background: 'var(--bg2)', minHeight: 100, paddingTop: 12 }} />
+              </div>
+
+              <button className="btn btn-primary" style={{ padding: '14px', borderRadius: 14, fontWeight: 700 }} type="submit" disabled={submitting}>
+                 {submitting ? 'Recording Credentials...' : 'Broadcast Work Session'}
+              </button>
+           </form>
+        </div>
+      ) : (
         <>
-          {/* Status filter chips */}
-          {data.records.length > 0 && (
-            <div className="ot-filter-bar">
-              {[
-                { id: 'all',      label: `All (${data.records.length})` },
-                { id: 'pending',  label: `⏳ Pending (${data.pendingCount})` },
-                { id: 'approved', label: `✅ Approved (${approved.length})` },
-                { id: 'rejected', label: `❌ Rejected (${rejected.length})` },
-              ].map((f) => (
-                <button
-                  key={f.id}
-                  className={`ot-chip ${statusFilter === f.id ? 'active' : ''}`}
-                  onClick={() => setStatusFilter(f.id)}
-                >
-                  {f.label}
+          <div style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
+             {['all','pending','approved','rejected'].map(f => (
+                <button key={f} className={`ot-chip ${statusFilter === f ? 'active' : ''}`} onClick={() => setStatusFilter(f)}>
+                   {f.toUpperCase()}
                 </button>
-              ))}
-            </div>
-          )}
+             ))}
+          </div>
 
           {loading ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
-            </div>
+             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {Array.from({ length: 4 }).map((_, i) => <div key={i} className="skeleton-card" style={{ height: 110, borderRadius: 20 }} />)}
+             </div>
           ) : filtered.length === 0 ? (
-            <div className="empty-state" style={{ padding: '72px 20px' }}>
-              <div className="empty-state-icon">⏰</div>
-              <div className="empty-state-text" style={{ fontWeight: 600, fontSize: '1.05rem', color: 'var(--text2)', marginBottom: 10 }}>
-                {statusFilter !== 'all' ? `No ${statusFilter} applications` : 'No OT applications yet'}
-              </div>
-              <div style={{ color: 'var(--text3)', fontSize: '0.875rem', marginBottom: 18 }}>
-                {statusFilter !== 'all'
-                  ? 'Try selecting a different filter'
-                  : 'Apply for overtime when you work extra hours'}
-              </div>
-              {statusFilter === 'all' && (
-                <button className="btn btn-primary btn-sm" onClick={() => setTab('apply')}>
-                  + Apply for OT
-                </button>
-              )}
-              {statusFilter !== 'all' && (
-                <button className="btn btn-outline btn-sm" onClick={() => setStatusFilter('all')}>
-                  View All
-                </button>
-              )}
-            </div>
+             <div className="empty-state">
+                <Ic.Clock size={48} style={{ opacity: 0.1, marginBottom: 20 }} />
+                <div className="empty-state-text">No work sessions matched the criteria</div>
+             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {filtered.map((r) => {
-                const st = STATUS_CFG[r.status] || STATUS_CFG.pending;
-                const sh = getShift(r.shift);
-                return (
-                  <div
-                    key={r._id}
-                    className="ot-app-card"
-                    style={{ borderLeft: `3px solid ${st.color}` }}
-                  >
-                    {/* Top row */}
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
-                      {/* Date + hours bubble */}
-                      <div className="ot-hours-big">
-                        <div style={{ fontSize: '0.62rem', color: '#22d3ee', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                          {r.date ? new Date(...r.date.split('-').map(Number)).toLocaleDateString('en-US', { month: 'short' }) : ''}
-                        </div>
-                        <div style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--text)', lineHeight: 1, fontFamily: "'DM Sans', sans-serif" }}>
-                          {r.date ? Number(r.date.split('-')[2]) : ''}
-                        </div>
+             <div className="ot-feed">
+                {filtered.map(r => {
+                   const cfg = STATUS_CFG[r.status] || STATUS_CFG.pending;
+                   const sh = SHIFTS.find(s => s.id === r.shift) || SHIFTS[3];
+                   return (
+                      <div key={r._id} className="ot-history-card">
+                         <div style={{ width: 44, height: 44, borderRadius: 12, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {sh.icon}
+                         </div>
+                         
+                         <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                               <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{new Date(r.date).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</span>
+                               <span style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`, padding: '2px 10px', borderRadius: 8, fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase' }}>{cfg.label}</span>
+                            </div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text3)', display: 'flex', alignItems: 'center', gap: 12 }}>
+                               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Ic.Clock size={14}/> {sh.label} Block</span>
+                               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Ic.Transfer size={14}/> {r.extraHours} Clinical Hours</span>
+                            </div>
+                         </div>
+
+                         <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase' }}>Earnings</div>
+                            <div style={{ fontSize: '1rem', fontWeight: 800, color: r.status === 'approved' ? '#10b981' : 'var(--text3)' }}>
+                               {new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(r.approvedAmount || (r.extraHours * OT_HOURLY_RATE))}
+                            </div>
+                         </div>
+                         
+                         {r.status === 'pending' && (
+                            <button className="btn btn-ghost" onClick={() => handleWithdraw(r._id)} style={{ color: '#f43f5e' }}>✕</button>
+                         )}
                       </div>
-
-                      {/* Info */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        {/* Title row */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
-                          <span
-                            className="ot-shift-pill"
-                            style={{ color: sh.color, background: sh.bg, borderColor: sh.border }}
-                          >
-                            {sh.icon} {sh.label}
-                          </span>
-                          <span style={{ fontSize: '0.78rem', color: 'var(--text3)' }}>{fmtDate(r.date)}</span>
-                        </div>
-
-                        {/* Reason */}
-                        <div style={{ fontSize: '0.875rem', color: r.reason ? 'var(--text2)' : 'var(--text3)', fontStyle: r.reason ? 'normal' : 'italic', marginBottom: 6, lineHeight: 1.5 }}>
-                          {r.reason || 'No reason provided'}
-                        </div>
-
-                        {/* Meta */}
-                        <div style={{ fontSize: '0.76rem', color: 'var(--text3)', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-                          <span>
-                            Applied: {new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                          </span>
-                          {r.reviewedBy?.name && (
-                            <span>Reviewed by: <strong style={{ color: 'var(--text2)' }}>{r.reviewedBy.name}</strong></span>
-                          )}
-                        </div>
-
-                        {/* Admin note for rejected */}
-                        {r.status === 'rejected' && r.adminNote && (
-                          <div className="ot-admin-note">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginTop: 1 }}>
-                              <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><circle cx="12" cy="16" r="1" fill="currentColor" />
-                            </svg>
-                            <span><strong>Admin note:</strong> {r.adminNote}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Right side actions */}
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, flexShrink: 0 }}>
-                        {/* Hours or Amount badge */}
-                        {r.status === 'approved' ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-                            <span style={{ background: 'rgba(6,182,212,0.12)', color: '#22d3ee', border: '1px solid rgba(6,182,212,0.25)', borderRadius: 999, padding: '4px 12px', fontSize: '0.9rem', fontWeight: 800, fontFamily: "'DM Sans', sans-serif" }}>
-                              {r.extraHours}h
-                            </span>
-                            {/* Show actual DB approvedAmount set by admin */}
-                            <span className="ot-amount-badge">
-                              LKR {(r.approvedAmount != null ? r.approvedAmount : r.extraHours * OT_HOURLY_RATE).toLocaleString('en-LK', { minimumFractionDigits: 2 })}
-                            </span>
-                            {/* Indicate if admin set a custom rate */}
-                            {r.approvedAmount != null && r.approvedAmount !== r.extraHours * OT_HOURLY_RATE && (
-                              <span style={{ fontSize: '0.65rem', color: '#60a5fa', fontWeight: 600, textAlign: 'right' }}>
-                                ✦ Custom amount
-                              </span>
-                            )}
-                          </div>
-                        ) : (
-                          <span style={{ background: 'rgba(6,182,212,0.12)', color: '#22d3ee', border: '1px solid rgba(6,182,212,0.25)', borderRadius: 999, padding: '5px 14px', fontSize: '0.9rem', fontWeight: 800, fontFamily: "'DM Sans', sans-serif" }}>
-                            {r.extraHours}h
-                          </span>
-                        )}
-
-                        {/* Status badge */}
-                        <span
-                          style={{
-                            background: st.bg, color: st.color, border: `1px solid ${st.border}`,
-                            borderRadius: 999, padding: '3px 10px', fontSize: '0.72rem', fontWeight: 700,
-                          }}
-                        >
-                          {st.icon} {st.label}
-                        </span>
-
-                        {/* Withdraw (pending only) */}
-                        {r.status === 'pending' && (
-                          <button
-                            className="btn btn-outline btn-xs"
-                            onClick={() => handleWithdraw(r._id)}
-                            disabled={withdrawingId === r._id}
-                            style={{ fontSize: '0.72rem', opacity: withdrawingId === r._id ? 0.5 : 1 }}
-                          >
-                            {withdrawingId === r._id ? 'Withdrawing…' : 'Withdraw'}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-
-              {/* Summary footer */}
-              {statusFilter === 'approved' && filtered.length > 0 && (
-                <div style={{ marginTop: 10, padding: '14px 20px', background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: 12, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
-                  <span style={{ fontSize: '0.83rem', color: 'var(--text3)' }}>
-                    Total approved: <strong style={{ color: '#34d399' }}>{filtered.reduce((s, r) => s + r.extraHours, 0)}h</strong>
-                  </span>
-                  <span style={{ fontSize: '0.83rem', color: '#34d399', fontWeight: 700 }}>
-                    {fmtAmount(filtered.reduce((s, r) => s + r.extraHours, 0))}
-                  </span>
-                </div>
-              )}
-            </div>
+                   )
+                })}
+             </div>
           )}
         </>
-      )}
-
-      {/* ════════════════ TAB: APPLY FOR OT ════════════════ */}
-      {tab === 'apply' && (
-        <div className="ot-form-panel">
-          {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid var(--border)' }}>
-            <div style={{ width: 40, height: 40, borderRadius: 11, background: 'rgba(37,99,235,0.12)', border: '1px solid rgba(37,99,235,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
-              📋
-            </div>
-            <div>
-              <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>Apply for Overtime</div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text3)', marginTop: 2 }}>Fill in the details for your overtime work session</div>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit}>
-            {/* Date */}
-            <div className="form-group">
-              <label className="form-label">Date Worked *</label>
-              <input
-                className="form-input"
-                type="date"
-                value={form.date}
-                min={minDateStr()}
-                max={todayStr()}
-                onChange={(e) => { setForm({ ...form, date: e.target.value }); setFormErrors((p) => ({ ...p, date: '' })); }}
-                style={formErrors.date ? { borderColor: 'var(--danger)' } : {}}
-              />
-              {formErrors.date && <div className="ot-field-err"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg>{formErrors.date}</div>}
-              <div className="form-hint">Cannot be a future date or more than 3 months ago</div>
-            </div>
-
-            {/* Shift selector */}
-            <div className="form-group">
-              <label className="form-label">Shift *</label>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {SHIFTS.map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    className={`ot-shift-btn ${form.shift === s.id ? 'selected' : ''}`}
-                    style={form.shift === s.id ? { borderColor: s.border, color: s.color, boxShadow: `0 0 0 2px ${s.border}` } : {}}
-                    onClick={() => { setForm({ ...form, shift: s.id }); setFormErrors((p) => ({ ...p, shift: '' })); }}
-                  >
-                    <span style={{ fontSize: '1.2rem' }}>{s.icon}</span>
-                    <span style={{ fontWeight: 700, fontSize: '0.8rem', color: form.shift === s.id ? s.color : undefined }}>{s.label}</span>
-                    <span style={{ fontSize: '0.68rem', color: 'var(--text3)', fontWeight: 400 }}>{s.time}</span>
-                  </button>
-                ))}
-              </div>
-              {formErrors.shift && <div className="ot-field-err" style={{ marginTop: 6 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg>{formErrors.shift}</div>}
-            </div>
-
-            {/* Duplicate warning */}
-            {isDuplicate && (
-              <div className="ot-dup-warn">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg>
-                You already have a <strong>{form.shift}</strong> shift application for <strong>{fmtDate(form.date)}</strong>. Choose a different date or shift.
-              </div>
-            )}
-
-            {/* Extra hours */}
-            <div className="form-group">
-              <label className="form-label">Extra Hours Worked *</label>
-              <div style={{ position: 'relative', maxWidth: 200 }}>
-                <input
-                  className="form-input"
-                  type="number"
-                  min="0.5"
-                  max="24"
-                  step="0.5"
-                  placeholder="e.g. 3.5"
-                  value={form.extraHours}
-                  onChange={(e) => { setForm({ ...form, extraHours: e.target.value }); setFormErrors((p) => ({ ...p, extraHours: '' })); }}
-                  style={{ paddingRight: 36, ...(formErrors.extraHours ? { borderColor: 'var(--danger)' } : {}) }}
-                />
-                <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: '0.82rem', fontWeight: 700, color: form.extraHours ? '#22d3ee' : 'var(--text3)', pointerEvents: 'none' }}>h</span>
-              </div>
-              {formErrors.extraHours && <div className="ot-field-err"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg>{formErrors.extraHours}</div>}
-              <div className="form-hint">Minimum 0.5 hours, maximum 24 hours</div>
-            </div>
-
-            {/* Reason */}
-            <div className="form-group">
-              <label className="form-label">Reason / Description <span style={{ color: 'var(--text3)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(recommended)</span></label>
-              <textarea
-                className="form-textarea"
-                rows={3}
-                placeholder="Describe what required overtime work — e.g. Emergency patient intake, ICU support during night, Staff shortage coverage, Critical surgery assistance…"
-                value={form.reason}
-                onChange={(e) => setForm({ ...form, reason: e.target.value })}
-                style={{ minHeight: 80 }}
-              />
-              <div className="form-hint">The more detail you provide, the easier it is for admin to approve</div>
-            </div>
-
-            {/* Potential earning preview */}
-            {preview && !isDuplicate && (
-              <div className="ot-preview-box">
-                <span style={{ fontSize: '1.1rem' }}>💰</span>
-                <span style={{ color: 'var(--text3)' }}>If approved, you will earn: </span>
-                <strong style={{ color: '#34d399', fontSize: '1rem', fontFamily: "'DM Sans', sans-serif" }}>{preview}</strong>
-                <span style={{ color: 'var(--text3)', fontSize: '0.78rem', marginLeft: 4 }}>({Number(form.extraHours)}h × LKR {OT_HOURLY_RATE})</span>
-              </div>
-            )}
-
-            {/* Rate info */}
-            <div style={{ background: 'rgba(37,99,235,0.06)', border: '1px solid rgba(37,99,235,0.15)', borderRadius: 9, padding: '9px 14px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8rem', color: 'var(--text3)' }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: '#60a5fa', flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><circle cx="12" cy="8" r="1" fill="currentColor"/></svg>
-              Overtime compensation rate: <strong style={{ color: '#60a5fa' }}>LKR {OT_HOURLY_RATE}/hour</strong>. Payment is processed after admin approval.
-            </div>
-
-            {/* Submit */}
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <button className="btn btn-primary" type="submit" disabled={submitting || isDuplicate}>
-                {submitting ? (
-                  <><div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid #fff', borderRadius: 50, animation: 'spin 0.7s linear infinite' }} />Submitting…</>
-                ) : (
-                  <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Submit Application</>
-                )}
-              </button>
-              <button
-                type="button"
-                className="btn btn-outline"
-                onClick={() => { setForm({ date: todayStr(), shift: 'morning', extraHours: '', reason: '' }); setFormErrors({}); }}
-              >
-                Reset
-              </button>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setTab('my')}>
-                ← View My Applications
-              </button>
-            </div>
-          </form>
-        </div>
       )}
     </div>
   );
 }
+

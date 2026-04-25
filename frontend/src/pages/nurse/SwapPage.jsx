@@ -3,6 +3,7 @@ import API from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import useToastMessage from '../../hooks/useToastMessage';
 import { notify } from '../../utils/toast';
+import * as Ic from '../../components/icons';
 
 const STATUS_CFG = {
   pending:  { color: '#fbbf24', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.3)',  label: 'Pending'  },
@@ -49,175 +50,230 @@ export default function SwapPage() {
     setSubmitting(true);
     try {
       await API.post('/swap', form);
-      setMsg({ type: 'success', text: 'Swap request sent!' });
+      setMsg({ type: 'success', text: 'Swap request initiated successfully!' });
       setForm({ targetNurse:'', requesterShiftDate:'', requesterShift:'7AM-1PM', targetShiftDate:'', targetShift:'7AM-1PM', reason:'' });
       fetchSwaps(); setTab('list');
-    } catch (err) { setMsg({ type:'error', text: err.response?.data?.message || 'Failed.' }); }
+    } catch (err) { setMsg({ type:'error', text: err.response?.data?.message || 'Submission failed.' }); }
     finally { setSubmitting(false); }
   };
 
   const handleRespond = async (id, status) => {
-    try { await API.put(`/swap/${id}`, { status }); fetchSwaps(); notify.success(`Swap ${status}.`); }
-    catch (err) { notify.error(err.response?.data?.message || 'Failed.'); }
+    try { await API.put(`/swap/${id}`, { status }); fetchSwaps(); notify.success(`Swap request ${status}.`); }
+    catch (err) { notify.error(err.response?.data?.message || 'Action failed.'); }
   };
 
   const pending = swaps.filter(s => s.status === 'pending').length;
-  const approved = swaps.filter(s => s.status === 'approved').length;
 
   return (
-    <div style={{ animation: 'fadeInUp 0.35s ease' }}>
+    <div className="swap-page-container" style={{ animation: 'fadeIn 0.5s ease-out' }}>
       <style>{`
-        @keyframes fadeInUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-        .swap-card {
+        .exchange-card {
           background: var(--surface);
           border: 1px solid var(--border);
-          border-radius: 14px;
-          padding: 18px 22px;
-          backdrop-filter: blur(12px);
-          transition: all 0.2s;
+          border-radius: 20px;
+          padding: 24px;
+          margin-bottom: 20px;
+          backdrop-filter: blur(20px);
+          position: relative;
+          transition: all 0.3s ease;
         }
-        .swap-card:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.26); }
-        .shift-pill { padding: 3px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; background: rgba(37,99,235,0.15); color: #60a5fa; border: 1px solid rgba(37,99,235,0.3); }
-        .arrow-icon { color: var(--text3); font-size: 1.1rem; }
+        .exchange-card:hover {
+          transform: translateY(-4px);
+          border-color: var(--primary-light);
+          box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+        }
+        .exchange-flow {
+          display: flex;
+          align-items: center;
+          gap: 24px;
+          margin-top: 20px;
+          padding: 16px;
+          background: var(--bg2);
+          border-radius: 16px;
+          border: 1px solid var(--border);
+        }
+        .staff-info-mini {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .mini-avatar {
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+          background: var(--bg3);
+          border: 1px solid var(--border);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 700;
+          color: var(--text);
+        }
+        .swap-arrow {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: var(--primary-glow);
+          color: var(--primary);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 2px solid var(--primary);
+          box-shadow: 0 0 15px var(--primary-glow);
+          flex-shrink: 0;
+        }
+        
+        .form-card-premium {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 24px;
+          padding: 32px;
+          max-width: 800px;
+          margin: 0 auto;
+        }
       `}</style>
 
       <div className="page-header">
         <div>
-          <div className="page-title">🔄 Shift Swap</div>
-          <div className="page-subtitle">Manage your shift swap requests</div>
+          <div className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg, #fb923c, #f43f5e)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+              <Ic.Transfer size={24} />
+            </div>
+            Duty Exchange Requests
+          </div>
+          <div className="page-subtitle">Facilitating colleague-to-colleague shift swaps and operational flexibility</div>
         </div>
-        <button className={`btn ${tab === 'list' ? 'btn-primary' : 'btn-outline'} btn-sm`} onClick={() => setTab(tab === 'list' ? 'new' : 'list')}>
-          {tab === 'list' ? '+ New Swap Request' : '← Back to List'}
-        </button>
+        
+        <div className="tab-group" style={{ background: 'var(--bg2)', padding: 4, borderRadius: 14, border: '1px solid var(--border)' }}>
+          <button className={`btn btn-sm ${tab === 'list' ? 'btn-primary' : ''}`} style={{ borderRadius: 10 }} onClick={() => setTab('list')}>Active Requests</button>
+          <button className={`btn btn-sm ${tab === 'new' ? 'btn-primary' : ''}`} style={{ borderRadius: 10 }} onClick={() => setTab('new')}>+ Create New</button>
+        </div>
       </div>
 
-      {/* Stats */}
-      {swaps.length > 0 && tab === 'list' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, marginBottom: 24 }}>
-          {[
-            { label: 'Total', value: swaps.length, color: '#60a5fa', bg: 'rgba(37,99,235,0.12)', icon: '🔄' },
-            { label: 'Pending', value: pending, color: '#fbbf24', bg: 'rgba(245,158,11,0.12)', icon: '⏳' },
-            { label: 'Approved', value: approved, color: '#34d399', bg: 'rgba(16,185,129,0.12)', icon: '✅' },
-          ].map(s => (
-            <div key={s.label} style={{ background: s.bg, border: `1px solid ${s.bg.replace('0.12','0.3')}`, borderRadius: 14, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div style={{ fontSize: '1.4rem' }}>{s.icon}</div>
-              <div>
-                <div style={{ fontSize: '0.71rem', color: 'var(--text3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{s.label}</div>
-                <div style={{ fontSize: '1.55rem', fontWeight: 800, color: s.color }}>{s.value}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {tab === 'new' ? (
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: '28px 32px', backdropFilter: 'blur(12px)' }}>
-          <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text)', marginBottom: 20, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
-            🔄 Send Swap Request
+      {tab === 'list' ? (
+        loading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="skeleton-card" style={{ height: 160, borderRadius: 20 }} />
+            ))}
           </div>
-          {msg.text && <div className={`alert alert-${msg.type === 'error' ? 'error' : 'success'}`}>{msg.text}</div>}
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label className="form-label">Target Nurse ID *</label>
-              <input className="form-input" name="targetNurse" placeholder="Paste nurse user ID from ward roster" value={form.targetNurse} onChange={handleChange} />
-              <div style={{ fontSize: '0.78rem', color: 'var(--text3)', marginTop: 4 }}>💡 Get the nurse ID from the ward roster page</div>
-            </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Your Shift Date *</label>
-                <input className="form-input" type="date" name="requesterShiftDate" value={form.requesterShiftDate} onChange={handleChange} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Your Shift *</label>
-                <select className="form-select" name="requesterShift" value={form.requesterShift} onChange={handleChange}>
-                  {SHIFTS.map(s => <option key={s}>{s}</option>)}
-                </select>
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Target Shift Date *</label>
-                <input className="form-input" type="date" name="targetShiftDate" value={form.targetShiftDate} onChange={handleChange} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Target Shift *</label>
-                <select className="form-select" name="targetShift" value={form.targetShift} onChange={handleChange}>
-                  {SHIFTS.map(s => <option key={s}>{s}</option>)}
-                </select>
-              </div>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Reason (optional)</label>
-              <input className="form-input" name="reason" placeholder="Reason for swap…" value={form.reason} onChange={handleChange} />
-            </div>
-            <button className="btn btn-primary" type="submit" disabled={submitting}>
-              {submitting ? 'Sending…' : '→ Send Request'}
-            </button>
-          </form>
-        </div>
-      ) : loading ? (
-        <div className="loading-center" style={{ flexDirection: 'column', gap: 16 }}>
-          <div className="spinner" style={{ margin: 0 }} />
-        </div>
-      ) : swaps.length === 0 ? (
-        <div className="empty-state" style={{ padding: '70px 20px' }}>
-          <div className="empty-state-icon">🔄</div>
-          <div className="empty-state-text" style={{ fontWeight: 600 }}>No swap requests yet</div>
-          <div style={{ color: 'var(--text3)', fontSize: '0.875rem', marginTop: 8 }}>Create your first swap request above</div>
-          <button className="btn btn-primary btn-sm" style={{ marginTop: 20 }} onClick={() => setTab('new')}>+ New Request</button>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {swaps.map(s => {
-            const cfg = STATUS_CFG[s.status] || STATUS_CFG.pending;
-            const isTargetAndPending = s.targetNurse?._id === user?._id && s.status === 'pending';
-            return (
-              <div key={s._id} className="swap-card" style={{ borderLeft: `3px solid ${cfg.color}` }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-                  <div style={{ flex: 1 }}>
-                    {/* Requester → Target */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg,#2563eb,#06b6d4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700, color: '#fff' }}>
-                          {(s.requester?.name || 'N')[0]}
-                        </div>
-                        <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>{s.requester?.name}</span>
-                      </div>
-                      <span className="arrow-icon">⇄</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg,#8b5cf6,#06b6d4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700, color: '#fff' }}>
-                          {(s.targetNurse?.name || 'N')[0]}
-                        </div>
-                        <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>{s.targetNurse?.name}</span>
-                      </div>
+        ) : swaps.length === 0 ? (
+          <div className="empty-state">
+            <Ic.Transfer size={48} style={{ opacity: 0.1, marginBottom: 20 }} />
+            <div className="empty-state-text">No shift swap activity recorded</div>
+            <button className="btn btn-primary btn-sm" style={{ marginTop: 20 }} onClick={() => setTab('new')}>Initiate First Exchange</button>
+          </div>
+        ) : (
+          <div className="swap-feed">
+            {swaps.map(s => {
+              const cfg = STATUS_CFG[s.status] || STATUS_CFG.pending;
+              const isTargetNurse = s.targetNurse?._id === user?._id;
+              
+              return (
+                <div key={s._id} className="exchange-card">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                       <div style={{ padding: '4px 12px', background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`, borderRadius: 8, fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase' }}>
+                          {s.status}
+                       </div>
+                       <span style={{ fontSize: '0.8rem', color: 'var(--text3)' }}>Requested {new Date(s.createdAt).toLocaleDateString()}</span>
                     </div>
-                    {/* Shift details */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', fontSize: '0.82rem', color: 'var(--text2)' }}>
-                      <span>📅 {s.requesterShiftDate}</span>
-                      <span className="shift-pill">{s.requesterShift}</span>
-                      <span style={{ color: 'var(--text3)' }}>→</span>
-                      <span>📅 {s.targetShiftDate}</span>
-                      <span className="shift-pill" style={{ background: 'rgba(6,182,212,0.12)', color: '#22d3ee', borderColor: 'rgba(6,182,212,0.3)' }}>{s.targetShift}</span>
-                    </div>
-                  </div>
-                  {/* Status & actions */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
-                    <span style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`, padding: '4px 12px', borderRadius: 999, fontSize: '0.75rem', fontWeight: 700 }}>
-                      {cfg.label}
-                    </span>
-                    {s.status === 'pending' && (
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button className="btn btn-success btn-sm" onClick={() => handleRespond(s._id, 'approved')}>✓ Approve</button>
-                        <button className="btn btn-danger btn-sm" onClick={() => handleRespond(s._id, 'rejected')}>✕ Reject</button>
-                      </div>
+                    
+                    {s.status === 'pending' && isTargetNurse && (
+                       <div style={{ display: 'flex', gap: 8 }}>
+                          <button className="btn btn-primary btn-sm" onClick={() => handleRespond(s._id, 'approved')}>✓ Accept</button>
+                          <button className="btn btn-outline btn-sm" style={{ color: '#f87171', borderColor: '#f87171' }} onClick={() => handleRespond(s._id, 'rejected')}>✕ Decline</button>
+                       </div>
                     )}
                   </div>
+
+                  <div className="exchange-flow">
+                    <div className="staff-info-mini">
+                       <div className="mini-avatar">{(s.requester?.name || 'N')[0]}</div>
+                       <div>
+                          <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>{s.requester?.name}</div>
+                          <div style={{ fontSize: '0.7rem', color: 'var(--text3)' }}>Offering: {s.requesterShiftDate} ({s.requesterShift})</div>
+                       </div>
+                    </div>
+                    
+                    <div className="swap-arrow">
+                       <Ic.ArrowRight size={20} />
+                    </div>
+
+                    <div className="staff-info-mini">
+                       <div className="mini-avatar">{(s.targetNurse?.name || 'N')[0]}</div>
+                       <div>
+                          <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>{s.targetNurse?.name}</div>
+                          <div style={{ fontSize: '0.7rem', color: 'var(--text3)' }}>Target: {s.targetShiftDate} ({s.targetShift})</div>
+                       </div>
+                    </div>
+                  </div>
+
+                  {s.reason && (
+                    <div style={{ marginTop: 16, padding: '12px 16px', background: 'var(--bg3)', borderRadius: 12, fontSize: '0.85rem', color: 'var(--text3)', fontStyle: 'italic' }}>
+                       "{s.reason}"
+                    </div>
+                  )}
                 </div>
+              );
+            })}
+          </div>
+        )
+      ) : (
+        <div className="form-card-premium" style={{ animation: 'fadeInUp 0.4s ease' }}>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 10 }}>
+             <Ic.Transfer size={24} color="var(--primary)" />
+             New Exchange Request
+          </h2>
+          
+          <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 20 }}>
+            <div className="form-group">
+              <label className="form-label" style={{ fontWeight: 700 }}>Target Colleague Personnel ID</label>
+              <div style={{ position: 'relative' }}>
+                <Ic.User size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text3)' }} />
+                <input className="form-input" style={{ paddingLeft: 44, background: 'var(--bg2)' }} name="targetNurse" placeholder="Paste the nurse object ID from Ward Roster..." value={form.targetNurse} onChange={handleChange} />
               </div>
-            );
-          })}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+               <div className="form-group">
+                 <label className="form-label" style={{ fontWeight: 700 }}>Your Shift Date</label>
+                 <input className="form-input" type="date" style={{ background: 'var(--bg2)' }} name="requesterShiftDate" value={form.requesterShiftDate} onChange={handleChange} />
+               </div>
+               <div className="form-group">
+                 <label className="form-label" style={{ fontWeight: 700 }}>Your Shift Period</label>
+                 <select className="form-select" style={{ background: 'var(--bg2)' }} name="requesterShift" value={form.requesterShift} onChange={handleChange}>
+                   {SHIFTS.map(s => <option key={s}>{s}</option>)}
+                 </select>
+               </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+               <div className="form-group">
+                 <label className="form-label" style={{ fontWeight: 700 }}>Target Shift Date</label>
+                 <input className="form-input" type="date" style={{ background: 'var(--bg2)' }} name="targetShiftDate" value={form.targetShiftDate} onChange={handleChange} />
+               </div>
+               <div className="form-group">
+                 <label className="form-label" style={{ fontWeight: 700 }}>Target Shift Period</label>
+                 <select className="form-select" style={{ background: 'var(--bg2)' }} name="targetShift" value={form.targetShift} onChange={handleChange}>
+                   {SHIFTS.map(s => <option key={s}>{s}</option>)}
+                 </select>
+               </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" style={{ fontWeight: 700 }}>Context / Reason</label>
+              <textarea className="form-input" style={{ background: 'var(--bg2)', minHeight: 100, paddingTop: 12 }} name="reason" placeholder="Explain the context to your colleague..." value={form.reason} onChange={handleChange} />
+            </div>
+
+            <button className="btn btn-primary" style={{ padding: '14px', borderRadius: 14, fontWeight: 700 }} type="submit" disabled={submitting}>
+              {submitting ? 'Processing Submission...' : 'Initiate Exchange Request'}
+            </button>
+          </form>
         </div>
       )}
     </div>
   );
 }
+

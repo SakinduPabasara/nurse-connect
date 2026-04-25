@@ -1,20 +1,22 @@
 import { useState, useEffect } from 'react';
 import API from '../../api/axios';
+import * as Ic from '../../components/icons';
 
 const TYPE_CFG = {
-  international: { color: '#22d3ee', bg: 'rgba(6,182,212,0.12)', border: 'rgba(6,182,212,0.3)', icon: '🌍' },
-  local:         { color: '#34d399', bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)', icon: '🏠' },
-  training:      { color: '#60a5fa', bg: 'rgba(37,99,235,0.12)', border: 'rgba(37,99,235,0.3)', icon: '📚' },
-  certification: { color: '#fbbf24', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.3)', icon: '🏆' },
+  international: { color: '#22d3ee', bg: 'rgba(6,182,212,0.12)', border: 'rgba(6,182,212,0.3)', Icon: Ic.Globe },
+  local:         { color: '#34d399', bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)', Icon: Ic.Hospital },
+  training:      { color: '#60a5fa', bg: 'rgba(37,99,235,0.12)', border: 'rgba(37,99,235,0.3)', Icon: Ic.Award },
+  certification: { color: '#fbbf24', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.3)', Icon: Ic.Check },
 };
-const getType = t => TYPE_CFG[t] || { color: '#94a3b8', bg: 'rgba(148,163,184,0.1)', border: 'rgba(148,163,184,0.2)', icon: '🌐' };
+
+const getType = t => TYPE_CFG[t] || { color: '#94a3b8', bg: 'rgba(148,163,184,0.1)', border: 'rgba(148,163,184,0.2)', Icon: Ic.Globe };
 const TYPES = ['all','international','local','training','certification'];
 
 const deadlineInfo = (dl) => {
   const diff = (new Date(dl) - new Date()) / 86400000;
-  if (diff < 0) return { color: '#f87171', bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.3)', label: 'Closed', icon: '❌' };
-  if (diff < 7) return { color: '#fbbf24', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.3)', label: `${Math.ceil(diff)}d left`, icon: '⚠️' };
-  return { color: '#34d399', bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)', label: `${Math.ceil(diff)}d left`, icon: '✅' };
+  if (diff < 0) return { color: '#f87171', bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.3)', label: 'Applications Closed', Icon: Ic.X };
+  if (diff < 7) return { color: '#fbbf24', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.3)', label: `Closing in ${Math.ceil(diff)}d`, Icon: Ic.AlertTriangle };
+  return { color: '#34d399', bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)', label: `${Math.ceil(diff)} days remaining`, Icon: Ic.Clock };
 };
 
 export default function OpportunitiesPage() {
@@ -28,7 +30,7 @@ export default function OpportunitiesPage() {
     try {
       const url = type === 'all' ? '/opportunities' : `/opportunities?type=${type}`;
       const { data } = await API.get(url);
-      setItems(data);
+      setItems(Array.isArray(data) ? data : []);
     } catch { setItems([]); } finally { setLoading(false); }
   };
 
@@ -38,107 +40,231 @@ export default function OpportunitiesPage() {
     !search || o.title.toLowerCase().includes(search.toLowerCase()) || (o.description || '').toLowerCase().includes(search.toLowerCase())
   );
 
-  const active = items.filter(o => new Date(o.deadline) >= new Date()).length;
-  const closingSoon = items.filter(o => { const d = (new Date(o.deadline)-new Date())/86400000; return d > 0 && d < 7; }).length;
+  const activeCount = items.filter(o => new Date(o.deadline) >= new Date()).length;
+  const closingSoonCount = items.filter(o => { const d = (new Date(o.deadline)-new Date())/86400000; return d > 0 && d < 7; }).length;
 
   return (
-    <div style={{ animation: 'fadeInUp 0.35s ease' }}>
+    <div className="opportunities-container" style={{ animation: 'fadeIn 0.5s ease-out' }}>
       <style>{`
-        @keyframes fadeInUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-        .opp-card {
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: 14px;
-          padding: 22px 26px;
-          backdrop-filter: blur(12px);
-          transition: all 0.2s;
+        .stats-grid-compact {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          gap: 16px;
+          margin-bottom: 32px;
         }
-        .opp-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.28); }
-        .type-chip { padding: 5px 12px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; border: 1px solid; cursor: pointer; transition: all 0.15s; }
-        .search-wrap { position: relative; flex: 1; min-width: 200px; }
-        .search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text3); pointer-events: none; }
-        .opp-search { width: 100%; padding: 9px 16px 9px 38px; background: rgba(15,23,42,0.6); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family:'Inter',sans-serif; font-size:0.875rem; outline:none; }
-        .opp-search:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,0.15); }
-        .opp-search::placeholder { color:var(--text3); }
+        .opp-stat-card {
+           background: var(--surface);
+           border: 1px solid var(--border);
+           border-radius: 16px;
+           padding: 20px;
+           display: flex;
+           align-items: center;
+           gap: 16px;
+           backdrop-filter: blur(20px);
+        }
+        .opp-grid {
+           display: grid;
+           grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+           gap: 20px;
+        }
+        .opp-card-modern {
+           background: var(--surface);
+           border: 1px solid var(--border);
+           border-radius: 20px;
+           padding: 28px;
+           display: flex;
+           flex-direction: column;
+           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+           position: relative;
+           overflow: hidden;
+        }
+        .opp-card-modern:hover {
+           transform: translateY(-6px);
+           border-color: var(--primary-light);
+           box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+        .opp-card-modern::after {
+           content: '';
+           position: absolute;
+           top: 0; right: 0; width: 100px; height: 100px;
+           background: radial-gradient(circle at top right, var(--primary-glow), transparent 70%);
+           pointer-events: none;
+        }
+        .opp-type-badge {
+           display: inline-flex;
+           align-items: center;
+           gap: 6px;
+           padding: 4px 12px;
+           border-radius: 999px;
+           font-size: 0.7rem;
+           font-weight: 700;
+           text-transform: uppercase;
+           letter-spacing: 0.05em;
+           margin-bottom: 16px;
+        }
+        .opp-title-main {
+           font-family: 'DM Sans', sans-serif;
+           font-size: 1.25rem;
+           font-weight: 700;
+           color: var(--text);
+           line-height: 1.4;
+           margin-bottom: 12px;
+        }
+        .opp-desc-main {
+           font-size: 0.9rem;
+           color: var(--text3);
+           line-height: 1.6;
+           margin-bottom: 24px;
+           flex: 1;
+        }
+        .opp-footer-main {
+           display: flex;
+           align-items: center;
+           justify-content: space-between;
+           padding-top: 20px;
+           border-top: 1px solid var(--border-light);
+        }
+        .opp-meta-item {
+           font-size: 0.78rem;
+           color: var(--text3);
+           display: flex;
+           align-items: center;
+           gap: 6px;
+        }
+        
+        @media (max-width: 640px) {
+           .opp-grid {
+              grid-template-columns: 1fr;
+           }
+        }
       `}</style>
 
       <div className="page-header">
         <div>
-          <div className="page-title">🌐 Opportunities</div>
-          <div className="page-subtitle">Professional opportunities for nurses</div>
-        </div>
-      </div>
-
-      {/* Stats */}
-      {items.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, marginBottom: 24 }}>
-          {[
-            { label: 'Total', value: items.length, color: '#60a5fa', bg: 'rgba(37,99,235,0.12)', icon: '🌐' },
-            { label: 'Active', value: active, color: '#34d399', bg: 'rgba(16,185,129,0.12)', icon: '✅' },
-            { label: 'Closing Soon', value: closingSoon, color: '#fbbf24', bg: 'rgba(245,158,11,0.12)', icon: '⚠️' },
-          ].map(s => (
-            <div key={s.label} style={{ background: s.bg, border: `1px solid ${s.bg.replace('0.12','0.3')}`, borderRadius: 14, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div style={{ fontSize: '1.4rem' }}>{s.icon}</div>
-              <div>
-                <div style={{ fontSize: '0.71rem', color: 'var(--text3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{s.label}</div>
-                <div style={{ fontSize: '1.55rem', fontWeight: 800, color: s.color }}>{s.value}</div>
-              </div>
+          <div className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg, #fbbf24, #f59e0b)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+              <Ic.Globe size={24} />
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* Search */}
-      <div style={{ marginBottom: 14 }}>
-        <div className="search-wrap">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input className="opp-search" placeholder="Search opportunities…" value={search} onChange={e => setSearch(e.target.value)} />
+            Global Career Pathways
+          </div>
+          <div className="page-subtitle">Curated professional opportunities for specialized nursing careers</div>
         </div>
       </div>
 
-      {/* Type chips */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
-        {TYPES.map(t => {
-          const cfg = t === 'all' ? { color: '#60a5fa', bg: 'rgba(37,99,235,0.12)', border: 'rgba(37,99,235,0.3)', icon: '' } : getType(t);
-          const active = type === t;
-          return (
-            <button key={t} className="type-chip" onClick={() => setType(t)}
-              style={{ background: active ? cfg.color : cfg.bg, color: active ? '#fff' : cfg.color, borderColor: active ? cfg.color : cfg.border }}>
-              {cfg.icon && cfg.icon + ' '}{t.charAt(0).toUpperCase() + t.slice(1)}
-            </button>
-          );
-        })}
+      <div className="stats-grid-compact">
+         <div className="opp-stat-card">
+            <div style={{ width: 42, height: 42, borderRadius: 10, background: 'var(--primary-glow)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+               <Ic.Globe size={20} />
+            </div>
+            <div>
+               <div style={{ fontSize: '1.25rem', fontWeight: 800 }}>{items.length}</div>
+               <div style={{ fontSize: '0.7rem', color: 'var(--text3)', fontWeight: 700, textTransform: 'uppercase' }}>Active Postings</div>
+            </div>
+         </div>
+         <div className="opp-stat-card">
+            <div style={{ width: 42, height: 42, borderRadius: 10, background: 'rgba(52, 211, 153, 0.1)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+               <Ic.Check size={20} />
+            </div>
+            <div>
+               <div style={{ fontSize: '1.25rem', fontWeight: 800 }}>{activeCount}</div>
+               <div style={{ fontSize: '0.7rem', color: 'var(--text3)', fontWeight: 700, textTransform: 'uppercase' }}>Opening Now</div>
+            </div>
+         </div>
+         <div className="opp-stat-card">
+            <div style={{ width: 42, height: 42, borderRadius: 10, background: 'rgba(251, 191, 36, 0.1)', color: '#fbbf24', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+               <Ic.AlertTriangle size={20} />
+            </div>
+            <div>
+               <div style={{ fontSize: '1.25rem', fontWeight: 800 }}>{closingSoonCount}</div>
+               <div style={{ fontSize: '0.7rem', color: 'var(--text3)', fontWeight: 700, textTransform: 'uppercase' }}>Closing within 7d</div>
+            </div>
+         </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+         <div style={{ position: 'relative', flex: 1, minWidth: 260 }}>
+            <Ic.Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text3)' }} />
+            <input 
+               className="form-input" 
+               style={{ paddingLeft: 42, background: 'var(--surface)', height: 44, borderRadius: 14 }} 
+               placeholder="Filter by keyword (e.g. ICU, Dubai, UK)..." 
+               value={search} 
+               onChange={e => setSearch(e.target.value)} 
+            />
+         </div>
+         <div style={{ display: 'flex', gap: 8 }}>
+            {TYPES.slice(0, 3).map(t => (
+               <button 
+                  key={t}
+                  onClick={() => setType(t)}
+                  style={{
+                     padding: '0 18px',
+                     height: 44,
+                     borderRadius: 14,
+                     fontSize: '0.82rem',
+                     fontWeight: 600,
+                     border: '1px solid',
+                     cursor: 'pointer',
+                     transition: 'all 0.2s',
+                     background: type === t ? 'var(--primary)' : 'var(--bg2)',
+                     color: type === t ? '#fff' : 'var(--text3)',
+                     borderColor: type === t ? 'var(--primary)' : 'var(--border)'
+                  }}
+               >
+                  {t.charAt(0).toUpperCase() + t.slice(1)}
+               </button>
+            ))}
+         </div>
       </div>
 
       {loading ? (
-        <div className="loading-center" style={{ flexDirection: 'column', gap: 16 }}>
-          <div className="spinner" style={{ margin: 0 }} />
+        <div className="opp-grid">
+           {Array.from({ length: 6 }).map((_, i) => (
+             <div key={i} className="skeleton-card" style={{ height: 300, borderRadius: 20 }} />
+           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="empty-state" style={{ padding: '70px 20px' }}>
-          <div className="empty-state-icon">🌐</div>
-          <div className="empty-state-text" style={{ fontWeight: 600 }}>No opportunities available</div>
+        <div className="empty-state">
+           <Ic.Globe size={48} style={{ opacity: 0.1, marginBottom: 20 }} />
+           <div className="empty-state-text">No opportunities found for the selected criteria</div>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(340px,1fr))', gap: 14 }}>
+        <div className="opp-grid">
           {filtered.map(o => {
             const typeCfg = getType(o.type);
             const dl = deadlineInfo(o.deadline);
+            const TypeIcon = typeCfg.Icon;
+            const DeadlineIcon = dl.Icon;
+            
             return (
-              <div key={o._id} className="opp-card" style={{ borderTop: `3px solid ${typeCfg.color}` }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 12 }}>
-                  <span style={{ background: typeCfg.bg, color: typeCfg.color, border: `1px solid ${typeCfg.border}`, padding: '3px 10px', borderRadius: 999, fontSize: '0.72rem', fontWeight: 700 }}>
-                    {typeCfg.icon} {o.type}
-                  </span>
-                  <span style={{ background: dl.bg, color: dl.color, border: `1px solid ${dl.border}`, padding: '3px 10px', borderRadius: 999, fontSize: '0.72rem', fontWeight: 700 }}>
-                    {dl.icon} {dl.label}
-                  </span>
+              <div key={o._id} className="opp-card-modern">
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                   <div className="opp-type-badge" style={{ background: typeCfg.bg, color: typeCfg.color, border: `1px solid ${typeCfg.border}` }}>
+                      <TypeIcon size={12} />
+                      {o.type}
+                   </div>
+                   <div className="opp-type-badge" style={{ background: dl.bg, color: dl.color, border: `1px solid ${dl.border}` }}>
+                      <DeadlineIcon size={12} />
+                      {dl.label}
+                   </div>
                 </div>
-                <h3 style={{ fontSize: '0.98rem', fontWeight: 700, color: 'var(--text)', lineHeight: 1.4, marginBottom: 10 }}>{o.title}</h3>
-                <p style={{ color: 'var(--text2)', fontSize: '0.85rem', lineHeight: 1.65, marginBottom: 14 }}>{o.description}</p>
-                <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', fontSize: '0.78rem', color: 'var(--text3)' }}>
-                  {o.location && <span>📍 {o.location}</span>}
-                  <span>📅 Deadline: {new Date(o.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                
+                <h3 className="opp-title-main">{o.title}</h3>
+                <p className="opp-desc-main">{o.description}</p>
+                
+                <div className="opp-footer-main">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div className="opp-meta-item">
+                      <Ic.MapPin size={14} /> {o.location || 'Remote/Flexible'}
+                    </div>
+                    <div className="opp-meta-item">
+                      <Ic.Calendar size={14} /> Deadline: {new Date(o.deadline).toLocaleDateString()}
+                    </div>
+                  </div>
+                  
+                  <button className="btn btn-primary btn-sm" style={{ padding: '8px 16px' }}>
+                    <Ic.ExternalLink size={14} /> Access
+                  </button>
                 </div>
               </div>
             );
@@ -148,3 +274,4 @@ export default function OpportunitiesPage() {
     </div>
   );
 }
+

@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import API from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
+import * as Ic from '../../components/icons';
 
 const SHIFT_META = {
-  '7AM-1PM':  { color: '#2563eb', bg: 'rgba(37,99,235,0.12)', border: 'rgba(37,99,235,0.3)', badge: 'badge-blue' },
-  '1PM-7PM':  { color: '#06b6d4', bg: 'rgba(6,182,212,0.12)', border: 'rgba(6,182,212,0.3)', badge: 'badge-cyan' },
-  '7AM-7PM':  { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.3)', badge: 'badge-yellow' },
-  '7PM-7AM':  { color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)', border: 'rgba(139,92,246,0.3)', badge: 'badge-cyan' },
+  '7AM-1PM':  { color: '#60a5fa', bg: 'rgba(59,130,246,0.1)',   border: 'rgba(59,130,246,0.2)' },
+  '1PM-7PM':  { color: '#2dd4bf', bg: 'rgba(45,212,191,0.1)',   border: 'rgba(45,212,191,0.2)' },
+  '7AM-7PM':  { color: '#fbbf24', bg: 'rgba(245,158,11,0.1)',   border: 'rgba(245,158,11,0.2)' },
+  '7PM-7AM':  { color: '#a78bfa', bg: 'rgba(139,92,246,0.1)',   border: 'rgba(139,92,246,0.2)' },
 };
-const getMeta = s => SHIFT_META[s] || { color: '#94a3b8', bg: 'rgba(148,163,184,0.1)', border: 'rgba(148,163,184,0.2)', badge: 'badge-gray' };
+const getMeta = s => SHIFT_META[s] || { color: '#94a3b8', bg: 'rgba(148,163,184,0.1)', border: 'rgba(148,163,184,0.2)' };
 
 export default function WardRosterPage() {
   const { user } = useAuth();
@@ -23,7 +24,6 @@ export default function WardRosterPage() {
   const wardOptions = [...new Set([...(user?.ward ? [user.ward] : []), ...wards])];
 
   useEffect(() => {
-    // Merge managed wards with wards that exist in roster data
     Promise.all([
       API.get('/wards').then(r => (Array.isArray(r.data) ? r.data.map(w => w.name) : [])).catch(() => []),
       API.get('/roster/wards').then(r => (Array.isArray(r.data) ? r.data : [])).catch(() => []),
@@ -37,7 +37,7 @@ export default function WardRosterPage() {
     if (!ward) { setRoster([]); return; }
     setLoading(true);
     API.get(`/roster/ward/${ward === '__ALL__' ? 'all' : encodeURIComponent(ward)}?month=${month}`)
-      .then(r => setRoster(r.data))
+      .then(r => setRoster(Array.isArray(r.data) ? r.data : []))
       .catch(() => setRoster([]))
       .finally(() => setLoading(false));
   }, [month, ward]);
@@ -48,115 +48,186 @@ export default function WardRosterPage() {
   );
 
   return (
-    <div style={{ animation: 'fadeInUp 0.35s ease' }}>
+    <div className="ward-roster-container" style={{ animation: 'fadeIn 0.5s ease-out' }}>
       <style>{`
-        @keyframes fadeInUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-        .ward-row {
-          display: grid;
-          grid-template-columns: 80px 1fr auto auto;
-          align-items: center;
-          gap: 14px;
-          padding: 14px 18px;
-          border-radius: 12px;
+        .ward-header-card {
+          background: linear-gradient(135deg, var(--bg3), var(--bg4));
           border: 1px solid var(--border);
-          background: var(--surface);
-          backdrop-filter: blur(12px);
-          transition: all 0.2s;
+          border-radius: 24px;
+          padding: 28px;
+          margin-bottom: 32px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          backdrop-filter: blur(20px);
+          position: relative;
+          overflow: hidden;
         }
-        .ward-row:hover { transform: translateX(3px); box-shadow: 0 4px 14px rgba(0,0,0,0.22); }
-        .ward-row.me { border-color: rgba(37,99,235,0.4); background: rgba(37,99,235,0.06); }
-        .search-wrap { position: relative; flex: 1; }
-        .search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text3); pointer-events: none; }
-        .ward-search { width: 100%; padding: 9px 16px 9px 38px; background: rgba(15,23,42,0.6); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family:'Inter',sans-serif; font-size:0.875rem; outline:none; }
-        .ward-search:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,0.15); }
-        .ward-search::placeholder { color:var(--text3); }
-        @media(max-width:600px) { .ward-row { grid-template-columns:65px 1fr; } }
+        .ward-header-card::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at top right, var(--info-glow), transparent 60%);
+          opacity: 0.3;
+        }
+        
+        .roster-staff-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+          gap: 16px;
+        }
+        .staff-shift-card {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 20px;
+          padding: 20px;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          transition: all 0.3s ease;
+          position: relative;
+        }
+        .staff-shift-card:hover {
+          transform: translateY(-4px);
+          border-color: var(--primary-light);
+          box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+        }
+        .staff-shift-card.me {
+          border-color: var(--primary);
+          background: rgba(37,99,235,0.04);
+        }
+        .staff-avatar {
+          width: 48px;
+          height: 48px;
+          border-radius: 14px;
+          background: var(--bg3);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--text);
+          font-weight: 700;
+          border: 1px solid var(--border);
+          flex-shrink: 0;
+        }
+        .date-badge-mini {
+          width: 50px;
+          background: var(--bg2);
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          padding: 6px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          flex-shrink: 0;
+        }
+        .date-badge-mini .mon {
+          font-size: 0.6rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          color: var(--text3);
+        }
+        .date-badge-mini .day {
+          font-size: 1.1rem;
+          font-weight: 800;
+          color: var(--text);
+        }
       `}</style>
 
-      {/* Header */}
       <div className="page-header">
         <div>
-          <div className="page-title">🏥 Ward Roster</div>
-          <div className="page-subtitle">{roster.length} entries for the selected ward & month</div>
-        </div>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <select className="form-select" style={{ width: 200 }} value={ward} onChange={e => setWard(e.target.value)}>
-            <option value="">Select ward</option>
-            <option value="__ALL__">All Wards</option>
-            {wardOptions.map(w => <option key={w} value={w}>{w}</option>)}
-          </select>
-          <input type="month" className="form-input" style={{ width: 'auto' }} value={month} onChange={e => setMonth(e.target.value)} />
+          <div className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg, var(--primary), var(--info))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+              <Ic.Hospital size={24} />
+            </div>
+            Ward Occupancy & Roster
+          </div>
+          <div className="page-subtitle">Synchronized staffing schedule for unit operations</div>
         </div>
       </div>
 
-      {/* Search */}
-      {roster.length > 0 && (
-        <div style={{ marginBottom: 18 }}>
-          <div className="search-wrap">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input className="ward-search" placeholder="Search by nurse name or ward…" value={search} onChange={e => setSearch(e.target.value)} />
-          </div>
-        </div>
-      )}
+      <div className="ward-header-card">
+         <div style={{ zIndex: 1 }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--info)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Operational Unit</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff' }}>{ward === '__ALL__' ? 'Hospital-Wide Overview' : ward || 'Unit Not Selected'}</div>
+            <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
+               <span style={{ fontSize: '0.85rem', color: 'var(--text3)', display: 'flex', alignItems: 'center', gap: 6 }}><Ic.Calendar size={14} /> {new Date(month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
+               <span style={{ fontSize: '0.85rem', color: 'var(--text3)', display: 'flex', alignItems: 'center', gap: 6 }}><Ic.User size={14} /> staff on duty: {roster.length}</span>
+            </div>
+         </div>
+         
+         <div style={{ display: 'flex', gap: 12, zIndex: 1 }}>
+            <select className="form-select" style={{ width: 220, background: 'var(--bg2)', height: 44 }} value={ward} onChange={e => setWard(e.target.value)}>
+              <option value="">Select Ward</option>
+              <option value="__ALL__">All Departments</option>
+              {wardOptions.map(w => <option key={w} value={w}>{w}</option>)}
+            </select>
+            <input type="month" className="form-input" style={{ width: 160, background: 'var(--bg2)', height: 44 }} value={month} onChange={e => setMonth(e.target.value)} />
+         </div>
+      </div>
 
-      {!ward ? (
-        <div style={{ background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.25)', borderRadius: 12, padding: '18px 22px', color: '#60a5fa', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: '1.2rem' }}>ℹ️</span> Select a ward above to view the roster
+      <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
+        <div style={{ position: 'relative', flex: 1, minWidth: 280 }}>
+          <Ic.Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text3)' }} />
+          <input 
+            className="form-input" 
+            style={{ paddingLeft: 42, background: 'var(--surface)', height: 44 }} 
+            placeholder="Search by personnel name or department..." 
+            value={search} 
+            onChange={e => setSearch(e.target.value)} 
+          />
         </div>
-      ) : loading ? (
-        <div className="loading-center" style={{ flexDirection: 'column', gap: 16 }}>
-          <div className="spinner" style={{ margin: 0 }} />
-          <span style={{ color: 'var(--text2)', fontSize: '0.875rem' }}>Loading roster…</span>
+      </div>
+
+      {loading ? (
+        <div className="roster-staff-grid">
+           {Array.from({ length: 6 }).map((_, i) => (
+             <div key={i} className="skeleton-card" style={{ height: 100, borderRadius: 20 }} />
+           ))}
+        </div>
+      ) : !ward ? (
+        <div className="empty-state">
+           <Ic.Hospital size={48} style={{ opacity: 0.1, marginBottom: 20 }} />
+           <div className="empty-state-text">Select an operational unit to examine staffing</div>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="empty-state" style={{ padding: '70px 20px' }}>
-          <div className="empty-state-icon">📭</div>
-          <div className="empty-state-text" style={{ fontWeight: 600 }}>{search ? 'No matching entries' : 'No roster entries found'}</div>
-          <div style={{ color: 'var(--text3)', fontSize: '0.875rem', marginTop: 8 }}>Try a different ward or month</div>
+        <div className="empty-state">
+           <Ic.Inbox size={48} style={{ opacity: 0.1, marginBottom: 20 }} />
+           <div className="empty-state-text">No rostered personnel found targeting these criteria</div>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="roster-staff-grid">
           {filtered.map(entry => {
             const isMe = entry.nurse?._id === user?._id;
             const meta = getMeta(entry.shift);
+            const dateObj = new Date(entry.date);
+            
             return (
-              <div key={entry._id} className={`ward-row${isMe ? ' me' : ''}`}>
-                {/* Date */}
-                <div style={{ background: meta.bg, border: `1px solid ${meta.border}`, borderRadius: 10, padding: '8px 10px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.63rem', color: meta.color, fontWeight: 700, textTransform: 'uppercase' }}>
-                    {new Date(entry.date).toLocaleDateString('en-US', { month: 'short' })}
-                  </div>
-                  <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text)', lineHeight: 1.1 }}>
-                    {new Date(entry.date).getDate()}
-                  </div>
+              <div key={entry._id} className={`staff-shift-card ${isMe ? 'me' : ''}`}>
+                <div className="date-badge-mini">
+                   <span className="mon">{dateObj.toLocaleDateString('en-US', { month: 'short' })}</span>
+                   <span className="day">{dateObj.getDate()}</span>
                 </div>
-                {/* Nurse info */}
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                    <div style={{ 
-                      width: 28, height: 28, borderRadius: '50%', 
-                      background: entry.nurse?.profilePic 
-                        ? `url(http://localhost:5000${entry.nurse.profilePic}) center/cover no-repeat` 
-                        : 'linear-gradient(135deg,var(--primary),#06b6d4)', 
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                      fontSize: '0.75rem', fontWeight: 700, color: '#fff', flexShrink: 0,
-                      border: entry.nurse?.profilePic ? '1px solid var(--border)' : 'none',
-                      textIndent: entry.nurse?.profilePic ? '-9999px' : '0'
-                    }}>
-                      {(entry.nurse?.name || 'D')[0].toUpperCase()}
-                    </div>
-                    <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text)' }}>
-                      {entry.nurse?.name || 'Deleted user'}
-                    </span>
-                    {isMe && <span style={{ background: '#2563eb', color: '#fff', fontSize: '0.65rem', padding: '2px 7px', borderRadius: 999, fontWeight: 700 }}>YOU</span>}
-                  </div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text3)' }}>🏥 {entry.ward}</div>
+                
+                <div className="staff-avatar">
+                   {entry.nurse?.profilePic ? (
+                     <img src={`http://localhost:5000${entry.nurse.profilePic}`} alt="" style={{ width: '100%', height: '100%', borderRadius: 'inherit', objectFit: 'cover' }} />
+                   ) : (
+                     (entry.nurse?.name || 'N')[0].toUpperCase()
+                   )}
                 </div>
-                {/* Shift */}
-                <span style={{ background: meta.bg, color: meta.color, border: `1px solid ${meta.border}`, padding: '4px 12px', borderRadius: 999, fontSize: '0.78rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                  {entry.shift}
-                </span>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: meta.color, flexShrink: 0 }} />
+                
+                <div style={{ flex: 1 }}>
+                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{entry.nurse?.name || 'Assigned Nurse'}</span>
+                      {isMe && <span style={{ background: 'var(--primary)', color: '#fff', fontSize: '0.55rem', fontWeight: 900, padding: '2px 6px', borderRadius: 4, textTransform: 'uppercase' }}>Me</span>}
+                   </div>
+                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.78rem', color: 'var(--text3)' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Ic.Clock size={12} /> {entry.shift}</span>
+                      {ward === '__ALL__' && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Ic.Hospital size={12} /> {entry.ward}</span>}
+                   </div>
+                </div>
+                
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: meta.color, boxShadow: `0 0 10px ${meta.color}` }} />
               </div>
             );
           })}
@@ -165,3 +236,4 @@ export default function WardRosterPage() {
     </div>
   );
 }
+
