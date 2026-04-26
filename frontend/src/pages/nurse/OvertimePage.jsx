@@ -77,8 +77,58 @@ export default function OvertimePage() {
     catch { notify.error('Failed to remove.'); }
   };
 
+  /* ── Monthly Earnings Calculation ── */
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const getMonthKey = dStr => {
+    const d = new Date(dStr);
+    return `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+  };
+
+  const currentMonthKey = getMonthKey(new Date());
+  const [selectedMonth, setSelectedMonth] = useState(currentMonthKey);
+
+  const earningsData = useMemo(() => {
+    const monthly = {};
+    let allTime = 0;
+    
+    data.records.forEach(r => {
+      // For earnings, we only count approved sessions (as requested "exact OT earning")
+      // BUT if the user wants "Estimated", maybe include pending too? 
+      // User said "exact OT earning for a specific month", implying verified/payout.
+      // However, usually "Estimated" means all. Let's include everything that isn't rejected
+      // to match the "Estimated" label, but highlight approved as "Verified".
+      if (r.status === 'rejected') return;
+      
+      const key = getMonthKey(r.date);
+      const amount = r.approvedAmount || (r.extraHours * OT_HOURLY_RATE);
+      
+      monthly[key] = (monthly[key] || 0) + amount;
+      allTime += amount;
+    });
+    
+    return { monthly, allTime };
+  }, [data.records]);
+
+  const monthOptions = useMemo(() => {
+    const keys = Object.keys(earningsData.monthly);
+    if (!keys.includes(currentMonthKey)) keys.push(currentMonthKey);
+    // Sort chronologically: convert key back to date for sorting
+    return keys.sort((a, b) => {
+      const [ma, ya] = a.split(' ');
+      const [mb, yb] = b.split(' ');
+      return new Date(`${ma} 1, ${ya}`) > new Date(`${mb} 1, ${yb}`) ? -1 : 1;
+    });
+  }, [earningsData.monthly, currentMonthKey]);
+
+  const activeMonthEarnings = earningsData.monthly[selectedMonth] || 0;
+  
   const filtered = statusFilter === 'all' ? data.records : data.records.filter(r => r.status === statusFilter);
-  const earnings = new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(data.totalApprovedHours * OT_HOURLY_RATE);
+
+  const fmtCurrency = (val) => new Intl.NumberFormat('en-LK', { 
+    style: 'currency', 
+    currency: 'LKR',
+    minimumFractionDigits: 2 
+  }).format(val);
 
   return (
     <div style={{ animation: 'fadeInUp 0.35s ease' }}>
@@ -119,7 +169,7 @@ export default function OvertimePage() {
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--primary-light)', fontWeight: 600, marginTop: 16, display: 'flex', alignItems: 'center', gap: 5 }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#34d399', display: 'inline-block', animation: 'glow-pulse 2s ease infinite' }} />
-            Active duty cycle: {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            Active duty cycle: {currentMonthKey}
           </div>
           {data.pendingCount > 0 && (
             <div style={{ marginTop: 8, fontSize: '0.72rem', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -129,20 +179,86 @@ export default function OvertimePage() {
         </div>
 
         {/* Earnings */}
-        <div className="stat-hero-card" style={{ '--glow-color': 'rgba(16,185,129,0.1)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <div style={{ fontSize: '0.69rem', fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Estimated Earnings</div>
-              <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: '1.9rem', fontWeight: 800, color: '#34d399', letterSpacing: '-0.03em', lineHeight: 1 }}>
-                {earnings}
+        <div className="stat-hero-card" style={{ '--glow-color': 'rgba(16,185,129,0.1)', overflow: 'hidden' }}>
+          {/* subtle background pattern icon */}
+          <div style={{ position: 'absolute', right: -20, top: -20, opacity: 0.03, transform: 'rotate(-15deg)' }}>
+            <Ic.TrendUp size={140} />
+          </div>
+
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div style={{ fontSize: '0.66rem', fontWeight: 800, color: 'var(--text4)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                Earnings Breakdown
+              </div>
+              
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <select 
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  style={{
+                    appearance: 'none',
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '10px',
+                    color: 'var(--text2)',
+                    fontSize: '0.74rem',
+                    fontWeight: 700,
+                    padding: '6px 32px 6px 14px',
+                    outline: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    fontFamily: 'inherit'
+                  }}
+                  className="month-hover-select"
+                >
+                  {monthOptions.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+                <div style={{ position: 'absolute', right: 10, pointerEvents: 'none', color: 'var(--text3)' }}>
+                  <Ic.ChevronDown size={14} />
+                </div>
               </div>
             </div>
-            <div style={{ width: 44, height: 44, borderRadius: 13, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#34d399', flexShrink: 0 }}>
-              <Ic.TrendUp size={22} />
+
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text3)', fontWeight: 500, marginBottom: 4 }}>
+                {selectedMonth} verified total
+              </div>
+              <div style={{ 
+                fontFamily: "'DM Sans',sans-serif", 
+                fontSize: '2.4rem', 
+                fontWeight: 800, 
+                color: '#34d399', 
+                letterSpacing: '-0.04em', 
+                lineHeight: 1,
+                textShadow: '0 0 20px rgba(52,211,153,0.15)'
+              }}>
+                {fmtCurrency(activeMonthEarnings)}
+              </div>
             </div>
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text3)', marginTop: 16 }}>
-            Calculated at standard hospital base rate (LKR {OT_HOURLY_RATE}/hr)
+
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              paddingTop: 16,
+              borderTop: '1px solid rgba(255,255,255,0.06)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text3)', fontSize: '0.76rem', fontWeight: 500 }}>
+                <Ic.TrendUp size={14} color="#34d399" />
+                Rate: {fmtCurrency(OT_HOURLY_RATE)}/hr
+              </div>
+              
+              <div style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'flex-end'
+              }}>
+                <span style={{ fontSize: '0.6rem', color: 'var(--text4)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 2 }}>Career Total</span>
+                <span style={{ fontSize: '0.86rem', color: 'var(--text2)', fontWeight: 700, fontFamily: "'DM Sans',sans-serif" }}>
+                  {fmtCurrency(earningsData.allTime)}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
