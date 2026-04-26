@@ -54,6 +54,7 @@ const createRoster = async (req, res) => {
 
     try {
       getIO().to("user:" + nurse.toString()).emit("notification:new", notif);
+      getIO().to("user:" + nurse.toString()).emit("roster:updated");
     } catch (err) {
       console.error("Socket emit error:", err.message);
     }
@@ -155,6 +156,7 @@ const createRosterBulk = async (req, res) => {
 
     try {
       getIO().to("user:" + nurse.toString()).emit("notification:new", bulkNotif);
+      getIO().to("user:" + nurse.toString()).emit("roster:updated");
     } catch (err) {
       console.error("Socket emit error:", err.message);
     }
@@ -291,6 +293,7 @@ const deleteRoster = async (req, res) => {
 
     try {
       getIO().to("user:" + entry.nurse.toString()).emit("notification:new", delNotif);
+      getIO().to("user:" + entry.nurse.toString()).emit("roster:updated");
     } catch (err) {
       console.error("Socket emit error:", err.message);
     }

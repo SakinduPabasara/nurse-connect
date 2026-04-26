@@ -6,22 +6,22 @@ import SearchableSelect from '../../components/SearchableSelect';
 import * as Ic from '../../components/icons';
 
 const STATUS_CFG = {
-  open:    { color: '#10b981', bg: 'rgba(16,185,129,0.1)', border: 'rgba(16,185,129,0.2)' },
-  matched: { color: '#06b6d4', bg: 'rgba(6,182,212,0.1)',  border: 'rgba(6,182,212,0.2)'  },
-  closed:  { color: '#64748b', bg: 'rgba(100,116,139,0.1)', border: 'rgba(100,116,139,0.2)' },
+  open:    { color: '#34d399', bg: 'rgba(52,211,153,0.12)',   border: 'rgba(52,211,153,0.25)',   label: 'Open'    },
+  matched: { color: '#22d3ee', bg: 'rgba(34,211,238,0.12)',   border: 'rgba(34,211,238,0.25)',   label: 'Matched' },
+  closed:  { color: '#94a3b8', bg: 'rgba(148,163,184,0.12)', border: 'rgba(148,163,184,0.25)',  label: 'Closed'  },
 };
 
 export default function TransferPage() {
-  const [transfers, setTransfers] = useState([]);
-  const [matches, setMatches] = useState([]);
-  const [wards, setWards] = useState([]);
-  const [hospitals, setHospitals] = useState([]);
-  const [tab, setTab] = useState('my');
-  const [showForm, setShowForm] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ currentHospital:'', currentWard:'', desiredHospital:'', desiredWard:'', transferTimeframe:'', reason:'' });
-  const [msg, setMsg] = useState({ type:'', text:'' });
-  const [submitting, setSubmitting] = useState(false);
+  const [transfers, setTransfers]   = useState([]);
+  const [matches, setMatches]       = useState([]);
+  const [wards, setWards]           = useState([]);
+  const [hospitals, setHospitals]   = useState([]);
+  const [tab, setTab]               = useState('my');
+  const [showForm, setShowForm]     = useState(false);
+  const [loading, setLoading]       = useState(true);
+  const [form, setForm]             = useState({ currentHospital: '', currentWard: '', desiredHospital: '', desiredWard: '', transferTimeframe: '', reason: '' });
+  const [msg, setMsg]               = useState({ type: '', text: '' });
+  const [submitting, setSubmitting]  = useState(false);
   useToastMessage(msg);
   const { user } = useAuth();
 
@@ -59,293 +59,274 @@ export default function TransferPage() {
   const handleSubmit = async e => {
     e.preventDefault();
     if (!form.desiredHospital || !form.desiredWard || !form.transferTimeframe) {
-      setMsg({ type:'error', text:'Mandatory fields missing.' }); return;
+      setMsg({ type: 'error', text: 'Mandatory fields missing.' }); return;
     }
     setSubmitting(true);
     try {
       await API.post('/transfers', form);
-      setMsg({ type:'success', text:'Transfer request initiated.' });
+      setMsg({ type: 'success', text: 'Transfer request initiated.' });
       fetchTransfers(); setTab('my'); setShowForm(false);
-    } catch (err) { setMsg({ type:'error', text: err.response?.data?.message || 'Failed.' }); }
+    } catch (err) { setMsg({ type: 'error', text: err.response?.data?.message || 'Failed.' }); }
     finally { setSubmitting(false); }
   };
 
-  return (
-    <div className="transfer-page-container" style={{ animation: 'fadeIn 0.5s ease-out' }}>
-      <style>{`
-        .route-card {
-           background: var(--surface);
-           border: 1px solid var(--border);
-           border-radius: 20px;
-           padding: 24px;
-           margin-bottom: 16px;
-           transition: all 0.3s ease;
-           position: relative;
-           overflow: hidden;
-        }
-        .route-card:hover {
-           transform: translateY(-4px);
-           border-color: var(--primary-light);
-           box-shadow: 0 12px 30px rgba(0,0,0,0.4);
-        }
-        .route-visual {
-           display: flex;
-           align-items: center;
-           gap: 24px;
-           background: var(--bg2);
-           padding: 20px;
-           border-radius: 16px;
-           margin: 16px 0;
-           border: 1px solid var(--border);
-        }
-        .hosp-point {
-           flex: 1;
-        }
-        .point-label {
-           font-size: 0.65rem;
-           font-weight: 800;
-           text-transform: uppercase;
-           color: var(--text3);
-           margin-bottom: 4px;
-        }
-        .point-name {
-           font-size: 0.95rem;
-           font-weight: 700;
-           color: var(--text);
-        }
-        .point-sub {
-           font-size: 0.75rem;
-           color: var(--info);
-        }
-        .route-line {
-           flex: 0 0 40px;
-           height: 2px;
-           background: linear-gradient(90deg, var(--primary), var(--info));
-           position: relative;
-        }
-        .route-line::after {
-           content: '';
-           position: absolute;
-           right: -4px;
-           top: -4px;
-           width: 10px;
-           height: 10px;
-           border-radius: 50%;
-           background: var(--info);
-           box-shadow: 0 0 10px var(--info);
-        }
-        
-        .match-glow {
-           border-color: var(--info) !important;
-           background: rgba(6,182,212,0.03) !important;
-        }
-        .match-glow::before {
-           content: 'MATCH FOUND';
-           position: absolute;
-           top: 0;
-           right: 0;
-           background: var(--info);
-           color: #fff;
-           font-size: 0.6rem;
-           font-weight: 900;
-           padding: 4px 12px;
-           border-radius: 0 0 0 12px;
-        }
-      `}</style>
+  const activeList = tab === 'my' ? transfers : matches;
 
+  return (
+    <div style={{ animation: 'fadeInUp 0.35s ease' }}>
+
+      {/* ── Page Header ── */}
       <div className="page-header">
         <div>
-          <div className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg, var(--primary), var(--info))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
-              <Ic.Transfer size={24} />
+          <div className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
+            <div className="page-title-icon" style={{ background: 'linear-gradient(135deg, var(--primary), var(--accent))', boxShadow: '0 8px 24px rgba(37,99,235,0.35)' }}>
+              <Ic.Transfer size={22} />
             </div>
             Hospital Transfer Portal
           </div>
           <div className="page-subtitle">Coordinate inter-hospital mobility and mutual staffing exchanges</div>
         </div>
-        <button className={`btn ${showForm ? 'btn-outline' : 'btn-primary'}`} style={{ borderRadius: 14 }} onClick={() => setShowForm(!showForm)}>
-          {showForm ? 'Cancel Request' : '+ Initiate Request'}
+
+        <button
+          className={`btn ${showForm ? 'btn-outline' : 'btn-primary'}`}
+          style={{ borderRadius: 14, padding: '10px 22px' }}
+          onClick={() => setShowForm(!showForm)}
+        >
+          {showForm ? 'Cancel' : '+ Initiate Request'}
         </button>
       </div>
 
+      {/* ── Form ── */}
       {showForm ? (
-        <div className="form-card-premium" style={{ animation: 'fadeInUp 0.4s ease', maxWidth: 900, margin: '0 auto 40px' }}>
-           <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: 24 }}>New Transfer Intent</h3>
-           <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 24 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-                 <div className="form-group">
-                    <label className="form-label">Current Deployment</label>
-                    <SearchableSelect
-                      options={hospitals.map(h => ({ value: h.name, label: h.name }))}
-                      value={form.currentHospital}
-                      onChange={val => setForm({...form, currentHospital: val})}
-                      placeholder="Current Hospital"
-                    />
-                 </div>
-                 <div className="form-group" style={{ marginTop: 24 }}>
-                    <SearchableSelect
-                      options={wards.map(w => ({ value: w.name, label: w.name }))}
-                      value={form.currentWard}
-                      onChange={val => setForm({...form, currentWard: val})}
-                      placeholder="Current Ward"
-                    />
-                 </div>
-              </div>
+        <div className="form-card-premium" style={{ animation: 'fadeInUp 0.35s ease', maxWidth: 900, margin: '0 auto 36px' }}>
+          <div style={{ marginBottom: 28 }}>
+            <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: '1.15rem', fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>New Transfer Intent</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text3)' }}>Register your inter-hospital mobility preference for HR matching</div>
+          </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-                 <div className="form-group">
-                    <label className="form-label">Desired Destination</label>
-                    <SearchableSelect
-                      options={hospitals.map(h => ({ value: h.name, label: h.name }))}
-                      value={form.desiredHospital}
-                      onChange={val => setForm({...form, desiredHospital: val})}
-                      placeholder="Target Hospital"
-                    />
-                 </div>
-                 <div className="form-group" style={{ marginTop: 24 }}>
-                    <SearchableSelect
-                      options={wards.map(w => ({ value: w.name, label: w.name }))}
-                      value={form.desiredWard}
-                      onChange={val => setForm({...form, desiredWard: val})}
-                      placeholder="Target Ward"
-                    />
-                 </div>
-              </div>
+          <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 24 }}>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-                 <div className="form-group">
-                    <label className="form-label">Target Timeframe</label>
-                    <input className="form-input" type="month" value={form.transferTimeframe} onChange={e => setForm({...form, transferTimeframe: e.target.value})} style={{ background: 'var(--bg2)', height: 44 }} />
-                 </div>
-                 <div className="form-group">
-                    <label className="form-label">Reasoning</label>
-                    <input className="form-input" placeholder="Optional context..." value={form.reason} onChange={e => setForm({...form, reason: e.target.value})} style={{ background: 'var(--bg2)', height: 44 }} />
-                 </div>
+            {/* Current deployment */}
+            <div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#60a5fa' }} />
+                Current Deployment
               </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Current Hospital</label>
+                  <SearchableSelect
+                    options={hospitals.map(h => ({ value: h.name, label: h.name }))}
+                    value={form.currentHospital}
+                    onChange={val => setForm({ ...form, currentHospital: val })}
+                    placeholder="Select hospital..."
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Current Ward</label>
+                  <SearchableSelect
+                    options={wards.map(w => ({ value: w.name, label: w.name }))}
+                    value={form.currentWard}
+                    onChange={val => setForm({ ...form, currentWard: val })}
+                    placeholder="Select ward..."
+                  />
+                </div>
+              </div>
+            </div>
 
-              <button className="btn btn-primary" style={{ padding: '14px', borderRadius: 14, fontWeight: 700 }} type="submit" disabled={submitting}>
-                 {submitting ? 'Posting Intent...' : 'Broadcast Transfer Intent'}
-              </button>
-           </form>
+            {/* Desired destination */}
+            <div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#22d3ee', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#22d3ee' }} />
+                Desired Destination
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Target Hospital</label>
+                  <SearchableSelect
+                    options={hospitals.map(h => ({ value: h.name, label: h.name }))}
+                    value={form.desiredHospital}
+                    onChange={val => setForm({ ...form, desiredHospital: val })}
+                    placeholder="Select hospital..."
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Target Ward</label>
+                  <SearchableSelect
+                    options={wards.map(w => ({ value: w.name, label: w.name }))}
+                    value={form.desiredWard}
+                    onChange={val => setForm({ ...form, desiredWard: val })}
+                    placeholder="Select ward..."
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Target Timeframe</label>
+                <input className="form-input" type="month" value={form.transferTimeframe} onChange={e => setForm({ ...form, transferTimeframe: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Reasoning (optional)</label>
+                <input className="form-input" placeholder="Optional context..." value={form.reason} onChange={e => setForm({ ...form, reason: e.target.value })} />
+              </div>
+            </div>
+
+            <button className="btn btn-primary btn-full" style={{ padding: '14px', borderRadius: 14, fontSize: '0.92rem' }} type="submit" disabled={submitting}>
+              {submitting ? (
+                <><span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} /> Submitting...</>
+              ) : 'Broadcast Transfer Intent'}
+            </button>
+          </form>
         </div>
       ) : (
         <>
-          <div style={{ display: 'flex', gap: 10, marginBottom: 32 }}>
+          {/* Tab switcher */}
+          <div style={{ display: 'flex', gap: 10, marginBottom: 28, flexWrap: 'wrap' }}>
             {[
-              { id: 'my', label: 'Registered Intents', count: transfers.length },
-              { id: 'matches', label: 'Mutual Matches', count: matches.length, highlight: true }
+              { id: 'my',      label: 'Registered Intents', count: transfers.length, color: 'var(--primary)' },
+              { id: 'matches', label: 'Mutual Matches',      count: matches.length,   color: '#22d3ee', highlight: true },
             ].map(t => (
-              <button 
-                key={t.id} 
+              <button
+                key={t.id}
                 onClick={() => setTab(t.id)}
                 style={{
-                  padding: '12px 24px',
-                  borderRadius: 14,
-                  fontSize: '0.85rem',
-                  fontWeight: 700,
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '11px 24px',
+                  borderRadius: 14, fontSize: '0.84rem', fontWeight: 700,
                   border: '1px solid',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  background: tab === t.id ? (t.highlight ? 'var(--info)' : 'var(--primary)') : 'var(--bg2)',
-                  color: tab === t.id ? '#fff' : 'var(--text3)',
-                  borderColor: tab === t.id ? 'transparent' : 'var(--border)',
-                  boxShadow: tab === t.id ? `0 8px 20px ${t.highlight ? 'var(--info-glow)' : 'var(--primary-glow)'}` : 'none'
+                  cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                  transition: 'all 0.18s ease',
+                  background: tab === t.id ? (t.highlight ? 'rgba(6,182,212,0.15)' : 'linear-gradient(135deg, var(--primary), var(--primary-dark))') : 'rgba(255,255,255,0.03)',
+                  color: tab === t.id ? (t.highlight ? '#22d3ee' : '#fff') : 'var(--text3)',
+                  borderColor: tab === t.id ? (t.highlight ? 'rgba(6,182,212,0.35)' : 'transparent') : 'var(--border)',
+                  boxShadow: tab === t.id ? `0 6px 20px ${t.highlight ? 'rgba(6,182,212,0.2)' : 'rgba(37,99,235,0.3)'}` : 'none',
                 }}
               >
-                {t.label} ({t.count})
+                {t.label}
+                <span style={{ background: tab === t.id ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.07)', padding: '1px 8px', borderRadius: 999, fontSize: '0.75rem' }}>
+                  {t.count}
+                </span>
+                {t.highlight && matches.length > 0 && (
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#22d3ee', animation: 'glow-pulse 2s ease infinite', flexShrink: 0 }} />
+                )}
               </button>
             ))}
           </div>
 
           {loading ? (
-             <div style={{ display: 'grid', gap: 16 }}>
-                {Array.from({ length: 3 }).map((_, i) => <div key={i} className="skeleton-card" style={{ height: 180, borderRadius: 20 }} />)}
-             </div>
-          ) : (tab === 'my' ? (
-            transfers.length === 0 ? (
-               <div className="empty-state">
-                  <Ic.Transfer size={48} style={{ opacity: 0.1, marginBottom: 20 }} />
-                  <div className="empty-state-text">No active transfer requests</div>
-               </div>
-            ) : (
-               <div className="route-list">
-                  {transfers.map(t => {
-                     const cfg = STATUS_CFG[t.status] || STATUS_CFG.open;
-                     return (
-                        <div key={t._id} className="route-card">
-                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                              <div style={{ padding: '4px 12px', background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`, borderRadius: 8, fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase' }}>
-                                 {t.status}
-                              </div>
-                              <span style={{ fontSize: '0.8rem', color: 'var(--text3)' }}>Target: {t.transferTimeframe}</span>
-                           </div>
-
-                           <div className="route-visual">
-                              <div className="hosp-point">
-                                 <div className="point-label">Origin</div>
-                                 <div className="point-name">{t.currentHospital}</div>
-                                 <div className="point-sub">{t.currentWard}</div>
-                              </div>
-                              <div className="route-line" />
-                              <div className="hosp-point">
-                                 <div className="point-label">Destination</div>
-                                 <div className="point-name">{t.desiredHospital}</div>
-                                 <div className="point-sub">{t.desiredWard}</div>
-                              </div>
-                           </div>
-                           
-                           {t.reason && <div style={{ fontSize: '0.8rem', color: 'var(--text3)', fontStyle: 'italic', marginTop: 12 }}>"{t.reason}"</div>}
-                        </div>
-                     )
-                  })}
-               </div>
-            )
+            <div style={{ display: 'grid', gap: 16 }}>
+              {Array.from({ length: 3 }).map((_, i) => <div key={i} className="skeleton-card" style={{ height: 180, borderRadius: 20 }} />)}
+            </div>
+          ) : activeList.length === 0 ? (
+            <div className="empty-state">
+              <div style={{ color: 'var(--text4)', marginBottom: 16, display: 'flex', justifyContent: 'center', opacity: 0.3 }}>
+                {tab === 'my' ? <Ic.Transfer size={48} /> : <Ic.Search size={48} />}
+              </div>
+              <div className="empty-state-text">
+                {tab === 'my' ? 'No active transfer requests' : 'Monitoring for mutual matches...'}
+              </div>
+              <div className="empty-state-sub">
+                {tab === 'my' ? 'Use the button above to register a transfer intent' : 'Matches appear when another nurse requests the same exchange'}
+              </div>
+            </div>
           ) : (
-            matches.length === 0 ? (
-               <div className="empty-state">
-                  <Ic.Search size={48} style={{ opacity: 0.1, marginBottom: 20 }} />
-                  <div className="empty-state-text">Patiently monitoring for mutual matches...</div>
-               </div>
-            ) : (
-               <div className="route-list">
-                  {matches.map(m => (
-                     <div key={m._id} className="route-card match-glow">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                           <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--bg3)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
-                              {(m.requester?.name || 'N')[0]}
-                           </div>
-                           <div>
-                              <div style={{ fontSize: '0.9rem', fontWeight: 700 }}>{m.requester?.name}</div>
-                              <div style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>Potential Transfer Exchange</div>
-                           </div>
-                        </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {activeList.map((t, idx) => {
+                const cfg  = STATUS_CFG[t.status] || STATUS_CFG.open;
+                const isMatch = tab === 'matches';
 
-                        <div className="route-visual">
-                           <div className="hosp-point">
-                              <div className="point-label">Their Current</div>
-                              <div className="point-name">{m.currentHospital}</div>
-                              <div className="point-sub">{m.currentWard}</div>
-                           </div>
-                           <div className="route-line" />
-                           <div className="hosp-point">
-                              <div className="point-label">Their Goal</div>
-                              <div className="point-name">{m.desiredHospital}</div>
-                              <div className="point-sub">{m.desiredWard}</div>
-                           </div>
+                return (
+                  <div key={t._id} style={{
+                    background: isMatch ? 'rgba(6,182,212,0.03)' : 'var(--surface)',
+                    border: `1px solid ${isMatch ? 'rgba(6,182,212,0.3)' : 'var(--border)'}`,
+                    borderRadius: 20,
+                    padding: '24px',
+                    position: 'relative', overflow: 'hidden',
+                    transition: 'all 0.25s ease',
+                  }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 14px 36px rgba(0,0,0,0.4)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+                  >
+                    {isMatch && (
+                      <div style={{ position: 'absolute', top: 0, right: 0, background: 'linear-gradient(135deg, #06b6d4, #22d3ee)', color: '#fff', fontSize: '0.6rem', fontWeight: 900, padding: '5px 14px', borderRadius: '0 0 0 12px', letterSpacing: '0.08em' }}>
+                        MATCH FOUND
+                      </div>
+                    )}
+
+                    {/* Top row */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+                      {isMatch ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <div style={{ width: 42, height: 42, borderRadius: 12, background: 'linear-gradient(135deg, rgba(6,182,212,0.2), rgba(99,102,241,0.15))', border: '1px solid rgba(6,182,212,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#22d3ee', fontWeight: 800, fontSize: '1rem' }}>
+                            {(t.requester?.name || 'N')[0]}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text)' }}>{t.requester?.name}</div>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text3)', marginTop: 1 }}>Potential Transfer Partner</div>
+                          </div>
                         </div>
-                        
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
-                           <span style={{ fontSize: '0.8rem', color: 'var(--text3)' }}>Synchronized Timeframe: {m.transferTimeframe}</span>
-                           <button className="btn btn-primary btn-sm">Contact Nurse</button>
+                      ) : (
+                        <span className="status-pill" style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
+                          {cfg.label}
+                        </span>
+                      )}
+                      <span style={{ fontSize: '0.76rem', color: 'var(--text3)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                        <Ic.Calendar size={12} />
+                        {t.transferTimeframe}
+                      </span>
+                    </div>
+
+                    {/* Route visualization */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-light)', borderRadius: 14, padding: '18px 20px' }}>
+                      {/* Origin */}
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '0.62rem', fontWeight: 800, color: 'var(--text4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5 }}>
+                          {isMatch ? 'Their Current' : 'Origin'}
                         </div>
-                     </div>
-                  ))}
-               </div>
-            )
-          ))}
+                        <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>{t.currentHospital}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#22d3ee' }}>{t.currentWard}</div>
+                      </div>
+
+                      {/* Route line */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                        <div style={{ width: 40, height: 2, background: 'linear-gradient(90deg, var(--primary), #22d3ee)', borderRadius: 999, position: 'relative' }}>
+                          <div style={{ position: 'absolute', right: -4, top: -4, width: 10, height: 10, borderRadius: '50%', background: '#22d3ee', boxShadow: '0 0 8px #22d3ee' }} />
+                        </div>
+                        <div style={{ fontSize: '0.6rem', color: 'var(--text4)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>→</div>
+                      </div>
+
+                      {/* Destination */}
+                      <div style={{ flex: 1, textAlign: 'right' }}>
+                        <div style={{ fontSize: '0.62rem', fontWeight: 800, color: 'var(--text4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5 }}>
+                          {isMatch ? 'Their Goal' : 'Destination'}
+                        </div>
+                        <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>{t.desiredHospital}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#34d399' }}>{t.desiredWard}</div>
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    {(t.reason || isMatch) && (
+                      <div style={{ marginTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                        {t.reason && (
+                          <div style={{ fontSize: '0.78rem', color: 'var(--text3)', fontStyle: 'italic', flex: 1 }}>"{t.reason}"</div>
+                        )}
+                        {isMatch && (
+                          <button className="btn btn-primary btn-sm" style={{ flexShrink: 0 }}>
+                            Contact Nurse
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </>
       )}
     </div>
   );
 }
-

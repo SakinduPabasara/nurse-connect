@@ -139,49 +139,153 @@ export default function CommunityPage() {
 
       {/* ── Compose ── */}
       {composing && (
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '22px 24px', marginBottom: 22, backdropFilter: 'blur(16px)', animation: 'fadeInUp 0.2s ease' }}>
-          <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text)', marginBottom: 18 }}>Create a Post</div>
-          <form onSubmit={handleSubmit}>
+        <div style={{ 
+          background: 'rgba(23, 31, 48, 0.7)',
+          border: '1px solid rgba(255, 255, 255, 0.12)', 
+          borderRadius: 24, 
+          padding: '32px', 
+          marginBottom: 32, 
+          backdropFilter: 'blur(24px)', 
+          boxShadow: '0 20px 50px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.05)',
+          animation: 'fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)' 
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+            <div style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(37, 99, 235, 0.15)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+               <Ic.Plus size={20} />
+            </div>
+            <div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.01em' }}>Create a Publication</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text3)' }}>Share insights, ask for advice, or support your colleagues.</div>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 24 }}>
             {/* Category selector */}
-            <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
-              {Object.entries(CAT).map(([key, cfg]) => (
-                <button key={key} type="button" onClick={() => setForm(f => ({ ...f, category: key }))}
-                  style={{ padding: '5px 14px', borderRadius: 999, fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter,sans-serif', transition: 'all 0.15s', border: '1px solid', background: form.category === key ? cfg.color : cfg.bg, color: form.category === key ? '#fff' : cfg.color, borderColor: form.category === key ? cfg.color : cfg.border }}>
-                  {cfg.label}
-                </button>
-              ))}
+            <div>
+              <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>Select Category</label>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                {Object.entries(CAT).map(([key, cfg]) => {
+                  const isActive = form.category === key;
+                  return (
+                    <button 
+                      key={key} 
+                      type="button" 
+                      onClick={() => setForm(f => ({ ...f, category: key }))}
+                      style={{ 
+                        padding: '10px 18px', 
+                        borderRadius: 14, 
+                        fontSize: '0.82rem', 
+                        fontWeight: 700, 
+                        cursor: 'pointer', 
+                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)', 
+                        border: '1px solid', 
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        background: isActive ? cfg.color : 'rgba(255,255,255,0.03)', 
+                        color: isActive ? '#fff' : 'var(--text2)', 
+                        borderColor: isActive ? cfg.color : 'rgba(255,255,255,0.1)',
+                        boxShadow: isActive ? `0 8px 20px ${cfg.bg}` : 'none',
+                        transform: isActive ? 'translateY(-2px)' : 'none'
+                      }}
+                    >
+                      <div style={{ opacity: isActive ? 1 : 0.6 }}>
+                        {key === 'discussion' && <Ic.Chat size={14} />}
+                        {key === 'advice' && <Ic.Info size={14} />}
+                        {key === 'experience' && <Ic.Globe size={14} />}
+                        {key === 'support' && <Ic.Heart size={14} />}
+                      </div>
+                      {cfg.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <div className="form-group">
-              <input className="form-input" placeholder="Post title…" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
+
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <input 
+                className="form-input" 
+                placeholder="Give your post a compelling title..." 
+                value={form.title} 
+                onChange={e => setForm(f => ({ ...f, title: e.target.value }))} 
+                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', height: 50, borderRadius: 14, fontSize: '1rem', fontWeight: 600 }}
+              />
             </div>
-            <div className="form-group">
-              <textarea className="form-textarea" style={{ minHeight: 100 }} placeholder="Share your thoughts…" value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} />
+            
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <textarea 
+                className="form-textarea" 
+                style={{ minHeight: 140, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: '16px', lineHeight: 1.6 }} 
+                placeholder="What's on your mind? Detailed thoughts encourage better engagement..." 
+                value={form.content} 
+                onChange={e => setForm(f => ({ ...f, content: e.target.value }))} 
+              />
             </div>
-            <button className="btn btn-primary" type="submit" disabled={submitting}>
-              {submitting ? 'Publishing…' : 'Publish'} {!submitting && <Ic.ArrowRight size={14} />}
-            </button>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 8 }}>
+               <button type="button" className="btn btn-outline" style={{ borderRadius: 12, height: 48, padding: '0 24px' }} onClick={() => setComposing(false)}>Discard</button>
+               <button className="btn btn-primary" type="submit" disabled={submitting} style={{ borderRadius: 12, height: 48, padding: '0 32px', fontWeight: 700 }}>
+                 {submitting ? 'Publishing Post...' : 'Publish to Community'} {!submitting && <Ic.ArrowRight size={16} style={{ marginLeft: 8 }} />}
+               </button>
+            </div>
           </form>
         </div>
       )}
 
       {/* ── Filter row ── */}
-      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 20, flexWrap: 'wrap' }}>
-        <div style={{ position: 'relative', flex: 1, minWidth: 180 }}>
-          <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text3)', display: 'flex' }}>
-            <Ic.Search size={14} />
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 28, flexWrap: 'wrap' }}>
+        <div style={{ position: 'relative', flex: 1, minWidth: 240 }}>
+          <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text3)', display: 'flex' }}>
+            <Ic.Search size={16} />
           </span>
-          <input style={{ width: '100%', height: 36, padding: '0 14px 0 32px', background: 'rgba(8,15,30,0.6)', border: '1px solid var(--border)', borderRadius: 9, color: 'var(--text)', fontFamily: 'Inter,sans-serif', fontSize: '0.83rem', outline: 'none' }}
-            placeholder="Search posts…" value={search} onChange={e => setSearch(e.target.value)} />
+          <input 
+            style={{ 
+              width: '100%', 
+              height: 48, 
+              padding: '0 14px 0 42px', 
+              background: 'rgba(255, 255, 255, 0.03)', 
+              border: '1px solid rgba(255, 255, 255, 0.1)', 
+              borderRadius: 14, 
+              color: 'var(--text)', 
+              fontFamily: "'Inter', sans-serif", 
+              fontSize: '0.88rem', 
+              outline: 'none',
+              transition: 'all 0.2s'
+            }}
+            placeholder="Search discussions or colleagues..." 
+            value={search} 
+            onChange={e => setSearch(e.target.value)} 
+            onFocus={e => e.target.style.borderColor = 'var(--primary)'}
+            onBlur={e => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
+          />
         </div>
-        {['all', 'discussion', 'advice', 'experience', 'support'].map(c => {
-          const cfg = c === 'all' ? { color: '#60a5fa', bg: 'rgba(37,99,235,0.1)', border: 'rgba(37,99,235,0.2)' } : getCat(c);
-          const active = cat === c;
-          return (
-            <button key={c} onClick={() => setCat(c)} style={{ padding: '5px 13px', borderRadius: 999, fontSize: '0.78rem', fontWeight: 600, border: '1px solid', cursor: 'pointer', fontFamily: 'Inter,sans-serif', transition: 'all 0.15s', background: active ? cfg.color : cfg.bg, color: active ? '#fff' : cfg.color, borderColor: active ? cfg.color : cfg.border }}>
-              {c.charAt(0).toUpperCase() + c.slice(1)}
-            </button>
-          );
-        })}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {['all', 'discussion', 'advice', 'experience', 'support'].map(c => {
+            const cfg = c === 'all' ? { color: '#60a5fa', bg: 'rgba(37,99,235,0.1)', border: 'rgba(37,99,235,0.2)' } : getCat(c);
+            const active = cat === c;
+            return (
+              <button 
+                key={c} 
+                onClick={() => setCat(c)} 
+                style={{ 
+                  padding: '10px 16px', 
+                  borderRadius: 12, 
+                  fontSize: '0.8rem', 
+                  fontWeight: 700, 
+                  border: '1px solid', 
+                  cursor: 'pointer', 
+                  fontFamily: "'Inter', sans-serif", 
+                  transition: 'all 0.2s', 
+                  background: active ? cfg.color : 'rgba(255,255,255,0.03)', 
+                  color: active ? '#fff' : 'var(--text2)', 
+                  borderColor: active ? cfg.color : 'rgba(255,255,255,0.1)' 
+                }}
+              >
+                {c.charAt(0).toUpperCase() + c.slice(1)}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* ── Feed ── */}
@@ -196,54 +300,83 @@ export default function CommunityPage() {
           {!composing && <button className="btn btn-primary btn-sm" style={{ marginTop: 16 }} onClick={() => setComposing(true)}><Ic.Plus size={14} /> Start the conversation</button>}
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {filtered.map(p => {
             const cfg = getCat(p.category);
             const isOpen = expanded === p._id;
             const postDetail = detail[p._id];
 
             return (
-              <div key={p._id} className="feed-post" style={{ borderLeft: `3px solid ${cfg.color}` }}>
+              <div key={p._id} className="feed-post" style={{ 
+                borderLeft: `none`,
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: 20,
+                overflow: 'hidden',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                position: 'relative'
+              }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: cfg.color, opacity: 0.8 }} />
+                
                 {/* Post header */}
-                <div className="feed-post-body" style={{ cursor: 'pointer', paddingBottom: isOpen ? 16 : 20 }} onClick={() => isOpen ? setExpanded(null) : openPost(p._id)}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                <div className="feed-post-body" style={{ cursor: 'pointer', padding: '24px 28px', paddingBottom: isOpen ? 16 : 24 }} onClick={() => isOpen ? setExpanded(null) : openPost(p._id)}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
                     {/* Avatar */}
                     <div style={{ 
-                      width: 34, height: 34, borderRadius: '50%', 
+                      width: 40, height: 40, borderRadius: 14, 
                       background: p.author?.profilePic 
                         ? `url(http://localhost:5000${p.author.profilePic}) center/cover no-repeat` 
-                        : `linear-gradient(135deg,${cfg.color},var(--bg3))`, 
+                        : `linear-gradient(135deg, ${cfg.color}, #1e293b)`, 
                       display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                      fontSize: '0.82rem', fontWeight: 700, color: '#fff', flexShrink: 0,
-                      border: p.author?.profilePic ? '1px solid var(--border)' : 'none',
+                      fontSize: '0.9rem', fontWeight: 700, color: '#fff', flexShrink: 0,
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                      border: p.author?.profilePic ? '1px solid rgba(255,255,255,0.1)' : 'none',
                       textIndent: p.author?.profilePic ? '-9999px' : '0'
                     }}>
                       {(p.author?.name || 'N')[0]}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text)' }}>{p.author?.name}</div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text3)' }}>{timeAgo(p.createdAt)}</div>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>{p.author?.name}</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text3)', fontWeight: 500 }}>{timeAgo(p.createdAt)}</div>
                     </div>
-                    <span style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`, fontSize: '0.68rem', fontWeight: 700, padding: '2px 9px', borderRadius: 999, textTransform: 'capitalize', flexShrink: 0 }}>
-                      {p.category}
-                    </span>
-                    <span style={{ color: 'var(--text3)', transition: 'transform 0.2s', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', display: 'flex', flexShrink: 0 }}>
-                      <Ic.ChevronDown size={16} />
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                       {(user?._id === p.author?._id || user?.id === p.author?._id || user?.role === 'admin') && (
+                         <button 
+                           onClick={(e) => { e.stopPropagation(); handleDelete(p._id); }}
+                           style={{ 
+                             background: 'rgba(239, 68, 68, 0.1)', 
+                             border: '1px solid rgba(239, 68, 68, 0.2)', 
+                             color: '#f87171', 
+                             width: 32, height: 32, 
+                             borderRadius: 8, 
+                             display: 'flex', 
+                             alignItems: 'center', 
+                             justifyContent: 'center',
+                             cursor: 'pointer',
+                             transition: 'all 0.2s'
+                           }}
+                           onMouseEnter={e => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = '#fff'; }}
+                           onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; e.currentTarget.style.color = '#f87171'; }}
+                         >
+                           <Ic.Trash size={14} />
+                         </button>
+                       )}
+                       <span style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`, fontSize: '0.7rem', fontWeight: 800, padding: '4px 12px', borderRadius: 10, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                         {p.category}
+                       </span>
+                       <span style={{ color: 'var(--text3)', opacity: 0.5, transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                         <Ic.ChevronDown size={18} />
+                       </span>
+                    </div>
                   </div>
-                  <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text)', lineHeight: 1.4 }}>{p.title}</h3>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#fff', lineHeight: 1.5, letterSpacing: '-0.01em' }}>{p.title}</h3>
                 </div>
 
                 {/* Expanded content */}
                 {isOpen && postDetail && (
                   <div>
-                    <div style={{ padding: '0 24px 16px', color: 'var(--text2)', fontSize: '0.88rem', lineHeight: 1.75, borderBottom: '1px solid var(--border-light)' }}>
+                    <div style={{ padding: '0 28px 24px', color: 'var(--text2)', fontSize: '0.9rem', lineHeight: 1.8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                       {postDetail.content}
-                      {(user?._id === postDetail.author?._id || user?.id === postDetail.author?._id || user?.role === 'admin') && (
-                        <button className="btn btn-danger btn-sm" style={{ marginTop: 14 }} onClick={() => handleDelete(p._id)}>
-                          <Ic.Trash size={13} /> Delete Post
-                        </button>
-                      )}
                     </div>
 
                     {/* Comments */}

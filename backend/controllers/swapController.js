@@ -75,6 +75,24 @@ const getMySwaps = async (req, res) => {
   }
 };
 
+// @GET /api/swap
+const getAllSwaps = async (req, res) => {
+  try {
+    const filter = {};
+    if (req.query.status && ['pending', 'approved', 'rejected'].includes(req.query.status)) {
+      filter.status = req.query.status;
+    }
+
+    const swaps = await SwapRequest.find(filter)
+      .populate('requester', 'name email ward nic hospital')
+      .populate('targetNurse', 'name email ward nic hospital')
+      .sort({ createdAt: -1 });
+    res.json(swaps);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @PUT /api/swap/:id  ← FIX 4: Now actually swaps the roster entries
 const respondToSwap = async (req, res) => {
   const { status } = req.body;
@@ -163,4 +181,4 @@ const respondToSwap = async (req, res) => {
   }
 };
 
-module.exports = { createSwap, getMySwaps, respondToSwap };
+module.exports = { createSwap, getMySwaps, respondToSwap, getAllSwaps };

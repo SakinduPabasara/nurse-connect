@@ -8,27 +8,29 @@ import * as Ic from '../../components/icons';
 const OT_HOURLY_RATE = 150;
 
 const SHIFTS = [
-  { id: 'morning', icon: <Ic.Calendar size={18} />, label: 'Morning', time: '6 AM – 2 PM',  color: '#fbbf24', bg: 'rgba(245,158,11,0.1)',  border: 'rgba(245,158,11,0.2)'  },
-  { id: 'evening', icon: <Ic.Clock size={18} />,    label: 'Evening', time: '2 PM – 10 PM', color: '#fb923c', bg: 'rgba(249,115,22,0.1)',  border: 'rgba(249,115,22,0.2)'  },
-  { id: 'night',   icon: <Ic.Transfer size={18} />, label: 'Night',   time: '10 PM – 6 AM', color: '#818cf8', bg: 'rgba(99,102,241,0.1)',  border: 'rgba(99,102,241,0.2)'  },
-  { id: 'custom',  icon: <Ic.User size={18} />,     label: 'Custom',  time: 'Other / split', color: '#94a3b8', bg: 'rgba(100,116,139,0.1)', border: 'rgba(100,116,139,0.2)' },
+  { id: 'morning', Icon: Ic.Sun,      label: 'Morning', time: '6 AM – 2 PM',   color: '#fbbf24', bg: 'rgba(245,158,11,0.12)',   border: 'rgba(245,158,11,0.22)'  },
+  { id: 'evening', Icon: Ic.Sunset,   label: 'Evening', time: '2 PM – 10 PM',  color: '#fb923c', bg: 'rgba(249,115,22,0.12)',   border: 'rgba(249,115,22,0.22)'  },
+  { id: 'night',   Icon: Ic.Moon,     label: 'Night',   time: '10 PM – 6 AM',  color: '#a78bfa', bg: 'rgba(139,92,246,0.12)',   border: 'rgba(139,92,246,0.22)'  },
+  { id: 'custom',  Icon: Ic.Clock,    label: 'Custom',  time: 'Other / split', color: '#94a3b8', bg: 'rgba(100,116,139,0.12)',  border: 'rgba(100,116,139,0.22)' },
 ];
 
 const STATUS_CFG = {
-  pending:  { label: 'Awaiting Review', color: '#fbbf24', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.3)' },
-  approved: { label: 'Approved',       color: '#10b981', bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)' },
-  rejected: { label: 'Rejected',       color: '#f43f5e', bg: 'rgba(244,63,94,0.12)',  border: 'rgba(244,63,94,0.3)'  },
+  pending:  { label: 'Awaiting Review', color: '#fbbf24', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.25)' },
+  approved: { label: 'Approved',        color: '#34d399', bg: 'rgba(52,211,153,0.12)', border: 'rgba(52,211,153,0.25)' },
+  rejected: { label: 'Rejected',        color: '#f87171', bg: 'rgba(239,68,68,0.12)',  border: 'rgba(239,68,68,0.25)'  },
 };
+
+const FILTER_TABS = ['all', 'pending', 'approved', 'rejected'];
 
 export default function OvertimePage() {
   const confirm = useConfirm();
-  const [tab, setTab] = useState('my');
-  const [data, setData] = useState({ totalApprovedHours: 0, pendingCount: 0, records: [] });
-  const [loading, setLoading] = useState(true);
+  const [tab, setTab]               = useState('my');
+  const [data, setData]             = useState({ totalApprovedHours: 0, pendingCount: 0, records: [] });
+  const [loading, setLoading]       = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
-  const [form, setForm] = useState({ date: new Date().toISOString().split('T')[0], shift: 'morning', extraHours: '', reason: '' });
-  const [submitting, setSubmitting] = useState(false);
-  const [msg, setMsg] = useState({ type: '', text: '' });
+  const [form, setForm]             = useState({ date: new Date().toISOString().split('T')[0], shift: 'morning', extraHours: '', reason: '' });
+  const [submitting, setSubmitting]  = useState(false);
+  const [msg, setMsg]               = useState({ type: '', text: '' });
   useToastMessage(msg);
 
   const fetchRecords = useCallback(async (silent = false) => {
@@ -36,11 +38,8 @@ export default function OvertimePage() {
     try {
       const { data: d } = await API.get('/overtime/my');
       setData(d);
-    } catch {
-      setData({ totalApprovedHours: 0, pendingCount: 0, records: [] });
-    } finally {
-      if (!silent) setLoading(false);
-    }
+    } catch { setData({ totalApprovedHours: 0, pendingCount: 0, records: [] }); }
+    finally { if (!silent) setLoading(false); }
   }, []);
 
   useEffect(() => { fetchRecords(); }, [fetchRecords]);
@@ -58,7 +57,7 @@ export default function OvertimePage() {
   const handleSubmit = async e => {
     e.preventDefault();
     if (!form.extraHours || Number(form.extraHours) <= 0) {
-       setMsg({ type: 'error', text: 'Valid work duration required.' }); return;
+      setMsg({ type: 'error', text: 'Valid work duration required.' }); return;
     }
     setSubmitting(true);
     try {
@@ -72,211 +71,256 @@ export default function OvertimePage() {
   };
 
   const handleWithdraw = async id => {
-    const isConfirmed = await confirm({ title: "Withdraw Overtime Entry", message: "This action will remove the record from verification.", confirmText: "Remove Entry" });
+    const isConfirmed = await confirm({ title: 'Withdraw Overtime Entry', message: 'This action will remove the record from verification.', confirmText: 'Remove Entry' });
     if (!isConfirmed) return;
-    try {
-      await API.delete(`/overtime/withdraw/${id}`);
-      notify.success('Record removed.');
-      fetchRecords();
-    } catch (err) { notify.error('Failed to remove.'); }
+    try { await API.delete(`/overtime/withdraw/${id}`); notify.success('Record removed.'); fetchRecords(); }
+    catch { notify.error('Failed to remove.'); }
   };
 
   const filtered = statusFilter === 'all' ? data.records : data.records.filter(r => r.status === statusFilter);
+  const earnings = new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(data.totalApprovedHours * OT_HOURLY_RATE);
 
   return (
-    <div className="overtime-page-container" style={{ animation: 'fadeIn 0.5s ease-out' }}>
-      <style>{`
-        .stats-hero {
-           display: grid;
-           grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-           gap: 20px;
-           margin-bottom: 32px;
-        }
-        .stat-card-premium {
-           background: var(--surface);
-           border: 1px solid var(--border);
-           border-radius: 24px;
-           padding: 28px;
-           backdrop-filter: blur(20px);
-           position: relative;
-           overflow: hidden;
-        }
-        .stat-card-premium::before {
-           content: '';
-           position: absolute;
-           top: -50px;
-           right: -50px;
-           width: 150px;
-           height: 150px;
-           background: var(--primary-glow);
-           filter: blur(80px);
-           opacity: 0.3;
-        }
-        
-        .ot-history-card {
-           background: var(--surface);
-           border: 1px solid var(--border);
-           border-radius: 20px;
-           padding: 24px;
-           margin-bottom: 12px;
-           display: flex;
-           align-items: center;
-           gap: 20px;
-           transition: all 0.3s ease;
-        }
-        .ot-history-card:hover {
-           transform: translateX(6px);
-           border-color: var(--primary-light);
-        }
-        
-        .shift-picker {
-           display: grid;
-           grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-           gap: 12px;
-        }
-        .shift-option {
-           background: var(--bg2);
-           border: 1px solid var(--border);
-           border-radius: 16px;
-           padding: 16px;
-           text-align: center;
-           cursor: pointer;
-           transition: all 0.2s;
-        }
-        .shift-option.active {
-           background: var(--primary-glow);
-           border-color: var(--primary);
-           box-shadow: 0 8px 20px rgba(37,99,235,0.2);
-        }
-      `}</style>
+    <div style={{ animation: 'fadeInUp 0.35s ease' }}>
 
+      {/* ── Page Header ── */}
       <div className="page-header">
         <div>
-          <div className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg, #fbbf24, #f59e0b)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
-              <Ic.Clock size={24} />
+          <div className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
+            <div className="page-title-icon" style={{ background: 'linear-gradient(135deg, #fbbf24, #f59e0b)', boxShadow: '0 8px 24px rgba(245,158,11,0.35)' }}>
+              <Ic.Clock size={22} />
             </div>
-            Occupational Overtime 
+            Occupational Overtime
           </div>
-          <div className="page-subtitle">Verify and track additional duty hours and clinical compensation</div>
+          <div className="page-subtitle">Track additional duty hours and clinical compensation earned</div>
         </div>
-        
-        <div className="tab-group" style={{ background: 'var(--bg2)', padding: 4, borderRadius: 14, border: '1px solid var(--border)' }}>
-          <button className={`btn btn-sm ${tab === 'my' ? 'btn-primary' : ''}`} style={{ borderRadius: 10 }} onClick={() => setTab('my')}>Work Journals</button>
-          <button className={`btn btn-sm ${tab === 'apply' ? 'btn-primary' : ''}`} style={{ borderRadius: 10 }} onClick={() => setTab('apply')}>+ Log Session</button>
+
+        <div style={{ display: 'flex', gap: 6, background: 'rgba(0,0,0,0.25)', padding: 4, borderRadius: 16, border: '1px solid var(--border)' }}>
+          <button className={`chip-tab ${tab === 'my' ? 'active' : ''}`} onClick={() => setTab('my')}>Work Journals</button>
+          <button className={`chip-tab ${tab === 'apply' ? 'active' : ''}`} onClick={() => setTab('apply')}>+ Log Session</button>
         </div>
       </div>
 
-      <div className="stats-hero">
-         <div className="stat-card-premium">
-            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 8 }}>Total Verified Hours</div>
-            <div style={{ fontSize: '2.5rem', fontWeight: 800 }}>{data.totalApprovedHours} <span style={{ fontSize: '1rem', color: 'var(--text3)' }}>Unit Hours</span></div>
-            <div style={{ marginTop: 12, fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 600 }}>Active duty cycle: April 2026</div>
-         </div>
-         <div className="stat-card-premium">
-            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 8 }}>Estimated Earnings</div>
-            <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#10b981' }}>{new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(data.totalApprovedHours * OT_HOURLY_RATE)}</div>
-            <div style={{ marginTop: 12, fontSize: '0.85rem', color: 'var(--text3)' }}>Calculated at standard hospital base rate</div>
-         </div>
+      {/* ── Stats ── */}
+      <div className="stat-hero-grid">
+        {/* Total hours */}
+        <div className="stat-hero-card" style={{ '--glow-color': 'rgba(37,99,235,0.1)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div style={{ fontSize: '0.69rem', fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Total Verified Hours</div>
+              <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: '2.6rem', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+                {data.totalApprovedHours}
+                <span style={{ fontSize: '1rem', color: 'var(--text3)', fontWeight: 500, marginLeft: 6 }}>hrs</span>
+              </div>
+            </div>
+            <div style={{ width: 44, height: 44, borderRadius: 13, background: 'rgba(37,99,235,0.15)', border: '1px solid rgba(37,99,235,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#60a5fa', flexShrink: 0 }}>
+              <Ic.Clock size={22} />
+            </div>
+          </div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--primary-light)', fontWeight: 600, marginTop: 16, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#34d399', display: 'inline-block', animation: 'glow-pulse 2s ease infinite' }} />
+            Active duty cycle: {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+          </div>
+          {data.pendingCount > 0 && (
+            <div style={{ marginTop: 8, fontSize: '0.72rem', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 5 }}>
+              ⏳ {data.pendingCount} session{data.pendingCount > 1 ? 's' : ''} pending review
+            </div>
+          )}
+        </div>
+
+        {/* Earnings */}
+        <div className="stat-hero-card" style={{ '--glow-color': 'rgba(16,185,129,0.1)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div style={{ fontSize: '0.69rem', fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Estimated Earnings</div>
+              <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: '1.9rem', fontWeight: 800, color: '#34d399', letterSpacing: '-0.03em', lineHeight: 1 }}>
+                {earnings}
+              </div>
+            </div>
+            <div style={{ width: 44, height: 44, borderRadius: 13, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#34d399', flexShrink: 0 }}>
+              <Ic.TrendUp size={22} />
+            </div>
+          </div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text3)', marginTop: 16 }}>
+            Calculated at standard hospital base rate (LKR {OT_HOURLY_RATE}/hr)
+          </div>
+        </div>
       </div>
 
+      {/* ── Content ── */}
       {tab === 'apply' ? (
-        <div className="form-card-premium" style={{ animation: 'fadeInUp 0.4s ease', maxWidth: 800, margin: '0 auto' }}>
-           <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: 24 }}>Document Work Session</h3>
-           <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 24 }}>
+        <div className="form-card-premium" style={{ animation: 'fadeInUp 0.35s ease', maxWidth: 820, margin: '0 auto' }}>
+          <div style={{ marginBottom: 26 }}>
+            <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: '1.15rem', fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>Document Work Session</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text3)' }}>Log your additional duty hours for verification and compensation</div>
+          </div>
+
+          <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 22 }}>
+            {/* Shift picker */}
+            <div>
+              <div className="form-label" style={{ marginBottom: 12 }}>Shift Identification</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12 }}>
+                {SHIFTS.map(s => {
+                  const Icon = s.Icon;
+                  const active = form.shift === s.id;
+                  return (
+                    <button
+                      type="button"
+                      key={s.id}
+                      onClick={() => setForm({ ...form, shift: s.id })}
+                      style={{
+                        padding: '16px 12px',
+                        borderRadius: 14,
+                        border: `1px solid ${active ? s.color : 'var(--border)'}`,
+                        background: active ? s.bg : 'rgba(255,255,255,0.03)',
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                        transition: 'all 0.18s ease',
+                        boxShadow: active ? `0 6px 18px ${s.color}22` : 'none',
+                      }}
+                    >
+                      <div style={{ color: active ? s.color : 'var(--text3)', marginBottom: 8, display: 'flex', justifyContent: 'center' }}><Icon size={22} /></div>
+                      <div style={{ fontWeight: 700, fontSize: '0.84rem', color: active ? s.color : 'var(--text2)', marginBottom: 3 }}>{s.label}</div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text4)' }}>{s.time}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Date + Hours */}
+            <div className="form-row">
               <div className="form-group">
-                 <label className="form-label">Shift Identification</label>
-                 <div className="shift-picker">
-                    {SHIFTS.map(s => (
-                       <div key={s.id} className={`shift-option ${form.shift === s.id ? 'active' : ''}`} onClick={() => setForm({...form, shift: s.id})}>
-                          <div style={{ color: form.shift === s.id ? 'var(--primary)' : 'var(--text3)', marginBottom: 8 }}>{s.icon}</div>
-                          <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>{s.label}</div>
-                          <div style={{ fontSize: '0.65rem', color: 'var(--text3)' }}>{s.time}</div>
-                       </div>
-                    ))}
-                 </div>
+                <label className="form-label">Duty Date</label>
+                <input className="form-input" type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} />
               </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-                 <div className="form-group">
-                    <label className="form-label">Duty Date</label>
-                    <input className="form-input" type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} style={{ background: 'var(--bg2)', height: 44 }} />
-                 </div>
-                 <div className="form-group">
-                    <label className="form-label">Duration (Hours)</label>
-                    <input className="form-input" type="number" step="0.5" placeholder="e.g. 4.0" value={form.extraHours} onChange={e => setForm({...form, extraHours: e.target.value})} style={{ background: 'var(--bg2)', height: 44 }} />
-                 </div>
-              </div>
-
               <div className="form-group">
-                 <label className="form-label">Log Description</label>
-                 <textarea className="form-input" placeholder="Justify the additional work period (e.g. Emergency support, staff shortage...)" value={form.reason} onChange={e => setForm({...form, reason: e.target.value})} style={{ background: 'var(--bg2)', minHeight: 100, paddingTop: 12 }} />
+                <label className="form-label">Duration (Hours)</label>
+                <input className="form-input" type="number" step="0.5" min="0.5" max="24" placeholder="e.g. 4.0" value={form.extraHours} onChange={e => setForm({ ...form, extraHours: e.target.value })} />
               </div>
+            </div>
 
-              <button className="btn btn-primary" style={{ padding: '14px', borderRadius: 14, fontWeight: 700 }} type="submit" disabled={submitting}>
-                 {submitting ? 'Recording Credentials...' : 'Broadcast Work Session'}
-              </button>
-           </form>
+            {/* Reason */}
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">Log Description</label>
+              <textarea className="form-input form-textarea" placeholder="Justify the additional work period (e.g. Emergency support, staff shortage...)" value={form.reason} onChange={e => setForm({ ...form, reason: e.target.value })} style={{ minHeight: 100 }} />
+            </div>
+
+            {/* Preview */}
+            {form.extraHours && Number(form.extraHours) > 0 && (
+              <div style={{ padding: '14px 18px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text3)' }}>Estimated compensation:</span>
+                <span style={{ fontSize: '1rem', fontWeight: 800, color: '#34d399', fontFamily: "'DM Sans',sans-serif" }}>
+                  {new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(Number(form.extraHours) * OT_HOURLY_RATE)}
+                </span>
+              </div>
+            )}
+
+            <button className="btn btn-primary btn-full" style={{ padding: '14px', borderRadius: 14, fontSize: '0.92rem' }} type="submit" disabled={submitting}>
+              {submitting ? (
+                <><span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} /> Recording...</>
+              ) : 'Submit Work Session'}
+            </button>
+          </form>
         </div>
       ) : (
         <>
-          <div style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
-             {['all','pending','approved','rejected'].map(f => (
-                <button key={f} className={`ot-chip ${statusFilter === f ? 'active' : ''}`} onClick={() => setStatusFilter(f)}>
-                   {f.toUpperCase()}
-                </button>
-             ))}
+          {/* Status filter */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 22, flexWrap: 'wrap' }}>
+            {FILTER_TABS.map(f => (
+              <button
+                key={f}
+                onClick={() => setStatusFilter(f)}
+                style={{
+                  padding: '7px 18px',
+                  borderRadius: 10,
+                  fontSize: '0.79rem',
+                  fontWeight: 700,
+                  border: '1px solid',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  fontFamily: 'Inter, sans-serif',
+                  letterSpacing: '0.02em',
+                  textTransform: 'uppercase',
+                  background: statusFilter === f ? 'linear-gradient(135deg, var(--primary), var(--primary-dark))' : 'rgba(255,255,255,0.03)',
+                  color: statusFilter === f ? '#fff' : 'var(--text3)',
+                  borderColor: statusFilter === f ? 'transparent' : 'var(--border)',
+                  boxShadow: statusFilter === f ? '0 3px 12px rgba(37,99,235,0.35)' : 'none',
+                }}
+              >
+                {f}
+                <span style={{ marginLeft: 6, fontSize: '0.7rem', opacity: 0.7 }}>
+                  {f === 'all' ? data.records.length : data.records.filter(r => r.status === f).length}
+                </span>
+              </button>
+            ))}
           </div>
 
           {loading ? (
-             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {Array.from({ length: 4 }).map((_, i) => <div key={i} className="skeleton-card" style={{ height: 110, borderRadius: 20 }} />)}
-             </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {Array.from({ length: 4 }).map((_, i) => <div key={i} className="skeleton-card" style={{ height: 108, borderRadius: 18 }} />)}
+            </div>
           ) : filtered.length === 0 ? (
-             <div className="empty-state">
-                <Ic.Clock size={48} style={{ opacity: 0.1, marginBottom: 20 }} />
-                <div className="empty-state-text">No work sessions matched the criteria</div>
-             </div>
+            <div className="empty-state">
+              <div style={{ color: 'var(--text4)', marginBottom: 16, display: 'flex', justifyContent: 'center', opacity: 0.3 }}><Ic.Clock size={48} /></div>
+              <div className="empty-state-text">No work sessions matched the criteria</div>
+              <div className="empty-state-sub">Try a different filter or log a new session</div>
+            </div>
           ) : (
-             <div className="ot-feed">
-                {filtered.map(r => {
-                   const cfg = STATUS_CFG[r.status] || STATUS_CFG.pending;
-                   const sh = SHIFTS.find(s => s.id === r.shift) || SHIFTS[3];
-                   return (
-                      <div key={r._id} className="ot-history-card">
-                         <div style={{ width: 44, height: 44, borderRadius: 12, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            {sh.icon}
-                         </div>
-                         
-                         <div style={{ flex: 1 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                               <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{new Date(r.date).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</span>
-                               <span style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`, padding: '2px 10px', borderRadius: 8, fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase' }}>{cfg.label}</span>
-                            </div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text3)', display: 'flex', alignItems: 'center', gap: 12 }}>
-                               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Ic.Clock size={14}/> {sh.label} Block</span>
-                               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Ic.Transfer size={14}/> {r.extraHours} Clinical Hours</span>
-                            </div>
-                         </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {filtered.map(r => {
+                const cfg = STATUS_CFG[r.status] || STATUS_CFG.pending;
+                const sh  = SHIFTS.find(s => s.id === r.shift) || SHIFTS[3];
+                const Icon = sh.Icon;
+                return (
+                  <div key={r._id} className="action-card">
+                    {/* Left accent */}
+                    <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: cfg.color, borderRadius: '20px 0 0 20px' }} />
 
-                         <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase' }}>Earnings</div>
-                            <div style={{ fontSize: '1rem', fontWeight: 800, color: r.status === 'approved' ? '#10b981' : 'var(--text3)' }}>
-                               {new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(r.approvedAmount || (r.extraHours * OT_HOURLY_RATE))}
-                            </div>
-                         </div>
-                         
-                         {r.status === 'pending' && (
-                            <button className="btn btn-ghost" onClick={() => handleWithdraw(r._id)} style={{ color: '#f43f5e' }}>✕</button>
-                         )}
+                    <div className="action-card-icon" style={{ background: cfg.bg, border: `1px solid ${cfg.border}`, color: cfg.color }}>
+                      <Icon size={20} />
+                    </div>
+
+                    <div className="action-card-content">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text)' }}>
+                          {new Date(r.date).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
+                        </span>
+                        <span className="status-pill" style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
+                          {cfg.label}
+                        </span>
                       </div>
-                   )
-                })}
-             </div>
+                      <div style={{ fontSize: '0.76rem', color: 'var(--text3)', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Ic.Clock size={12} /> {sh.label} Block · {sh.time}</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Ic.TrendUp size={12} /> {r.extraHours} clinical hours</span>
+                      </div>
+                    </div>
+
+                    {/* Earnings */}
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ fontSize: '0.62rem', fontWeight: 700, color: 'var(--text4)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>Earnings</div>
+                      <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: '1rem', fontWeight: 800, color: r.status === 'approved' ? '#34d399' : 'var(--text3)' }}>
+                        {new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(r.approvedAmount || (r.extraHours * OT_HOURLY_RATE))}
+                      </div>
+                    </div>
+
+                    {r.status === 'pending' && (
+                      <button
+                        className="icon-btn"
+                        onClick={() => handleWithdraw(r._id)}
+                        title="Withdraw"
+                        style={{ border: '1px solid rgba(239,68,68,0.25)', color: '#f87171', background: 'rgba(239,68,68,0.08)' }}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           )}
         </>
       )}
     </div>
   );
 }
-

@@ -90,6 +90,7 @@ const ADMIN_GROUPS = [
       { to: "/admin/hospitals", icon: "hospital",    label: "Hospitals" },
       { to: "/admin/wards",   icon: "ward",         label: "Wards" },
       { to: "/admin/roster",  icon: "roster",       label: "Roster" },
+      { to: "/admin/swaps",   icon: "swap",         label: "Shift Swaps" },
       { to: "/admin/leave",   icon: "leave",        label: "Leave" },
       { to: "/admin/overtime",icon: "overtime",     label: "Overtime" },
     ],
