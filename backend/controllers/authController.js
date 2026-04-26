@@ -529,6 +529,17 @@ const getPublicStats = async (req, res) => {
   }
 };
 
+const getVerifiedNurses = async (req, res) => {
+  try {
+    const nurses = await User.find({ role: "nurse", isVerified: true })
+      .select("_id name ward hospital")
+      .sort({ name: 1 });
+    res.json(nurses);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -542,4 +553,5 @@ module.exports = {
   uploadAvatar,
   deleteAvatar,
   getPublicStats,
+  getVerifiedNurses,
 };

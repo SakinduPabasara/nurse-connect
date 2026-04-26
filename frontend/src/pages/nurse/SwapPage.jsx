@@ -14,6 +14,7 @@ const SHIFTS = ['7AM-1PM', '1PM-7PM', '7AM-7PM', '7PM-7AM'];
 
 export default function SwapPage() {
   const [swaps, setSwaps]           = useState([]);
+  const [nurses, setNurses]           = useState([]);
   const [loading, setLoading]       = useState(true);
   const [tab, setTab]               = useState('list');
   const [form, setForm]             = useState({ targetNurse: '', requesterShiftDate: '', requesterShift: '7AM-1PM', targetShiftDate: '', targetShift: '7AM-1PM', reason: '' });
@@ -28,7 +29,15 @@ export default function SwapPage() {
     catch { setSwaps([]); } finally { if (!silent) setLoading(false); }
   }, []);
 
-  useEffect(() => { fetchSwaps(); }, [fetchSwaps]);
+  const fetchNurses = useCallback(async () => {
+    try { const { data } = await API.get('/auth/nurses'); setNurses(data); }
+    catch { setNurses([]); }
+  }, []);
+
+  useEffect(() => { 
+    fetchSwaps();
+    fetchNurses();
+  }, [fetchSwaps, fetchNurses]);
 
   useEffect(() => {
     let socket;
@@ -76,7 +85,7 @@ export default function SwapPage() {
             </div>
             Shift Swap Requests
           </div>
-          <div className="page-subtitle">Facilitate colleague-to-colleague shift exchanges with full tracking</div>
+          <div className="page-subtitle">Facilitate nurse-to-nurse shift exchanges with full tracking</div>
         </div>
 
         <div style={{ display: 'flex', gap: 6, background: 'rgba(0,0,0,0.25)', padding: 4, borderRadius: 16, border: '1px solid var(--border)' }}>
@@ -103,7 +112,7 @@ export default function SwapPage() {
           <div className="empty-state">
             <div style={{ color: 'var(--text4)', marginBottom: 16, display: 'flex', justifyContent: 'center', opacity: 0.3 }}><Ic.Transfer size={48} /></div>
             <div className="empty-state-text">No shift swap activity recorded</div>
-            <div className="empty-state-sub">Initiate a swap request with a colleague</div>
+            <div className="empty-state-sub">Initiate a swap request with a nurse</div>
             <button className="btn btn-primary btn-sm" style={{ marginTop: 20 }} onClick={() => setTab('new')}>Create Request</button>
           </div>
         ) : (
@@ -210,15 +219,31 @@ export default function SwapPage() {
               <Ic.Transfer size={20} style={{ color: 'var(--primary-light)' }} />
               <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: '1.15rem', fontWeight: 800, color: 'var(--text)' }}>New Shift Exchange</div>
             </div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text3)' }}>Enter the target colleague's ID and shift details to initiate an exchange</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text3)' }}>Select a nurse from your ward and enter shift details to initiate an exchange</div>
           </div>
 
           <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 20 }}>
             <div className="form-group">
-              <label className="form-label">Target Colleague Personnel ID</label>
+              <label className="form-label">Target Nurse (Your Ward Only)</label>
               <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text3)', display: 'flex', pointerEvents: 'none' }}><Ic.User size={16} /></span>
-                <input className="form-input" style={{ paddingLeft: 42 }} name="targetNurse" placeholder="Paste the nurse object ID from Ward Roster..." value={form.targetNurse} onChange={handleChange} />
+                <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text3)', display: 'flex', pointerEvents: 'none', zIndex: 1 }}><Ic.User size={16} /></span>
+                <select 
+                  className="form-select" 
+                  style={{ paddingLeft: 42 }} 
+                  name="targetNurse" 
+                  value={form.targetNurse} 
+                  onChange={handleChange}
+                >
+                  <option value="">Select a nurse to swap with...</option>
+                  {nurses
+                    .filter(n => n._id !== user?._id && n.ward === user?.ward)
+                    .map(n => (
+                      <option key={n._id} value={n._id}>
+                        {n.name}
+                      </option>
+                    ))
+                  }
+                </select>
               </div>
             </div>
 
@@ -259,7 +284,7 @@ export default function SwapPage() {
 
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label">Context / Reason</label>
-              <textarea className="form-input form-textarea" style={{ minHeight: 100 }} name="reason" placeholder="Explain the context to your colleague..." value={form.reason} onChange={handleChange} />
+              <textarea className="form-input form-textarea" style={{ minHeight: 100 }} name="reason" placeholder="Explain the context to your nurse..." value={form.reason} onChange={handleChange} />
             </div>
 
             <button className="btn btn-primary btn-full" style={{ padding: '14px', borderRadius: 14, fontSize: '0.92rem' }} type="submit" disabled={submitting}>

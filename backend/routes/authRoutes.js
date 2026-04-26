@@ -15,6 +15,7 @@ const {
   uploadAvatar,
   deleteAvatar,
   getPublicStats,
+  getVerifiedNurses,
 } = require("../controllers/authController");
 const { protect, adminOnly } = require("../middleware/authMiddleware");
 
@@ -52,6 +53,7 @@ router.delete("/avatar", protect, deleteAvatar); // Any logged-in user
 router.put("/verify/:id", protect, adminOnly, verifyUser);   // Admin only — verify a nurse
 router.delete("/reject/:id", protect, adminOnly, rejectUser); // Admin only — reject a pending nurse
 router.get("/users", protect, adminOnly, getAllUsers); // Admin only — list all users
+router.get("/nurses", protect, getVerifiedNurses);   // Any logged-in user — list verified nurses for swaps
 router.get("/users/:id", protect, adminOnly, getUserById); // Admin only — get one user
 router.delete("/users/:id", protect, adminOnly, deleteUser); // Admin only — delete a user
 

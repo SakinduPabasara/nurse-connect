@@ -2,6 +2,7 @@ const SwapRequest = require('../models/SwapRequest');
 const Notification = require('../models/Notification');
 const Roster = require('../models/Roster');
 const mongoose = require('mongoose');
+const User = require('../models/User');
 const { getIO } = require('../utils/socketManager');
 
 const VALID_SHIFTS = ['7AM-1PM', '1PM-7PM', '7AM-7PM', '7PM-7AM'];
@@ -26,6 +27,14 @@ const createSwap = async (req, res) => {
   // ------------------
 
   try {
+    const target = await User.findById(targetNurse);
+    if (!target) return res.status(404).json({ message: 'Target nurse not found' });
+    
+    // Strict ward-based validation
+    if (target.ward !== req.user.ward) {
+      return res.status(400).json({ message: 'You can only request a swap with a nurse in your same ward' });
+    }
+
     const swap = await SwapRequest.create({
       requester: req.user._id,
       targetNurse,

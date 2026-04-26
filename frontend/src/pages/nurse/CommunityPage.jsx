@@ -155,7 +155,7 @@ export default function CommunityPage() {
             </div>
             <div>
               <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.01em' }}>Create a Publication</div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text3)' }}>Share insights, ask for advice, or support your colleagues.</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text3)' }}>Share insights, ask for advice, or support your fellow nurses.</div>
             </div>
           </div>
 
@@ -252,7 +252,7 @@ export default function CommunityPage() {
               outline: 'none',
               transition: 'all 0.2s'
             }}
-            placeholder="Search discussions or colleagues..." 
+            placeholder="Search discussions or nurses..." 
             value={search} 
             onChange={e => setSearch(e.target.value)} 
             onFocus={e => e.target.style.borderColor = 'var(--primary)'}
