@@ -251,7 +251,7 @@ export default function NoticeBoardPage() {
                 </div>
                 
                 <div className="notice-title">{n.title}</div>
-                <div className="notice-content" style={{ -webkit-line-clamp: isOpen ? 'unset' : 3 }}>
+                <div className="notice-content" style={{ WebkitLineClamp: isOpen ? 'unset' : 3 }}>
                   {n.content}
                 </div>
                 

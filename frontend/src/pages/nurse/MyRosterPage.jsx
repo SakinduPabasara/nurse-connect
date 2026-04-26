@@ -194,7 +194,7 @@ export default function MyRosterPage() {
           <div className="hero-content">
             <span className="hero-label">Immediate Assignment</span>
             <div className="hero-title">{nextShift.shift} Shift</div>
-            <div style={{ display: 'flex', gap: 20, marginTop: 12, color: var(--text3), fontSize: '0.9rem' }}>
+            <div style={{ display: 'flex', gap: 20, marginTop: 12, color: 'var(--text3)', fontSize: '0.9rem' }}>
                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Ic.Calendar size={18} /> {new Date(nextShift.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Ic.Hospital size={18} /> {nextShift.ward}</span>
                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Ic.Clock size={18} /> {nextShift.startTime} — {nextShift.endTime}</span>

@@ -256,7 +256,7 @@ export default function NewsPage() {
                   </div>
                   
                   <h3 className="news-title">{n.title}</h3>
-                  <p className="news-excerpt" style={{ -webkit-line-clamp: isFeatured ? 4 : 3, display: '-webkit-box', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                  <p className="news-excerpt" style={{ WebkitLineClamp: isFeatured ? 4 : 3, display: '-webkit-box', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                     {n.content}
                   </p>
                   
