@@ -62,6 +62,8 @@ export const Inbox     = ({ size, style }) => <Svg size={size} style={style}><po
 export const Briefcase = ({ size, style }) => <Svg size={size} style={style}><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></Svg>;
 export const File      = ({ size, style }) => <Svg size={size} style={style}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></Svg>;
 export const Heart     = ({ size, style }) => <Svg size={size} style={style}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></Svg>;
+export const Activity  = ({ size, style }) => <Svg size={size} style={style}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></Svg>;
+export const AlertCircle = ({ size, style }) => <Svg size={size} style={style}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></Svg>;
 
 // Convenience: shift type icon by name
 export const shiftIcon = (type) => {
