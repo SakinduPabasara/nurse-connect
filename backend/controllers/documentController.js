@@ -60,6 +60,30 @@ const uploadDocument = async (req, res) => {
     });
 
     const populated = await doc.populate("uploadedBy", "name");
+
+    // Broadcast notification to all nurses
+    const User = require("../models/User");
+    const Notification = require("../models/Notification");
+    const { getIO } = require("../utils/socketManager");
+    
+    const nurses = await User.find({ role: "nurse" }).select("_id");
+    const notifications = nurses.map(nurse => ({
+      recipient: nurse._id,
+      message: `New hospital document uploaded: "${doc.title}" (${doc.category})`,
+      type: 'announcement',
+    }));
+    
+    if (notifications.length > 0) {
+      await Notification.insertMany(notifications);
+      try {
+        notifications.forEach(n => {
+          getIO().to('user:' + n.recipient.toString()).emit('notification:new', { ...n, isRead: false, createdAt: new Date() });
+        });
+      } catch (err) {
+        console.error('Socket emit error:', err.message);
+      }
+    }
+
     res.status(201).json(populated);
   } catch (error) {
     res.status(500).json({ message: error.message });

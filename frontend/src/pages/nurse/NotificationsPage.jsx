@@ -10,65 +10,62 @@ import { useNotifications } from "../../context/NotificationContext";
 // message content and the role of the current user.
 function resolveNotificationLink(message, type, role) {
   const m = (message || '').toLowerCase();
+  const t = (type || '').toLowerCase();
 
   /* ── ADMIN routes ── */
   if (role === 'admin') {
-    if (m.includes('pending verification') || m.includes('registration pending') || m.includes('new nurse registration'))
-      return '/admin/verify';
-    if (m.includes('leave') && (m.includes('request') || m.includes('applied') || m.includes('approval')))
-      return '/admin/leave';
-    if (m.includes('overtime') && (m.includes('request') || m.includes('applied')))
+    // 1. Level: Specific Action/Management Requests
+    if (t === 'overtime' || m.includes('overtime') || m.includes(' applied for ot'))
       return '/admin/overtime';
-    if (m.includes('swap') || type === 'swap')
-      return '/admin/roster';
-    if (m.includes('roster') || m.includes('shift') || type === 'roster')
-      return '/admin/roster';
-    if (m.includes('transfer') || type === 'transfer')
-      return '/admin/roster';
-    if (m.includes('news') || type === 'news')
-      return '/admin/news';
-    if (m.includes('notice') || m.includes('notice board'))
-      return '/admin/notices';
-    if (m.includes('drug') || m.includes('medication'))
-      return '/admin/drugs';
-    if (m.includes('equipment'))
-      return '/admin/equipment';
-    if (m.includes('document'))
-      return '/admin/documents';
-    if (m.includes('community') || m.includes('post'))
-      return '/admin/community';
-    if (m.includes('opportunit'))
-      return '/admin/opportunities';
+    
+    if (t === 'leave' || (m.includes('leave') && (m.includes('request') || m.includes('applied') || m.includes('approval'))))
+      return '/admin/leave';
+    
+    if (t === 'swap' || m.includes('swap request'))
+      return '/admin/swaps';
+      
+    if (m.includes('verification') || m.includes('registration pending') || m.includes('new nurse registration'))
+      return '/admin/verify';
+
+    // 2. Level: Dynamic/Content
+    if (t === 'news' || m.includes('news')) return '/admin/news';
+    if (t === 'notice' || m.includes('notice')) return '/admin/notices';
+    if (t === 'community' || m.includes('post') || m.includes('community')) return '/admin/community';
+    if (m.includes('drug') || m.includes('medication')) return '/admin/drugs';
+    if (m.includes('equipment')) return '/admin/equipment';
+    if (m.includes('document')) return '/admin/documents';
+    if (m.includes('opportunit')) return '/admin/opportunities';
+
+    // 3. Level: Core Infrastructure
+    if (t === 'roster' || m.includes('roster') || m.includes('shift')) return '/admin/roster';
+    if (m.includes('hospital')) return '/admin/hospitals';
+    if (m.includes('ward')) return '/admin/wards';
+    
     return null;
   }
 
   /* ── NURSE routes ── */
-  if (m.includes('swap') || type === 'swap')
-    return '/swap';
-  if (m.includes('roster') || m.includes('roster entry') || m.includes('shift') || type === 'roster')
-    return '/my-roster';
-  if (m.includes('transfer') || type === 'transfer')
-    return '/transfer';
-  if (m.includes('leave') && !m.includes('annual'))
-    return '/leave';
-  if (m.includes('overtime'))
-    return '/overtime';
-  if (m.includes('news') || type === 'news')
-    return '/news';
-  if (m.includes('notice'))
-    return '/notices';
-  if (m.includes('drug') || m.includes('medication'))
-    return '/drugs';
-  if (m.includes('equipment'))
-    return '/equipment';
-  if (m.includes('document'))
-    return '/documents';
-  if (m.includes('community') || m.includes('post'))
-    return '/community';
-  if (m.includes('opportunit'))
-    return '/opportunities';
-  if (m.includes('verified') || m.includes('account') || m.includes('approved'))
+  // 1. Level: Personal Status/Requests
+  if (t === 'overtime' || m.includes('overtime')) return '/overtime';
+  if (t === 'leave' || m.includes('leave')) return '/leave';
+  if (t === 'swap' || m.includes('swap')) return '/swap';
+  if (t === 'transfer' || m.includes('transfer')) return '/transfer';
+  
+  if (m.includes('verified') || m.includes('account approved') || m.includes('registration approved'))
     return '/dashboard';
+
+  // 2. Level: Core Operations
+  if (t === 'roster' || m.includes('roster') || m.includes('shift')) return '/my-roster';
+
+  // 3. Level: Hospital Content
+  if (t === 'news' || m.includes('news')) return '/news';
+  if (t === 'notice' || m.includes('notice')) return '/notices';
+  if (m.includes('drug') || m.includes('medication')) return '/drugs';
+  if (m.includes('equipment')) return '/equipment';
+  if (m.includes('document')) return '/documents';
+  if (m.includes('community') || m.includes('post') || m.includes('community')) return '/community';
+  if (m.includes('opportunit')) return '/opportunities';
+
   return null;
 }
 
