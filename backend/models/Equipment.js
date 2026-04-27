@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const equipmentSchema = new mongoose.Schema({
   name: { type: String, required: true },
   ward: { type: String, required: true },
+  serialNumber: { type: String, default: '' },
+  description: { type: String, default: '' },
   status: {
     type: String,
     enum: ['available', 'maintenance', 'unavailable'],

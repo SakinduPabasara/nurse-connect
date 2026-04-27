@@ -195,27 +195,20 @@ export default function OvertimePage() {
                 <select 
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="form-select month-hover-select"
                   style={{
-                    appearance: 'none',
+                    width: 'auto',
                     background: 'rgba(255,255,255,0.06)',
-                    border: '1px solid var(--border)',
+                    borderColor: 'var(--border)',
                     borderRadius: '10px',
-                    color: 'var(--text2)',
                     fontSize: '0.74rem',
                     fontWeight: 700,
-                    padding: '6px 32px 6px 14px',
-                    outline: 'none',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
+                    height: 32,
                     fontFamily: 'inherit'
                   }}
-                  className="month-hover-select"
                 >
                   {monthOptions.map(m => <option key={m} value={m}>{m}</option>)}
                 </select>
-                <div style={{ position: 'absolute', right: 10, pointerEvents: 'none', color: 'var(--text3)' }}>
-                  <Ic.ChevronDown size={14} />
-                </div>
               </div>
             </div>
 

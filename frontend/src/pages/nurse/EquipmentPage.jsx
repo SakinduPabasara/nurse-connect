@@ -1,17 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import API from '../../api/axios';
 import SearchableSelect from '../../components/SearchableSelect';
 import * as Ic from '../../components/icons';
+import { notify } from '../../utils/toast';
+import { useConfirm } from '../../context/ConfirmContext';
 
 const STATUS_CFG = {
-  available:   { color: '#34d399', bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)', Icon: Ic.Check },
-  maintenance: { color: '#fbbf24', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.3)', Icon: Ic.Wrench },
-  unavailable: { color: '#f87171', bg: 'rgba(239,68,68,0.12)',  border: 'rgba(239,68,68,0.3)',  Icon: Ic.X },
+  available:   { color: '#34d399', bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)', Icon: Ic.Check, label: 'Available' },
+  maintenance: { color: '#fbbf24', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.3)', Icon: Ic.Wrench, label: 'Maintenance' },
+  unavailable: { color: '#f87171', bg: 'rgba(239,68,68,0.12)',  border: 'rgba(239,68,68,0.3)',  Icon: Ic.X, label: 'Unavailable' },
 };
 
-const getCfg = s => STATUS_CFG[s] || { color: '#94a3b8', bg: 'rgba(148,163,184,0.1)', border: 'rgba(148,163,184,0.2)', Icon: Ic.Info };
+const getCfg = s => STATUS_CFG[s] || { color: '#94a3b8', bg: 'rgba(148,163,184,0.1)', border: 'rgba(148,163,184,0.2)', Icon: Ic.Info, label: s };
 
 export default function EquipmentPage() {
+  const confirm = useConfirm();
   const [equipment, setEquipment] = useState([]);
   const [loading, setLoading] = useState(true);
   const [wards, setWards] = useState([]);
@@ -19,13 +22,13 @@ export default function EquipmentPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  const fetchEquipment = async () => {
-    setLoading(true);
+  const fetchEquipment = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const url = ward ? `/equipment?ward=${encodeURIComponent(ward)}` : '/equipment';
       const { data } = await API.get(url);
       setEquipment(Array.isArray(data) ? data : []);
-    } catch { setEquipment([]); } finally { setLoading(false); }
+    } catch { setEquipment([]); } finally { if (!silent) setLoading(false); }
   };
 
   useEffect(() => { fetchEquipment(); }, [ward]);
@@ -34,209 +37,197 @@ export default function EquipmentPage() {
     API.get('/wards').then(r => setWards(Array.isArray(r.data) ? r.data : [])).catch(() => {});
   }, []);
 
-  const filtered = equipment.filter(e =>
-    (statusFilter === 'all' || e.status === statusFilter) &&
-    (!search || e.name.toLowerCase().includes(search.toLowerCase()) || (e.ward || '').toLowerCase().includes(search.toLowerCase()))
-  );
+  const handleReportFault = async (item) => {
+    const isConfirmed = await confirm({
+      title: 'Report Equipment Fault',
+      message: `Are you flagging ${item.name} as faulty? This will move it to maintenance status and alert the tech team.`,
+      confirmText: 'Report Fault',
+      confirmStyle: { background: '#f59e0b' }
+    });
+    if (!isConfirmed) return;
+    try {
+      await API.put(`/equipment/${item._id}`, { status: 'maintenance' });
+      notify.success("Fault reported. Maintenance ticket created.");
+      fetchEquipment(true);
+    } catch (err) {
+      notify.error("Failed to submit report.");
+    }
+  };
 
-  const counts = { available: 0, maintenance: 0, unavailable: 0 };
-  equipment.forEach(e => { if (counts[e.status] !== undefined) counts[e.status]++; });
+  const filtered = useMemo(() => {
+    return equipment.filter(e =>
+      (statusFilter === 'all' || e.status === statusFilter) &&
+      (!search || 
+        e.name.toLowerCase().includes(search.toLowerCase()) || 
+        (e.ward || '').toLowerCase().includes(search.toLowerCase()) ||
+        (e.serialNumber || '').toLowerCase().includes(search.toLowerCase())
+      )
+    );
+  }, [equipment, search, statusFilter]);
+
+  const counts = useMemo(() => {
+    const c = { total: equipment.length, available: 0, maintenance: 0, unavailable: 0 };
+    equipment.forEach(e => { if (c[e.status] !== undefined) c[e.status]++; });
+    return c;
+  }, [equipment]);
 
   return (
-    <div className="equipment-container" style={{ animation: 'fadeIn 0.5s ease-out' }}>
-      <style>{`
-        .equipment-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-          gap: 20px;
-          margin-top: 24px;
-        }
-        .equip-card-premium {
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: 20px;
-          padding: 24px;
-          backdrop-filter: blur(20px);
-          transition: all 0.3s ease;
-          display: flex;
-          flex-direction: column;
-          position: relative;
-        }
-        .equip-card-premium:hover {
-          transform: translateY(-5px);
-          border-color: var(--primary-light);
-          box-shadow: 0 15px 35px rgba(0,0,0,0.4);
-        }
-        .equip-icon-bg {
-          width: 48px;
-          height: 48px;
-          border-radius: 14px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-bottom: 20px;
-          border: 1px solid var(--border);
-        }
-        .equip-name {
-          font-family: 'DM Sans', sans-serif;
-          font-size: 1.05rem;
-          font-weight: 700;
-          color: var(--text);
-          margin-bottom: 8px;
-        }
-        .equip-meta {
-           font-size: 0.8rem;
-           color: var(--text3);
-           display: flex;
-           flex-direction: column;
-           gap: 6px;
-           margin-bottom: 20px;
-        }
-        .equip-status-tag {
-           margin-top: auto;
-           padding: 6px 14px;
-           border-radius: 10px;
-           font-size: 0.75rem;
-           font-weight: 800;
-           text-transform: uppercase;
-           display: flex;
-           align-items: center;
-           justify-content: center;
-           gap: 8px;
-        }
-        .stats-bar {
-           display: flex;
-           gap: 12px;
-           margin-bottom: 32px;
-           overflow-x: auto;
-           padding-bottom: 8px;
-        }
-        .stat-pill {
-           background: var(--bg2);
-           border: 1px solid var(--border);
-           padding: 10px 20px;
-           border-radius: 999px;
-           display: flex;
-           align-items: center;
-           gap: 12px;
-           white-space: nowrap;
-           cursor: pointer;
-           transition: all 0.2s;
-        }
-        .stat-pill:hover {
-           background: var(--bg3);
-           border-color: var(--text4);
-        }
-        .stat-pill.active {
-           background: var(--primary);
-           border-color: var(--primary);
-           color: #fff;
-        }
-      `}</style>
-
-      <div className="page-header">
+    <div style={{ animation: 'screen-entry 0.4s ease-out' }}>
+      
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 32 }}>
         <div>
-          <div className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg, #0ea5e9, #6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
-              <Ic.Wrench size={24} />
-            </div>
-            Critical Equipment Assets
+          <div style={{ fontSize: '0.75rem', fontWeight: 900, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 6 }}>Facility Resources</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: 15 }}>
+             <div style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg, #0ea5e9, #6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+               <Ic.Wrench size={24} color="#fff" />
+             </div>
+             Asset & Gear Hub
           </div>
-          <div className="page-subtitle">Monitoring and maintenance lifecycle management for medical hardware</div>
         </div>
       </div>
 
-      <div className="stats-bar">
+      {/* ── Status KPIs ── */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 32, overflowX: 'auto', paddingBottom: 8 }}>
         {[
-          { label: 'Total Assets', value: equipment.length, color: '#60a5fa', status: 'all', Icon: Ic.Wrench },
-          { label: 'Available', value: counts.available, color: '#34d399', status: 'available', Icon: Ic.Check },
-          { label: 'In Maintenance', value: counts.maintenance, color: '#fbbf24', status: 'maintenance', Icon: Ic.Wrench },
-          { label: 'Unavailable', value: counts.unavailable, color: '#f87171', status: 'unavailable', Icon: Ic.X },
+          { label: 'Total Assets', value: counts.total, color: '#6366f1', id: 'all', Icon: Ic.Inbox },
+          { label: 'Ready to Use', value: counts.available, color: '#10b981', id: 'available', Icon: Ic.Check },
+          { label: 'In Repair', value: counts.maintenance, color: '#f59e0b', id: 'maintenance', Icon: Ic.Wrench },
+          { label: 'Down', value: counts.unavailable, color: '#ef4444', id: 'unavailable', Icon: Ic.X },
         ].map(s => (
-          <div 
-            key={s.status} 
-            className={`stat-pill ${statusFilter === s.status ? 'active' : ''}`}
-            onClick={() => setStatusFilter(s.status)}
+          <button 
+            key={s.id}
+            onClick={() => setStatusFilter(s.id)}
+            style={{ 
+              all: 'unset', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, 
+              padding: '12px 20px', borderRadius: 16, background: statusFilter === s.id ? `${s.color}15` : 'rgba(255,255,255,0.03)',
+              border: `1px solid ${statusFilter === s.id ? s.color : 'rgba(255,255,255,0.06)'}`,
+              transition: 'all 0.2s', whiteSpace: 'nowrap'
+            }}
           >
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: statusFilter === s.status ? '#fff' : s.color }} />
-            <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{s.label}</span>
-            <span style={{ fontWeight: 800, opacity: 0.8 }}>{s.value}</span>
-          </div>
+            <div style={{ width: 32, height: 32, borderRadius: 10, background: `${s.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: s.color }}>
+              <s.Icon size={16} />
+            </div>
+            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: statusFilter === s.id ? '#fff' : '#94a3b8' }}>{s.label}</span>
+            <span style={{ fontSize: '1rem', fontWeight: 900, color: s.color }}>{s.value}</span>
+          </button>
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
-        <div style={{ position: 'relative', flex: 1, minWidth: 260 }}>
-          <Ic.Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text3)' }} />
+      {/* ── Search & Filters ── */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
+        <div style={{ position: 'relative', flex: 1, minWidth: 280 }}>
+          <Ic.Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
           <input 
             className="form-input" 
-            style={{ paddingLeft: 42, background: 'var(--surface)', height: 44 }} 
-            placeholder="Search assets by name or ID..." 
+            style={{ paddingLeft: 42, background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.1)', height: 48, borderRadius: 14 }} 
+            placeholder="Search by name, serial number or model..." 
             value={search} 
             onChange={e => setSearch(e.target.value)} 
           />
         </div>
         <SearchableSelect
           className="compact premium"
-          style={{ width: 240, height: 44 }}
+          style={{ width: 240, height: 48, borderRadius: 14 }}
           options={wards.map(w => ({ value: w.name, label: w.name }))}
           value={ward}
           onChange={setWard}
-          placeholder="Filter by Hospital Ward"
+          placeholder="Filter by Ward"
         />
       </div>
 
+      {/* ── Asset Grid ── */}
       {loading ? (
-        <div className="equipment-grid">
-           {Array.from({ length: 8 }).map((_, i) => (
-             <div key={i} className="skeleton-card" style={{ height: 220, borderRadius: 20 }} />
-           ))}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 24 }}>
+          {Array.from({ length: 8 }).map((_, i) => <div key={i} className="skeleton-card" style={{ height: 240, borderRadius: 24 }} />)}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="empty-state">
-           <Ic.Wrench size={48} style={{ opacity: 0.1, marginBottom: 20 }} />
-           <div className="empty-state-text">No equipment found matching criteria</div>
+        <div style={{ padding: 100, textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: 24, border: '1px dashed rgba(255,255,255,0.1)' }}>
+          <Ic.Wrench size={48} style={{ opacity: 0.1, marginBottom: 20 }} />
+          <div style={{ fontSize: '1rem', color: '#94a3b8' }}>No equipment found in the current view.</div>
         </div>
       ) : (
-        <div className="equipment-grid">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 24 }}>
           {filtered.map(e => {
             const cfg = getCfg(e.status);
-            const StatusIcon = cfg.Icon;
+            const isAvailable = e.status === 'available';
+            
             return (
-              <div key={e._id} className="equip-card-premium">
-                <div className="equip-icon-bg" style={{ background: cfg.bg, color: cfg.color, borderColor: cfg.border }}>
-                  <StatusIcon size={22} />
-                </div>
-                
-                <div className="equip-name">{e.name}</div>
-                
-                <div className="equip-meta">
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Ic.Hospital size={14} /> {e.ward || 'General Inventory'}
-                  </span>
-                  {e.lastMaintenance && (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <Ic.Clock size={14} /> Last Service: {new Date(e.lastMaintenance).toLocaleDateString()}
-                    </span>
+              <div key={e._id} style={{ 
+                background: 'rgba(30, 41, 59, 0.4)', border: '1px solid rgba(255,255,255,0.06)', 
+                borderRadius: 24, padding: '24px', display: 'flex', flexDirection: 'column',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', backdropFilter: 'blur(20px)',
+                position: 'relative', overflow: 'hidden'
+              }}
+              onMouseEnter={el => { el.currentTarget.style.transform = 'translateY(-6px)'; el.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; }}
+              onMouseLeave={el => { el.currentTarget.style.transform = 'translateY(0)'; el.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}
+              >
+                {/* Visual Accent */}
+                <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 4, background: cfg.color, opacity: 0.2 }} />
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 14, background: `${cfg.color}15`, border: `1px solid ${cfg.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: cfg.color }}>
+                    <cfg.Icon size={24} />
+                  </div>
+                  {isAvailable && (
+                    <button 
+                      onClick={() => handleReportFault(e)}
+                      style={{ 
+                        all: 'unset', cursor: 'pointer', fontSize: '0.65rem', fontWeight: 900, 
+                        color: '#f59e0b', background: 'rgba(245,158,11,0.1)', padding: '6px 12px', 
+                        borderRadius: 10, border: '1px solid rgba(245,158,11,0.2)',
+                        textTransform: 'uppercase', letterSpacing: '0.05em'
+                      }}
+                      onMouseEnter={el => { el.currentTarget.style.background = 'rgba(245,158,11,0.2)'; }}
+                      onMouseLeave={el => { el.currentTarget.style.background = 'rgba(245,158,11,0.1)'; }}
+                    >
+                      Report Fault
+                    </button>
                   )}
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Ic.Info size={14} /> Asset ID: {e._id.slice(-8).toUpperCase()}
-                  </span>
                 </div>
-                
-                <div 
-                   className="equip-status-tag" 
-                   style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}
-                >
-                  <StatusIcon size={14} />
-                  {e.status}
+
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#fff', marginBottom: 6 }}>{e.name}</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#94a3b8', fontSize: '0.8rem' }}>
+                      <Ic.Hospital size={14} /> <span>{e.ward || 'General Stock'}</span>
+                    </div>
+                    {e.serialNumber && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#64748b', fontSize: '0.75rem', fontWeight: 600 }}>
+                        <Ic.Award size={14} /> <span>SN: {e.serialNumber}</span>
+                      </div>
+                    )}
+                    {e.description && (
+                      <div style={{ fontSize: '0.78rem', color: '#64748b', lineHeight: 1.5, background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: 12 }}>
+                        {e.description}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ 
+                  marginTop: 20, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.05)',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                }}>
+                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: cfg.color, boxShadow: `0 0 10px ${cfg.color}` }} />
+                      <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#fff', textTransform: 'capitalize' }}>{cfg.label}</span>
+                   </div>
+                   {e.lastMaintenance && (
+                      <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Service: {new Date(e.lastMaintenance).toLocaleDateString()}</span>
+                   )}
                 </div>
               </div>
             );
           })}
         </div>
       )}
+
+      <style>{`
+        @keyframes screen-entry {
+          from { opacity: 0; transform: translateY(15px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }
-

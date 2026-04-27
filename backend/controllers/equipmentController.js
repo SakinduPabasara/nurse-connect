@@ -5,7 +5,7 @@ const VALID_STATUSES = ['available', 'maintenance', 'unavailable'];
 
 // @POST /api/equipment
 const addEquipment = async (req, res) => {
-  const { name, ward, status, lastMaintenance } = req.body;
+  const { name, ward, status, lastMaintenance, serialNumber, description } = req.body;
 
   // --- Validation ---
   if (!name || !ward) {
@@ -26,6 +26,8 @@ const addEquipment = async (req, res) => {
     const equipment = await Equipment.create({
       name: name.trim(),
       ward: ward.trim(),
+      serialNumber: serialNumber?.trim() || '',
+      description: description?.trim() || '',
       status: status || 'available',
       lastMaintenance: lastMaintenance || '',
       addedBy: req.user._id,
