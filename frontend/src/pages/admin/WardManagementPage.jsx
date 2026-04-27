@@ -192,10 +192,10 @@ export default function WardManagementPage() {
                                <div style={{ fontSize: '0.7rem', color: 'var(--text3)', fontWeight: 600 }}>ID: {w._id.slice(-6).toUpperCase()}</div>
                                <div style={{ display: 'flex', gap: 8 }}>
                                   <button className="btn btn-ghost btn-sm" onClick={() => { setEditId(w._id); setEditData({ name: w.name, description: w.description || "" }); }} style={{ color: 'var(--text2)' }}>
-                                     <Ic.Calendar size={16} />
+                                     <Ic.Edit size={16} />
                                   </button>
                                   <button className="btn btn-ghost btn-sm" onClick={() => handleDelete(w._id, w.name)} style={{ color: '#f43f5e' }}>
-                                     <Ic.Transfer size={16} />
+                                     <Ic.Trash size={16} />
                                   </button>
                                </div>
                             </div>
