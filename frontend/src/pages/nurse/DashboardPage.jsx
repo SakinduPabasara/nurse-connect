@@ -405,16 +405,25 @@ export default function DashboardPage() {
 
         <div style={{ display: 'flex', gap: 16, position: 'relative', zIndex: 1 }}>
           {[
-            { label: 'Total Logs', value: stats.total, color: THEME.primary },
-            { label: 'Coverage', value: stats.night, color: '#818cf8' },
-            { label: 'Physio-Match', value: readiness + '%', color: THEME.warning },
+            { label: 'Operational Duty', value: stats.total, color: THEME.primary, icon: Ic.Activity },
+            { label: 'Night Resilience', value: stats.night, color: '#818cf8', icon: Ic.Moon },
+            { label: 'Readiness Index', value: readiness + '%', color: THEME.warning, icon: Ic.Award },
           ].map(m => (
             <div key={m.label} style={{ 
-              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', 
-              borderRadius: 20, padding: '16px 24px', textAlign: 'center', backdropFilter: 'blur(10px)' 
-            }}>
-              <div style={{ fontSize: '1.8rem', fontWeight: 900, color: m.color, lineHeight: 1 }}>{m.value}</div>
-              <div style={{ fontSize: '0.6rem', fontWeight: 800, color: THEME.textDim, textTransform: 'uppercase', letterSpacing: '0.12em', marginTop: 6 }}>{m.label}</div>
+              background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', 
+              borderRadius: 22, padding: '20px 24px', textAlign: 'left', backdropFilter: 'blur(12px)',
+              minWidth: 165, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', cursor: 'default'
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = `${m.color}44`; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                 <div style={{ fontSize: '2rem', fontWeight: 900, color: m.color, lineHeight: 1, letterSpacing: '-0.02em' }}>{m.value}</div>
+                 <div style={{ padding: 8, borderRadius: 10, background: `${m.color}15`, display: 'flex' }}>
+                    <m.icon size={16} color={m.color} />
+                 </div>
+              </div>
+              <div style={{ fontSize: '0.68rem', fontWeight: 800, color: THEME.textDim, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{m.label}</div>
             </div>
           ))}
         </div>
