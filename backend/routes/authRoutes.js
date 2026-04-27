@@ -11,6 +11,7 @@ const {
   getAllUsers,
   getUserById,
   deleteUser,
+  updateUser,
   updateProfile,
   uploadAvatar,
   deleteAvatar,
@@ -56,5 +57,6 @@ router.get("/users", protect, adminOnly, getAllUsers); // Admin only — list al
 router.get("/nurses", protect, getVerifiedNurses);   // Any logged-in user — list verified nurses for swaps
 router.get("/users/:id", protect, adminOnly, getUserById); // Admin only — get one user
 router.delete("/users/:id", protect, adminOnly, deleteUser); // Admin only — delete a user
+router.put("/users/:id", protect, adminOnly, updateUser);    // Admin only — edit a user
 
 module.exports = router;

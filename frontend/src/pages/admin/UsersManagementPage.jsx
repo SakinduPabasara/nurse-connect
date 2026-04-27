@@ -17,6 +17,10 @@ export default function UsersManagementPage() {
   const [deletingId, setDeletingId] = useState("");
   const [hospitals, setHospitals] = useState([]);
   const [wards, setWards] = useState([]);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [editForm, setEditForm] = useState({ hospital: "", ward: "" });
+  const [updating, setUpdating] = useState(false);
 
   const fetchFilters = async () => {
     try {
@@ -79,6 +83,27 @@ export default function UsersManagementPage() {
     finally { setDeletingId(""); }
   };
 
+  const handleEditClick = (u) => {
+    setEditingUser(u);
+    setEditForm({ hospital: u.hospital || "", ward: u.ward || "" });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateSubmit = async () => {
+    if (!editingUser) return;
+    setUpdating(true);
+    try {
+      await API.put(`/auth/users/${editingUser._id}`, editForm);
+      setUsers(prev => prev.map(u => u._id === editingUser._id ? { ...u, ...editForm } : u));
+      notify.success("Identity updated.");
+      setIsEditModalOpen(false);
+    } catch (err) {
+      notify.error(err.response?.data?.message || "Failed to update identity.");
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   return (
     <div className="users-mgmt-container" style={{ animation: 'fadeIn 0.4s ease' }}>
       <style>{`
@@ -108,7 +133,7 @@ export default function UsersManagementPage() {
         .col-hospital { flex: 1.8; display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--text2); min-width: 180px; overflow: hidden; }
         .col-ward { flex: 1.5; display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--text2); min-width: 150px; overflow: hidden; }
         .col-meta { flex: 1; text-align: right; min-width: 130px; }
-        .col-actions { width: 50px; display: flex; justify-content: flex-end; }
+        .col-actions { flex: 0 0 100px; display: flex; justify-content: flex-end; gap: 8px; }
         .btn-delete-premium {
            width: 38px;
            height: 38px;
@@ -132,6 +157,26 @@ export default function UsersManagementPage() {
         .btn-delete-premium:disabled {
            opacity: 0.5;
            cursor: not-allowed;
+        }
+        .btn-edit-premium {
+           width: 38px;
+           height: 38px;
+           border-radius: 12px;
+           background: rgba(37,99,235,0.1);
+           border: 1px solid rgba(37,99,235,0.2);
+           color: var(--primary);
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           transition: all 0.2s ease;
+           cursor: pointer;
+           padding: 0;
+        }
+        .btn-edit-premium:hover {
+           background: var(--primary);
+           color: #fff;
+           transform: scale(1.05);
+           box-shadow: 0 4px 12px rgba(37,99,235,0.3);
         }
         .avatar-box {
            width: 54px;
@@ -259,19 +304,80 @@ export default function UsersManagementPage() {
 
                     <div className="col-actions">
                        {!isSelf && (
-                          <button 
-                             className="btn-delete-premium" 
-                             onClick={() => handleDelete(u)} 
-                             disabled={deletingId === u._id}
-                             title="Terminate Access"
-                          >
-                             {deletingId === u._id ? <div className="spinner" style={{ width: 14, height: 14 }} /> : <Ic.Trash size={18} />}
-                          </button>
+                          <>
+                             <button 
+                                className="btn-edit-premium" 
+                                onClick={() => handleEditClick(u)}
+                                title="Edit Identity"
+                             >
+                                <Ic.Edit size={18} />
+                             </button>
+                             <button 
+                                className="btn-delete-premium" 
+                                onClick={() => handleDelete(u)} 
+                                disabled={deletingId === u._id}
+                                title="Terminate Access"
+                             >
+                                {deletingId === u._id ? <div className="spinner" style={{ width: 14, height: 14 }} /> : <Ic.Trash size={18} />}
+                             </button>
+                          </>
                        )}
                     </div>
                  </div>
               )
            })}
+        </div>
+      )}
+
+      {/* ── Edit Modal ── */}
+      {isEditModalOpen && (
+        <div className="modal-overlay" style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+          backdropFilter: 'blur(8px)', zIndex: 10000, display: 'flex',
+          alignItems: 'center', justifyContent: 'center', padding: 20
+        }}>
+          <div className="modal-content" style={{
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            borderRadius: 24, width: '100%', maxWidth: 480, padding: 32,
+            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+            animation: 'modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+          }}>
+             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+                <div>
+                   <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text1)' }}>Edit Identity</div>
+                   <div style={{ fontSize: '0.85rem', color: 'var(--text3)', marginTop: 4 }}>Modify assignment for {editingUser?.name}</div>
+                </div>
+                <button onClick={() => setIsEditModalOpen(false)} style={{ all: 'unset', cursor: 'pointer', color: 'var(--text3)' }}><Ic.X size={20} /></button>
+             </div>
+
+             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <div className="form-group">
+                   <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Hospital Assignment</label>
+                   <SearchableSelect 
+                      options={hospitals.map(h => ({ value: h.name, label: h.name }))} 
+                      value={editForm.hospital} 
+                      onChange={val => setEditForm(prev => ({ ...prev, hospital: val }))}
+                      placeholder="Select Hospital"
+                   />
+                </div>
+                <div className="form-group">
+                   <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Ward Assignment</label>
+                   <SearchableSelect 
+                      options={wards.map(w => ({ value: w.name, label: w.name }))} 
+                      value={editForm.ward} 
+                      onChange={val => setEditForm(prev => ({ ...prev, ward: val }))}
+                      placeholder="Select Ward"
+                   />
+                </div>
+             </div>
+
+             <div style={{ display: 'flex', gap: 12, marginTop: 32 }}>
+                <button className="btn btn-ghost" onClick={() => setIsEditModalOpen(false)} style={{ flex: 1 }}>Cancel</button>
+                <button className="btn btn-primary" onClick={handleUpdateSubmit} disabled={updating} style={{ flex: 1, height: 48, borderRadius: 12, fontWeight: 700 }}>
+                   {updating ? <div className="spinner" style={{ width: 16, height: 16 }} /> : "Commit Changes"}
+                </button>
+             </div>
+          </div>
         </div>
       )}
     </div>

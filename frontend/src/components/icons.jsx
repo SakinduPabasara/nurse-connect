@@ -41,8 +41,8 @@ export const ExternalLink = ({ size, style }) => <Svg size={size} style={style}>
 export const Search    = ({ size, style }) => <Svg size={size} style={style}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></Svg>;
 export const Filter    = ({ size, style }) => <Svg size={size} style={style}><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></Svg>;
 export const Tag       = ({ size, style }) => <Svg size={size} style={style}><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" x2="7.01" y1="7" y2="7"/></Svg>;
-export const Trash     = ({ size, style }) => <Svg size={size} style={style}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></Svg>;
-export const Edit      = ({ size, style }) => <Svg size={size} style={style}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></Svg>;
+export const Trash     = ({ size, style }) => <Svg size={size} style={style}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></Svg>;
+export const Edit      = ({ size, style }) => <Svg size={size} style={style}><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></Svg>;
 export const Plus      = ({ size, style }) => <Svg size={size} style={style}><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></Svg>;
 export const Swap      = ({ size, style }) => <Svg size={size} style={style}><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></Svg>;
 export const Transfer  = ({ size, style }) => <Svg size={size} style={style}><path d="m9 18 6-6-6-6"/></Svg>;

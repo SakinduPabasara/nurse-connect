@@ -529,6 +529,38 @@ const getPublicStats = async (req, res) => {
   }
 };
 
+// ─────────────────────────────────────────────
+// @PUT /api/auth/users/:id  (Admin only — edit any user's info)
+// ─────────────────────────────────────────────
+const updateUser = async (req, res) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({ message: "Invalid user ID" });
+  }
+
+  const { hospital, ward, role, isVerified, name, telephone, nic } = req.body;
+
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Protect against self-demotion or self-unverification if needed, 
+    // but usually admins can manage themselves except for deletion.
+    
+    if (hospital !== undefined) user.hospital = hospital.trim();
+    if (ward !== undefined) user.ward = ward.trim();
+    if (role !== undefined) user.role = role;
+    if (isVerified !== undefined) user.isVerified = isVerified;
+    if (name !== undefined) user.name = name.trim();
+    if (telephone !== undefined) user.telephone = telephone.trim();
+    if (nic !== undefined) user.nic = nic.trim().toUpperCase();
+
+    await user.save();
+    res.json({ message: "User updated successfully", user });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 const getVerifiedNurses = async (req, res) => {
   try {
     const nurses = await User.find({ role: "nurse", isVerified: true })
@@ -549,6 +581,7 @@ module.exports = {
   getAllUsers,
   getUserById,
   deleteUser,
+  updateUser,
   updateProfile,
   uploadAvatar,
   deleteAvatar,
