@@ -82,27 +82,56 @@ export default function UsersManagementPage() {
   return (
     <div className="users-mgmt-container" style={{ animation: 'fadeIn 0.4s ease' }}>
       <style>{`
-        .user-grid {
-           display: grid;
-           grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-           gap: 16px;
-           margin-top: 24px;
-        }
-        .user-card-premium {
-           background: var(--surface);
-           border: 1px solid var(--border);
-           border-radius: 20px;
-           padding: 24px;
-           position: relative;
-           transition: all 0.25s ease;
+        .user-list {
            display: flex;
            flex-direction: column;
-           gap: 16px;
+           gap: 12px;
+           margin-top: 24px;
         }
-        .user-card-premium:hover {
-           transform: translateY(-4px);
+        .user-row-premium {
+           background: var(--surface);
+           border: 1px solid var(--border);
+           border-radius: 16px;
+           padding: 14px 24px;
+           display: flex;
+           align-items: center;
+           gap: 20px;
+           transition: all 0.2s ease;
+           position: relative;
+        }
+        .user-row-premium:hover {
            border-color: var(--primary-light);
-           box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+           background: var(--bg2);
+           transform: translateX(6px);
+        }
+        .col-main { flex: 2.2; display: flex; align-items: center; gap: 16px; min-width: 220px; }
+        .col-hospital { flex: 1.8; display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--text2); min-width: 180px; overflow: hidden; }
+        .col-ward { flex: 1.5; display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--text2); min-width: 150px; overflow: hidden; }
+        .col-meta { flex: 1; text-align: right; min-width: 130px; }
+        .col-actions { width: 50px; display: flex; justify-content: flex-end; }
+        .btn-delete-premium {
+           width: 38px;
+           height: 38px;
+           border-radius: 12px;
+           background: rgba(244,63,94,0.1);
+           border: 1px solid rgba(244,63,94,0.2);
+           color: #f43f5e;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           transition: all 0.2s ease;
+           cursor: pointer;
+           padding: 0;
+        }
+        .btn-delete-premium:hover {
+           background: #f43f5e;
+           color: #fff;
+           transform: scale(1.05);
+           box-shadow: 0 4px 12px rgba(244,63,94,0.3);
+        }
+        .btn-delete-premium:disabled {
+           opacity: 0.5;
+           cursor: not-allowed;
         }
         .avatar-box {
            width: 54px;
@@ -180,8 +209,8 @@ export default function UsersManagementPage() {
       </div>
 
       {loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16, marginTop: 24 }}>
-          {Array.from({ length: 6 }).map((_, i) => <div key={i} className="skeleton-card" style={{ height: 200, borderRadius: 20 }} />)}
+        <div className="user-list">
+          {Array.from({ length: 5 }).map((_, i) => <div key={i} className="skeleton-card" style={{ height: 72, borderRadius: 16 }} />)}
         </div>
       ) : filteredUsers.length === 0 ? (
         <div className="empty-state" style={{ marginTop: 60 }}>
@@ -189,46 +218,54 @@ export default function UsersManagementPage() {
           <div className="empty-state-text">No identity certificates found</div>
         </div>
       ) : (
-        <div className="user-grid">
+        <div className="user-list">
            {filteredUsers.map(u => {
               const isSelf = String(u._id) === String(loggedInUser?._id);
               return (
-                 <div key={u._id} className="user-card-premium">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                       <div className="avatar-box">
+                 <div key={u._id} className="user-row-premium">
+                    <div className="col-main">
+                       <div className="avatar-box" style={{ width: 44, height: 44, fontSize: '1rem', borderRadius: 12 }}>
                           {u.name?.charAt(0).toUpperCase()}
                        </div>
-                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+                       <div>
+                          <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text1)' }}>
+                             {u.name} {isSelf && <span style={{ color: 'var(--primary)', fontSize: '0.75rem' }}>(You)</span>}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text3)', marginTop: 2 }}>{u.nic} • {u.telephone || 'N/A'}</div>
+                       </div>
+                    </div>
+
+                    <div className="col-hospital">
+                       <Ic.Hospital size={15} style={{ color: 'var(--primary)', opacity: 0.8, flexShrink: 0 }} />
+                       <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.hospital || 'Not Assigned'}</span>
+                    </div>
+
+                    <div className="col-ward">
+                       <Ic.Calendar size={15} style={{ color: 'var(--primary)', opacity: 0.8, flexShrink: 0 }} />
+                       <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.ward || 'General Pool'}</span>
+                    </div>
+
+                    <div className="col-meta">
+                       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginBottom: 6 }}>
                           <span style={{ 
                              background: u.role === 'admin' ? 'rgba(251,191,36,0.1)' : 'rgba(37,99,235,0.1)', 
                              color: u.role === 'admin' ? '#fbbf24' : 'var(--primary)',
-                             padding: '4px 12px', borderRadius: 8, fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase'
+                             padding: '3px 10px', borderRadius: 6, fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase'
                           }}>{u.role}</span>
-                          {!u.isVerified && <span style={{ background: 'rgba(244,63,94,0.1)', color: '#f43f5e', padding: '2px 8px', borderRadius: 6, fontSize: '0.6rem', fontWeight: 700 }}>UNVERIFIED</span>}
+                          {!u.isVerified && <span style={{ background: 'rgba(244,63,94,0.1)', color: '#f43f5e', padding: '3px 8px', borderRadius: 6, fontSize: '0.6rem', fontWeight: 700 }}>PENDING</span>}
                        </div>
+                       <div style={{ fontSize: '0.7rem', color: 'var(--text3)' }}>{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}</div>
                     </div>
 
-                    <div>
-                       <div style={{ fontWeight: 800, fontSize: '1.05rem', marginBottom: 4 }}>{u.name} {isSelf && <span style={{ color: 'var(--primary)', fontSize: '0.75rem' }}>(You)</span>}</div>
-                       <div style={{ fontSize: '0.8rem', color: 'var(--text3)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <Ic.User size={12} /> {u.nic}
-                       </div>
-                    </div>
-
-                    <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16, display: 'grid', gap: 10 }}>
-                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.8rem', color: 'var(--text2)' }}>
-                          <Ic.Hospital size={14} style={{ color: 'var(--text3)' }} /> {u.hospital || 'N/A'}
-                       </div>
-                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.8rem', color: 'var(--text2)' }}>
-                          <Ic.Calendar size={14} style={{ color: 'var(--text3)' }} /> {u.ward || 'General Pool'}
-                       </div>
-                    </div>
-
-                    <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                       <div style={{ fontSize: '0.7rem', color: 'var(--text3)' }}>Joined {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A'}</div>
+                    <div className="col-actions">
                        {!isSelf && (
-                          <button className="btn btn-ghost" onClick={() => handleDelete(u)} disabled={deletingId === u._id} style={{ color: '#f43f5e', padding: '6px' }}>
-                             {deletingId === u._id ? '...' : <Ic.Transfer size={16} /> /* Using Transfer as a placeholder for "Delete/Purge" action look */}
+                          <button 
+                             className="btn-delete-premium" 
+                             onClick={() => handleDelete(u)} 
+                             disabled={deletingId === u._id}
+                             title="Terminate Access"
+                          >
+                             {deletingId === u._id ? <div className="spinner" style={{ width: 14, height: 14 }} /> : <Ic.Trash size={18} />}
                           </button>
                        )}
                     </div>
