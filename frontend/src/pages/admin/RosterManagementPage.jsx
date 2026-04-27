@@ -20,6 +20,7 @@ export default function RosterManagementPage() {
   const [wards, setWards] = useState([]);
   const [roster, setRoster] = useState([]);
   const [rosterWard, setRosterWard] = useState("");
+  const [rosterHospital, setRosterHospital] = useState(""); // NEW: hospital filter for view tab
   const [tab, setTab] = useState("view");
   const now = new Date();
   const [month, setMonth] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
@@ -87,16 +88,28 @@ export default function RosterManagementPage() {
      return Array.from({ length: new Date(y, m, 0).getDate() }, (_, i) => i + 1);
   }, [month]);
 
+  // Wards available in the view filter — when a hospital is selected, only show wards
+  // that have at least one nurse belonging to that hospital.
+  const viewWards = useMemo(() => {
+    if (!rosterHospital) return wards;
+    const wardsInHospital = new Set(
+      nurses.filter(n => n.hospital === rosterHospital).map(n => n.ward).filter(Boolean)
+    );
+    return wards.filter(w => wardsInHospital.has(w));
+  }, [rosterHospital, nurses, wards]);
+
   const groupedRoster = useMemo(() => {
      const g = {};
-     roster.forEach(r => {
-        const name = r.nurse?.name || r.nurseName || "Unknown Nurse";
-        if (!g[name]) g[name] = {};
-        const day = parseInt(r.date.split('-').pop());
-        g[name][day] = r;
-     });
+     roster
+       .filter(r => !rosterHospital || r.nurse?.hospital === rosterHospital) // hospital filter
+       .forEach(r => {
+         const name = r.nurse?.name || r.nurseName || "Unknown Nurse";
+         if (!g[name]) g[name] = {};
+         const day = parseInt(r.date.split('-').pop());
+         g[name][day] = r;
+       });
      return g;
-  }, [roster]);
+  }, [roster, rosterHospital]);
 
   return (
     <div className="roster-mgmt-container" style={{ animation: 'fadeIn 0.4s ease' }}>
@@ -187,8 +200,8 @@ export default function RosterManagementPage() {
           <div className="page-subtitle">Synchronized scheduling and clinical resource allocation</div>
         </div>
         
-        <button className={`btn ${tab === 'create' ? 'btn-outline' : 'btn-primary'}`} style={{ borderRadius: 12 }} onClick={() => setTab(tab === 'view' ? 'create' : 'view')}>
-           {tab === 'view' ? '+ Deployment Entry' : '← Workforce Roster'}
+        <button className={`btn ${tab === 'create' ? 'btn-outline' : 'btn-primary'}`} style={{ borderRadius: 12, justifyContent: 'center' }} onClick={() => setTab(tab === 'view' ? 'create' : 'view')}>
+           {tab === 'view' ? '+ Create Roster' : '← Back to Roster'}
         </button>
       </div>
 
@@ -254,16 +267,31 @@ export default function RosterManagementPage() {
                  {!form.month && <div style={{ fontSize: '0.8rem', color: 'var(--text3)', marginTop: 12 }}>Initialize planning cycle to activate day sequence.</div>}
               </div>
 
-              <button className="btn btn-primary" style={{ padding: '14px', borderRadius: 14, fontWeight: 700 }} type="submit" disabled={submitting}>
-                 {submitting ? 'Broadcasting...' : 'Broadcast Shift Sequence'}
+              <button className="btn btn-primary" style={{ padding: '14px', borderRadius: 14, fontWeight: 700, justifyContent: 'center' }} type="submit" disabled={submitting}>
+                 {submitting ? 'Assigning...' : 'Assign Duty'}
               </button>
            </form>
         </div>
       ) : (
         <>
           <div className="filter-bar-premium" style={{ background: 'var(--surface)', padding: 16, borderRadius: 18, border: '1px solid var(--border)', display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap', marginTop: 24 }}>
+             {/* Hospital filter */}
              <div style={{ width: 220 }}>
-                <SearchableSelect options={wards.map(w => ({ value: w, label: w }))} value={rosterWard} onChange={setRosterWard} placeholder="Global Ward Filter" />
+                <SearchableSelect
+                   options={hospitals.map(h => ({ value: h.name, label: h.name }))}
+                   value={rosterHospital}
+                   onChange={v => { setRosterHospital(v); setRosterWard(""); }}
+                   placeholder="Filter by Hospital"
+                />
+             </div>
+             {/* Ward filter — narrows to wards in selected hospital */}
+             <div style={{ width: 220 }}>
+                <SearchableSelect
+                   options={viewWards.map(w => ({ value: w, label: w }))}
+                   value={rosterWard}
+                   onChange={setRosterWard}
+                   placeholder="Filter by Ward"
+                />
              </div>
              <input type="month" className="form-input" value={month} onChange={e => setMonth(e.target.value)} style={{ width: 180, background: 'var(--bg2)', border: 'none', height: 48 }} />
              
