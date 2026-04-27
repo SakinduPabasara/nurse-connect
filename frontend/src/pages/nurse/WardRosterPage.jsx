@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import API from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import * as Ic from '../../components/icons';
+import SearchableSelect from '../../components/SearchableSelect';
 
 const SHIFT_META = {
   '7AM-1PM':  { color: '#60a5fa', bg: 'rgba(96,165,250,0.12)',  border: 'rgba(96,165,250,0.22)'  },
@@ -32,7 +33,13 @@ export default function WardRosterPage() {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
 
-  const wardOptions = [...new Set([...(user?.ward ? [user.ward] : []), ...wards])];
+  const wardOptions = useMemo(() => {
+    const unique = [...new Set([...(user?.ward ? [user.ward] : []), ...wards])].sort();
+    return [
+      { value: '__ALL__', label: 'All Departments' },
+      ...unique.map(w => ({ value: w, label: w }))
+    ];
+  }, [user?.ward, wards]);
 
   useEffect(() => {
     Promise.all([
@@ -95,7 +102,7 @@ export default function WardRosterPage() {
         flexWrap: 'wrap',
         gap: 20,
         position: 'relative',
-        overflow: 'hidden',
+        zIndex: 10,
       }}>
         <div style={{ position: 'absolute', top: -60, right: -40, width: 200, height: 200, background: 'radial-gradient(circle, rgba(6,182,212,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
@@ -120,21 +127,19 @@ export default function WardRosterPage() {
         </div>
 
         {/* Controls */}
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', zIndex: 1 }}>
-          <select
-            className="form-select"
-            style={{ width: 210, height: 44, background: 'rgba(6,13,28,0.7)' }}
-            value={ward}
-            onChange={e => setWard(e.target.value)}
-          >
-            <option value="">Select Ward</option>
-            <option value="__ALL__">All Departments</option>
-            {wardOptions.map(w => <option key={w} value={w}>{w}</option>)}
-          </select>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', zIndex: 1, alignItems: 'center' }}>
+          <div style={{ width: 220 }}>
+            <SearchableSelect
+              options={wardOptions}
+              value={ward}
+              onChange={setWard}
+              placeholder="Select Ward"
+            />
+          </div>
           <input
             type="month"
             className="form-input"
-            style={{ width: 160, height: 44, background: 'rgba(6,13,28,0.7)' }}
+            style={{ width: 160, height: 48, background: 'var(--input-bg, #1e293b)', border: '1px solid var(--border)' }}
             value={month}
             onChange={e => setMonth(e.target.value)}
           />
