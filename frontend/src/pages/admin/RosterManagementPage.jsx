@@ -203,18 +203,33 @@ export default function RosterManagementPage() {
                  </div>
                  <div className="form-group">
                     <label className="form-label">Assigned Personnel</label>
-                    <SearchableSelect options={nurses.filter(n => !selectedHospital || n.hospital === selectedHospital).map(n => ({ value: n._id, label: n.name }))} value={form.nurse} onChange={id => {
-                       const n = nurses.find(nu => nu._id === id);
-                       setForm({...form, nurse: id, ward: n?.ward || ""});
-                    }} placeholder="Target Nurse" />
+                    <SearchableSelect 
+                       options={
+                         nurses
+                           .filter(n => !selectedHospital || n.hospital === selectedHospital)
+                           .filter(n => !form.ward || n.ward === form.ward)
+                           .map(n => ({ value: n._id, label: n.name }))
+                       } 
+                       value={form.nurse} 
+                       onChange={id => {
+                         const n = nurses.find(nu => nu._id === id);
+                         setForm({...form, nurse: id, ward: form.ward || n?.ward || ""});
+                       }} 
+                       placeholder="Target Nurse" 
+                    />
                  </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20 }}>
-                 <div className="form-group">
-                    <label className="form-label">Deployment Block (Ward)</label>
-                    <SearchableSelect options={wards.map(w => ({ value: w, label: w }))} value={form.ward} onChange={v => setForm({...form, ward: v})} placeholder="Target Block" />
-                 </div>
+                  <div className="form-group">
+                     <label className="form-label">Deployment Block (Ward)</label>
+                     <SearchableSelect 
+                        options={wards.map(w => ({ value: w, label: w }))} 
+                        value={form.ward} 
+                        onChange={v => setForm({...form, ward: v, nurse: ""})} 
+                        placeholder="Target Block" 
+                     />
+                  </div>
                  <div className="form-group">
                     <label className="form-label">Planning Cycle (Month)</label>
                     <input className="form-input" type="month" value={form.month} onChange={e => setForm({...form, month: e.target.value})} style={{ background: 'var(--bg2)', height: 48 }} />
