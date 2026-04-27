@@ -401,6 +401,16 @@ const updateProfile = async (req, res) => {
       user.password = newPassword;
     }
 
+    if (req.user.role !== 'admin') {
+      // Prevent changing ward/hospital if you're a nurse
+      if (ward !== undefined && ward.trim() !== user.ward) {
+        return res.status(403).json({ message: "Clinical ward assignment is locked for your account level. Contact an administrator for re-assignment." });
+      }
+      if (hospital !== undefined && hospital.trim() !== user.hospital) {
+        return res.status(403).json({ message: "Medical center assignment is locked. Contact an administrator for institutional transfer." });
+      }
+    }
+
     if (name) user.name = name.trim();
     if (address) user.address = address.trim();
     if (telephone) user.telephone = telephone.trim();

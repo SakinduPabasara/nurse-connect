@@ -452,41 +452,50 @@ export default function ProfilePage() {
             <div className="form-row" style={{ marginTop: "24px" }}>
               <div className="form-group">
                 <label className="form-label">Assigned Hospital</label>
-                <SearchableSelect
-                  options={[
-                    ...hospitals.map(h => ({ value: h.name, label: h.name })),
-                    ...(!hospitals.some(h => h.name === personalForm.hospital) && personalForm.hospital 
-                        ? [{ value: personalForm.hospital, label: `${personalForm.hospital} (Current)` }] 
-                        : [])
-                  ]}
-                  value={personalForm.hospital}
-                  onChange={(val) => setPersonalForm({ ...personalForm, hospital: val })}
-                  placeholder="Search Hospital..."
-                />
+                {user?.role === 'admin' ? (
+                  <SearchableSelect
+                    options={[
+                      ...hospitals.map(h => ({ value: h.name, label: h.name })),
+                      ...(!hospitals.some(h => h.name === personalForm.hospital) && personalForm.hospital 
+                          ? [{ value: personalForm.hospital, label: `${personalForm.hospital} (Current)` }] 
+                          : [])
+                    ]}
+                    value={personalForm.hospital}
+                    onChange={(val) => setPersonalForm({ ...personalForm, hospital: val })}
+                    placeholder="Search Hospital..."
+                  />
+                ) : (
+                  <div className="form-input" style={{ background: 'rgba(8, 15, 30, 0.4)', border: '1px dashed var(--border)', color: 'var(--text3)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <ShieldIcon /> {personalForm.hospital}
+                  </div>
+                )}
               </div>
               <div className="form-group" style={{ flex: 2 }}>
-                <label className="form-label">Ward / Unit</label>
+                <label className="form-label">Ward / Unit {user?.role !== 'admin' && <span style={{ textTransform: 'none', fontWeight: 500, opacity: 0.6 }}>(System Managed)</span>}</label>
                 <div style={{ 
                   display: 'grid', 
                   gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', 
                   gap: 10,
-                  marginTop: 8
+                  marginTop: 8,
+                  opacity: user?.role === 'admin' ? 1 : 0.85
                 }}>
                   {wards.map(w => {
                     const active = personalForm.ward === w.name;
+                    const canEdit = user?.role === 'admin';
                     return (
                       <div 
                         key={w._id}
-                        onClick={() => setPersonalForm(p => ({ ...p, ward: w.name }))}
+                        onClick={() => canEdit && setPersonalForm(p => ({ ...p, ward: w.name }))}
                         style={{
                           background: active ? 'rgba(37,99,235,0.12)' : 'rgba(8,15,30,0.3)',
                           border: `1.5px solid ${active ? '#3b82f6' : 'rgba(148,163,184,0.1)'}`,
                           borderRadius: 10,
                           padding: '10px 8px',
-                          cursor: 'pointer',
+                          cursor: canEdit ? 'pointer' : 'default',
                           transition: 'all 0.2s',
                           textAlign: 'center',
-                          boxShadow: active ? '0 4px 12px rgba(37,99,235,0.15)' : 'none'
+                          boxShadow: active ? '0 4px 12px rgba(37,99,235,0.15)' : 'none',
+                          filter: !canEdit && !active ? 'grayscale(0.5) opacity(0.5)' : 'none'
                         }}
                       >
                         <div style={{ fontSize: '1rem', marginBottom: 4 }}>🏥</div>
@@ -507,6 +516,11 @@ export default function ProfilePage() {
                     </div>
                   )}
                 </div>
+                {user?.role !== 'admin' && (
+                  <p style={{ fontSize: '0.7rem', color: 'var(--text3)', marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <ShieldIcon /> Contact administration to request a clinical block transfer.
+                  </p>
+                )}
               </div>
             </div>
 
