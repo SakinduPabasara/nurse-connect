@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import API from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import useToastMessage from '../../hooks/useToastMessage';
@@ -13,11 +14,17 @@ const STATUS_CFG = {
 const SHIFTS = ['7AM-1PM', '1PM-7PM', '7AM-7PM', '7PM-7AM'];
 
 export default function SwapPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [swaps, setSwaps]           = useState([]);
-  const [nurses, setNurses]           = useState([]);
+  const [nurses, setNurses]         = useState([]);
+  const [myRoster, setMyRoster]     = useState([]);       // logged-in nurse's upcoming shifts
+  const [targetRoster, setTargetRoster] = useState([]);   // selected target nurse's upcoming shifts
+  const [loadingTarget, setLoadingTarget] = useState(false);
   const [loading, setLoading]       = useState(true);
   const [tab, setTab]               = useState('list');
-  const [form, setForm]             = useState({ targetNurse: '', requesterShiftDate: '', requesterShift: '7AM-1PM', targetShiftDate: '', targetShift: '7AM-1PM', reason: '' });
+  // form: myShiftId is the _id of the selected roster entry; targetShiftId is the target's entry _id
+  const [form, setForm]             = useState({ targetNurse: '', myShiftId: '', targetShiftId: '', reason: '' });
   const [submitting, setSubmitting]  = useState(false);
   const [msg, setMsg]               = useState({ type: '', text: '' });
   useToastMessage(msg);
@@ -34,10 +41,59 @@ export default function SwapPage() {
     catch { setNurses([]); }
   }, []);
 
+  const fetchMyRoster = useCallback(async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const { data } = await API.get('/roster/my');
+      // Only upcoming shifts
+      setMyRoster(Array.isArray(data) ? data.filter(s => s.date >= today) : []);
+    } catch { setMyRoster([]); }
+  }, []);
+
   useEffect(() => { 
     fetchSwaps();
     fetchNurses();
-  }, [fetchSwaps, fetchNurses]);
+    fetchMyRoster();
+  }, [fetchSwaps, fetchNurses, fetchMyRoster]);
+
+  // Read navigation state from My Roster page — auto-open new tab with pre-filled data
+  useEffect(() => {
+    const state = location.state;
+    if (!state) return;
+
+    if (state.autoTab === 'new') {
+      setTab('new');
+    }
+    if (state.prefill) {
+      // We prefill by finding the matching roster entry by date+shift
+      // myRoster may not be loaded yet, so store the prefill intent and handle in the myRoster effect
+      window.__swapPrefill = state.prefill;
+    }
+    // Clear the state from history so back-navigation doesn't re-trigger this
+    navigate(location.pathname, { replace: true, state: null });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Once myRoster is loaded, apply any pending prefill from navigation state
+  useEffect(() => {
+    if (!window.__swapPrefill || myRoster.length === 0) return;
+    const { requesterShiftDate, requesterShift } = window.__swapPrefill;
+    const match = myRoster.find(s => s.date === requesterShiftDate && s.shift === requesterShift);
+    if (match) {
+      setForm(prev => ({ ...prev, myShiftId: match._id }));
+    }
+    window.__swapPrefill = null;
+  }, [myRoster]);
+
+  // Fetch target nurse's roster when targetNurse changes
+  useEffect(() => {
+    if (!form.targetNurse) { setTargetRoster([]); return; }
+    setLoadingTarget(true);
+    setForm(prev => ({ ...prev, targetShiftId: '' }));
+    API.get(`/roster/nurse/${form.targetNurse}`)
+      .then(r => setTargetRoster(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setTargetRoster([]))
+      .finally(() => setLoadingTarget(false));
+  }, [form.targetNurse]);
 
   useEffect(() => {
     let socket;
@@ -53,14 +109,28 @@ export default function SwapPage() {
 
   const handleSubmit = async e => {
     e.preventDefault();
-    if (!form.targetNurse || !form.requesterShiftDate || !form.targetShiftDate) {
-      setMsg({ type: 'error', text: 'Please fill all required fields.' }); return;
+    if (!form.targetNurse || !form.myShiftId || !form.targetShiftId) {
+      setMsg({ type: 'error', text: 'Please select your shift and the target nurse shift.' }); return;
+    }
+    // Derive the actual date/shift from selected roster entry IDs
+    const myEntry     = myRoster.find(s => s._id === form.myShiftId);
+    const targetEntry = targetRoster.find(s => s._id === form.targetShiftId);
+    if (!myEntry || !targetEntry) {
+      setMsg({ type: 'error', text: 'Invalid shift selection. Please try again.' }); return;
     }
     setSubmitting(true);
     try {
-      await API.post('/swap', form);
+      await API.post('/swap', {
+        targetNurse:       form.targetNurse,
+        requesterShiftDate: myEntry.date,
+        requesterShift:    myEntry.shift,
+        targetShiftDate:   targetEntry.date,
+        targetShift:       targetEntry.shift,
+        reason:            form.reason,
+      });
       setMsg({ type: 'success', text: 'Swap request initiated successfully!' });
-      setForm({ targetNurse: '', requesterShiftDate: '', requesterShift: '7AM-1PM', targetShiftDate: '', targetShift: '7AM-1PM', reason: '' });
+      setForm({ targetNurse: '', myShiftId: '', targetShiftId: '', reason: '' });
+      setTargetRoster([]);
       fetchSwaps(); setTab('list');
     } catch (err) { setMsg({ type: 'error', text: err.response?.data?.message || 'Submission failed.' }); }
     finally { setSubmitting(false); }
@@ -219,10 +289,12 @@ export default function SwapPage() {
               <Ic.Transfer size={20} style={{ color: 'var(--primary-light)' }} />
               <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: '1.15rem', fontWeight: 800, color: 'var(--text)' }}>New Shift Exchange</div>
             </div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text3)' }}>Select a nurse from your ward and enter shift details to initiate an exchange</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text3)' }}>You can only swap shifts that are actually assigned to you by the admin</div>
           </div>
 
           <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 20 }}>
+
+            {/* Target Nurse */}
             <div className="form-group">
               <label className="form-label">Target Nurse (Your Ward Only)</label>
               <div style={{ position: 'relative' }}>
@@ -238,9 +310,7 @@ export default function SwapPage() {
                   {nurses
                     .filter(n => n._id !== user?._id && n.ward === user?.ward)
                     .map(n => (
-                      <option key={n._id} value={n._id}>
-                        {n.name}
-                      </option>
+                      <option key={n._id} value={n._id}>{n.name}</option>
                     ))
                   }
                 </select>
@@ -248,46 +318,102 @@ export default function SwapPage() {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+
+              {/* Your Shift — from real roster */}
               <div>
                 <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--primary-light)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#60a5fa' }} />
                   Your Shift
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Your Shift Date</label>
-                  <input className="form-input" type="date" name="requesterShiftDate" value={form.requesterShiftDate} onChange={handleChange} />
+                  <label className="form-label">Select Your Assigned Shift</label>
+                  {myRoster.length === 0 ? (
+                    <div style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: 10, fontSize: '0.8rem', color: 'var(--text3)' }}>
+                      No upcoming assigned shifts found.
+                    </div>
+                  ) : (
+                    <select
+                      className="form-select"
+                      name="myShiftId"
+                      value={form.myShiftId}
+                      onChange={handleChange}
+                    >
+                      <option value="">Choose your shift to offer...</option>
+                      {myRoster.map(s => (
+                        <option key={s._id} value={s._id}>
+                          {s.date} · {s.shift} · {s.ward}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Your Shift Period</label>
-                  <select className="form-select" name="requesterShift" value={form.requesterShift} onChange={handleChange}>
-                    {SHIFTS.map(s => <option key={s}>{s}</option>)}
-                  </select>
-                </div>
+                {/* Show selected entry details */}
+                {form.myShiftId && (() => {
+                  const e = myRoster.find(s => s._id === form.myShiftId);
+                  return e ? (
+                    <div style={{ padding: '8px 14px', background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.2)', borderRadius: 10, fontSize: '0.76rem', color: '#60a5fa', display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      <span style={{ fontWeight: 700 }}>{e.date} — {e.shift}</span>
+                      <span style={{ opacity: 0.8 }}>Ward: {e.ward}</span>
+                    </div>
+                  ) : null;
+                })()}
               </div>
+
+              {/* Target Shift — from target nurse's real roster */}
               <div>
                 <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#fb923c', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#fb923c' }} />
-                  Target Shift
+                  Target Nurse Shift
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Target Shift Date</label>
-                  <input className="form-input" type="date" name="targetShiftDate" value={form.targetShiftDate} onChange={handleChange} />
+                  <label className="form-label">Select Their Assigned Shift</label>
+                  {!form.targetNurse ? (
+                    <div style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: 10, fontSize: '0.8rem', color: 'var(--text3)' }}>
+                      Select a target nurse first.
+                    </div>
+                  ) : loadingTarget ? (
+                    <div style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: 10, fontSize: '0.8rem', color: 'var(--text3)' }}>
+                      Loading shifts...
+                    </div>
+                  ) : targetRoster.length === 0 ? (
+                    <div style={{ padding: '12px 16px', background: 'rgba(244,63,94,0.06)', border: '1px solid rgba(244,63,94,0.2)', borderRadius: 10, fontSize: '0.8rem', color: '#f87171' }}>
+                      This nurse has no upcoming assigned shifts.
+                    </div>
+                  ) : (
+                    <select
+                      className="form-select"
+                      name="targetShiftId"
+                      value={form.targetShiftId}
+                      onChange={handleChange}
+                    >
+                      <option value="">Choose their shift to receive...</option>
+                      {targetRoster.map(s => (
+                        <option key={s._id} value={s._id}>
+                          {s.date} · {s.shift} · {s.ward}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Target Shift Period</label>
-                  <select className="form-select" name="targetShift" value={form.targetShift} onChange={handleChange}>
-                    {SHIFTS.map(s => <option key={s}>{s}</option>)}
-                  </select>
-                </div>
+                {/* Show selected target entry details */}
+                {form.targetShiftId && (() => {
+                  const e = targetRoster.find(s => s._id === form.targetShiftId);
+                  return e ? (
+                    <div style={{ padding: '8px 14px', background: 'rgba(251,146,60,0.08)', border: '1px solid rgba(251,146,60,0.2)', borderRadius: 10, fontSize: '0.76rem', color: '#fb923c', display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      <span style={{ fontWeight: 700 }}>{e.date} — {e.shift}</span>
+                      <span style={{ opacity: 0.8 }}>Ward: {e.ward}</span>
+                    </div>
+                  ) : null;
+                })()}
               </div>
             </div>
 
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label">Context / Reason</label>
-              <textarea className="form-input form-textarea" style={{ minHeight: 100 }} name="reason" placeholder="Explain the context to your nurse..." value={form.reason} onChange={handleChange} />
+              <textarea className="form-input form-textarea" style={{ minHeight: 100 }} name="reason" placeholder="Explain the reason for this swap..." value={form.reason} onChange={handleChange} />
             </div>
 
-            <button className="btn btn-primary btn-full" style={{ padding: '14px', borderRadius: 14, fontSize: '0.92rem' }} type="submit" disabled={submitting}>
+            <button className="btn btn-primary btn-full" style={{ padding: '14px', borderRadius: 14, fontSize: '0.92rem' }} type="submit" disabled={submitting || !form.myShiftId || !form.targetShiftId}>
               {submitting ? (
                 <><span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} /> Processing...</>
               ) : 'Initiate Exchange Request'}

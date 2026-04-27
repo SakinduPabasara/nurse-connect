@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import API from '../../api/axios';
 import * as Ic from '../../components/icons';
 
@@ -20,6 +21,7 @@ const FILTER_BTNS = [
 ];
 
 export default function MyRosterPage() {
+  const navigate = useNavigate();
   const [shifts, setShifts]   = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter]   = useState('upcoming');
@@ -264,8 +266,40 @@ export default function MyRosterPage() {
                       </div>
                     </div>
 
-                    <div style={{ padding: '4px 12px', background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`, borderRadius: 8, fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0 }}>
-                      {s.shift}
+                    {/* Action area */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                      <div style={{ padding: '4px 12px', background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`, borderRadius: 8, fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        {s.shift}
+                      </div>
+                      {new Date(s.date) >= now && (
+                        <button
+                          onClick={() => navigate('/swap', {
+                            state: {
+                              autoTab: 'new',
+                              prefill: {
+                                requesterShiftDate: s.date,
+                                requesterShift: s.shift,
+                              }
+                            }
+                          })}
+                          style={{
+                            all: 'unset', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', gap: 5,
+                            padding: '5px 14px', borderRadius: 8,
+                            background: 'rgba(99,102,241,0.1)',
+                            border: '1px solid rgba(99,102,241,0.3)',
+                            color: '#818cf8', fontSize: '0.68rem', fontWeight: 800,
+                            textTransform: 'uppercase', letterSpacing: '0.05em',
+                            transition: 'all 0.18s ease',
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.2)'; e.currentTarget.style.borderColor = '#818cf8'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.1)'; e.currentTarget.style.borderColor = 'rgba(99,102,241,0.3)'; }}
+                          title="Request a shift swap for this duty"
+                        >
+                          <Ic.Swap size={12} />
+                          Swap
+                        </button>
+                      )}
                     </div>
                   </div>
                 );

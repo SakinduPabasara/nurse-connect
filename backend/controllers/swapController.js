@@ -35,6 +35,26 @@ const createSwap = async (req, res) => {
       return res.status(400).json({ message: 'You can only request a swap with a nurse in your same ward' });
     }
 
+    // Verify the requester actually owns that roster entry
+    const myRosterEntry = await Roster.findOne({
+      nurse: req.user._id,
+      date: requesterShiftDate,
+      shift: requesterShift,
+    });
+    if (!myRosterEntry) {
+      return res.status(400).json({ message: `You do not have a "${requesterShift}" shift assigned on ${requesterShiftDate}. You can only request a swap for your actual assigned shifts.` });
+    }
+
+    // Verify the target nurse actually owns that roster entry
+    const targetRosterEntry = await Roster.findOne({
+      nurse: targetNurse,
+      date: targetShiftDate,
+      shift: targetShift,
+    });
+    if (!targetRosterEntry) {
+      return res.status(400).json({ message: `The target nurse does not have a "${targetShift}" shift assigned on ${targetShiftDate}.` });
+    }
+
     const swap = await SwapRequest.create({
       requester: req.user._id,
       targetNurse,
@@ -102,7 +122,7 @@ const getAllSwaps = async (req, res) => {
   }
 };
 
-// @PUT /api/swap/:id  ← FIX 4: Now actually swaps the roster entries
+// @PUT /api/swap/:id
 const respondToSwap = async (req, res) => {
   const { status } = req.body;
 
@@ -120,8 +140,8 @@ const respondToSwap = async (req, res) => {
 
   try {
     const swap = await SwapRequest.findById(req.params.id)
-      .populate('requester', 'name')
-      .populate('targetNurse', 'name');
+      .populate('requester', 'name ward')
+      .populate('targetNurse', 'name ward');
 
     if (!swap) {
       return res.status(404).json({ message: 'Swap request not found' });
@@ -140,26 +160,38 @@ const respondToSwap = async (req, res) => {
     swap.status = status;
     await swap.save();
 
-    // ✅ FIX 4: If approved, update the actual roster entries
+    let rosterWarning = null;
+
+    // If approved, perform the actual roster swap
     if (status === 'approved') {
-      // Find requester's roster entry for that date
+      // Find the requester's roster entry matching their offered shift date
       const requesterRosterEntry = await Roster.findOne({
         nurse: swap.requester._id,
         date: swap.requesterShiftDate,
       });
 
-      // Find target nurse's roster entry for that date
+      // Find the target nurse's roster entry matching their offered shift date
       const targetRosterEntry = await Roster.findOne({
         nurse: swap.targetNurse._id,
         date: swap.targetShiftDate,
       });
 
-      // Swap the nurse fields in both roster entries
       if (requesterRosterEntry && targetRosterEntry) {
+        // Swap the nurse assignments on each entry
+        // Requester's slot → now assigned to target nurse (with target nurse's ward)
         requesterRosterEntry.nurse = swap.targetNurse._id;
+        requesterRosterEntry.ward  = swap.targetNurse.ward;
+
+        // Target's slot → now assigned to requester (with requester's ward)
         targetRosterEntry.nurse = swap.requester._id;
+        targetRosterEntry.ward  = swap.requester.ward;
+
         await requesterRosterEntry.save();
         await targetRosterEntry.save();
+      } else {
+        // Swap approved but no matching roster records — log for visibility
+        rosterWarning = 'Swap approved but no matching roster entries were found for the specified dates. Roster was not automatically updated.';
+        console.warn(`[SWAP] ${rosterWarning} Swap ID: ${swap._id}`);
       }
     }
 
@@ -174,8 +206,9 @@ const respondToSwap = async (req, res) => {
       getIO().to('user:' + swap.requester._id.toString()).emit('notification:new', notif);
       getIO().to('user:' + swap.requester._id.toString()).emit('swap:updated');
       if (status === 'approved') {
-         getIO().to('user:' + swap.requester._id.toString()).emit('roster:updated');
-         getIO().to('user:' + swap.targetNurse._id.toString()).emit('roster:updated');
+        // Trigger roster refresh on both sides so their My Roster updates in real-time
+        getIO().to('user:' + swap.requester._id.toString()).emit('roster:updated');
+        getIO().to('user:' + swap.targetNurse._id.toString()).emit('roster:updated');
       }
     } catch (err) {
       console.error('Socket emit error:', err.message);
@@ -184,6 +217,7 @@ const respondToSwap = async (req, res) => {
     res.json({
       message: `Swap request ${status} successfully`,
       swap,
+      ...(rosterWarning && { warning: rosterWarning }),
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

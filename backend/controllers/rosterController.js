@@ -370,6 +370,24 @@ const getDashboardSummary = async (req, res) => {
   }
 };
 
+// @GET /api/roster/nurse/:id  — fetch any nurse's upcoming roster (for swap form)
+const getNurseRoster = async (req, res) => {
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: 'Invalid nurse ID' });
+  }
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const roster = await Roster.find({
+      nurse: id,
+      date: { $gte: today },
+    }).sort({ date: 1 });
+    res.json(roster);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   createRoster,
   createRosterBulk,
@@ -379,4 +397,5 @@ module.exports = {
   getWardNames,
   deleteRoster,
   getDashboardSummary,
+  getNurseRoster,
 };
