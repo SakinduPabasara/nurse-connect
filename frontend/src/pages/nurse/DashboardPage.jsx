@@ -290,14 +290,18 @@ export default function DashboardPage() {
   const [notices, setNotices]   = useState([]);
   const [loading, setLoading]   = useState(true);
   const [stats, setStats]       = useState({ total: 0, morning: 0, night: 0, upcoming: 0 });
+  const [leaveDays, setLeaveDays] = useState(0);
+  const [pendingSwaps, setPendingSwaps] = useState(0);
 
   const fetchData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const [rRes, otRes, nRes] = await Promise.all([
+      const [rRes, otRes, nRes, lRes, sRes] = await Promise.all([
         API.get('/roster/my'),
         API.get('/overtime/my'),
-        API.get('/notices')
+        API.get('/notices'),
+        API.get('/leave/my'),
+        API.get('/swap/my')
       ]);
       const rList = Array.isArray(rRes.data) ? rRes.data : [];
       setShifts(rList);
@@ -309,6 +313,16 @@ export default function DashboardPage() {
       const night    = rList.filter(s => s.shift?.includes('7PM')).length;
       const upcoming = rList.filter(s => new Date(s.date) >= now).length;
       setStats({ total: rList.length, morning, night, upcoming });
+
+      // Calculate utilized leave days
+      const approvedLeaves = Array.isArray(lRes.data) ? lRes.data.filter(l => l.status === 'approved') : [];
+      const used = approvedLeaves.reduce((sum, l) =>
+        sum + (Math.ceil((new Date(l.endDate) - new Date(l.startDate)) / 86400000) + 1), 0);
+      setLeaveDays(Math.max(0, 24 - used));
+
+      // Count pending swaps
+      const pSwaps = Array.isArray(sRes.data) ? sRes.data.filter(s => s.status === 'pending').length : 0;
+      setPendingSwaps(pSwaps);
     } catch (err) {
       console.error('Core Dashboard Error:', err);
     } finally {
@@ -407,18 +421,24 @@ export default function DashboardPage() {
           {[
             { label: 'Operational Duty', value: stats.total, color: THEME.primary, icon: Ic.Activity },
             { label: 'Night Resilience', value: stats.night, color: '#818cf8', icon: Ic.Moon },
-            { label: 'Readiness Index', value: readiness + '%', color: THEME.warning, icon: Ic.Award },
+            { label: 'Extra Earnings', value: `LKR ${((otData.totalApprovedHours || 0) * 150).toLocaleString()}`, color: THEME.success, icon: Ic.TrendUp },
           ].map(m => (
             <div key={m.label} style={{ 
               background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', 
               borderRadius: 22, padding: '20px 24px', textAlign: 'left', backdropFilter: 'blur(12px)',
-              minWidth: 165, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', cursor: 'default'
+              minWidth: 175, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', cursor: 'default'
             }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = `${m.color}44`; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                 <div style={{ fontSize: '2rem', fontWeight: 900, color: m.color, lineHeight: 1, letterSpacing: '-0.02em' }}>{m.value}</div>
+                 <div style={{ 
+                   fontSize: m.value.toString().length > 8 ? '1.4rem' : '1.8rem', 
+                   fontWeight: 900, color: m.color, lineHeight: 1.2, letterSpacing: '-0.02em',
+                   display: 'flex', alignItems: 'baseline', gap: 4
+                 }}>
+                    {m.value}
+                 </div>
                  <div style={{ padding: 8, borderRadius: 10, background: `${m.color}15`, display: 'flex' }}>
                     <m.icon size={16} color={m.color} />
                  </div>
@@ -467,10 +487,21 @@ export default function DashboardPage() {
               alignItems: 'center', gap: 8, padding: '16px 8px', borderRadius: 16,
               background: 'rgba(255,255,255,0.03)', border: `1px solid rgba(255,255,255,0.06)`,
               backdropFilter: 'blur(10px)', transition: 'all 0.2s ease', textAlign: 'center',
+              position: 'relative'
             }}
             onMouseEnter={e => { e.currentTarget.style.background = `${color}12`; e.currentTarget.style.borderColor = `${color}44`; e.currentTarget.style.transform = 'translateY(-2px)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.transform = 'translateY(0)'; }}
           >
+            {label === 'Swap' && pendingSwaps > 0 && (
+              <div style={{ 
+                position: 'absolute', top: 12, right: 12, background: THEME.danger, 
+                color: '#fff', fontSize: '0.6rem', fontWeight: 900, width: 18, height: 18, 
+                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: `0 0 10px ${THEME.danger}66`, zIndex: 2
+              }}>
+                {pendingSwaps}
+              </div>
+            )}
             <div style={{ width: 40, height: 40, borderRadius: 12, background: `${color}15`, border: `1px solid ${color}33`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Icon size={18} color={color} />
             </div>
