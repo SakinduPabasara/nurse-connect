@@ -6,16 +6,22 @@ const mongoose = require('mongoose');
 const getWards = async (req, res) => {
   try {
     const filter = {};
-    if (req.query.hospital) filter.hospital = req.query.hospital;
+    if (req.query.hospital && req.query.hospital !== 'all') {
+      filter.hospital = req.query.hospital;
+    }
     
     const wards = await Ward.find(filter).sort({ name: 1 });
     
     // Get user counts for each ward
     const wardWithCounts = await Promise.all(
       wards.map(async (w) => {
-        const count = await User.countDocuments({ hospital: w.hospital, ward: w.name });
+        const count = await User.countDocuments({ 
+          hospital: w.hospital || "", 
+          ward: w.name 
+        });
         return {
           ...w.toObject(),
+          hospital: w.hospital || "Unassigned",
           userCount: count,
         };
       })

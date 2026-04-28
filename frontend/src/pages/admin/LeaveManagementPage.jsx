@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import API from "../../api/axios";
 import { notify } from "../../utils/toast";
+import SearchableSelect from "../../components/SearchableSelect";
 
 const statusColor = {
   pending: "badge-yellow",
@@ -10,8 +11,12 @@ const statusColor = {
 
 export default function LeaveManagementPage() {
   const [leaves, setLeaves] = useState([]);
+  const [hospitals, setHospitals] = useState([]);
+  const [wards, setWards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("pending");
+  const [hospitalFilter, setHospitalFilter] = useState("all");
+  const [wardFilter, setWardFilter] = useState("all");
 
   const fetchLeaves = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -26,24 +31,55 @@ export default function LeaveManagementPage() {
     }
   }, [filter]);
 
+  const fetchInitialData = useCallback(async () => {
+    try {
+      const [hRes, wRes] = await Promise.all([
+        API.get("/hospitals"),
+        API.get("/wards"),
+      ]);
+      setHospitals(hRes.data);
+      setWards(wRes.data);
+    } catch (err) {
+      console.error("Failed to fetch hospital/ward data");
+    }
+  }, []);
+
   useEffect(() => {
     fetchLeaves();
-  }, [fetchLeaves]);
+    fetchInitialData();
+  }, [fetchLeaves, fetchInitialData]);
+
+  const filteredWards = useMemo(() => {
+    if (hospitalFilter === "all") return wards;
+    return wards.filter((w) => w.hospital === hospitalFilter);
+  }, [wards, hospitalFilter]);
+
+  useEffect(() => {
+    setWardFilter("all");
+  }, [hospitalFilter]);
+
+  const filteredLeaves = useMemo(() => {
+    return leaves.filter((l) => {
+      const hMatch =
+        hospitalFilter === "all" || l.nurse?.hospital === hospitalFilter;
+      const wMatch = wardFilter === "all" || l.nurse?.ward === wardFilter;
+      return hMatch && wMatch;
+    });
+  }, [leaves, hospitalFilter, wardFilter]);
 
   useEffect(() => {
     let socket;
     import("../../utils/socketClient").then(({ getSocket }) => {
       socket = getSocket();
       if (!socket) return;
-      
+
       const onUpdate = () => fetchLeaves(true);
-      socket.on('leave:created', onUpdate);
-      socket.on('leave:updated', onUpdate);
+      socket.on("leave:created", onUpdate);
+      socket.on("leave:updated", onUpdate);
     });
 
     return () => {
       if (socket) {
-        socket.off('leave:created');
         socket.off('leave:updated');
       }
     };

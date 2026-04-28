@@ -12,7 +12,23 @@ dns.setServers(["1.1.1.1", "8.8.8.8"]); // This helps resolve the MongoDB SRV re
 dotenv.config();
 
 // Connect to MongoDB
-connectDB();
+connectDB().then(async () => {
+  // Simple migration to ensure all wards have a hospital
+  try {
+    const Ward = require("./models/Ward");
+    const Hospital = require("./models/Hospital");
+    const unassignedCount = await Ward.countDocuments({ hospital: { $exists: false } });
+    if (unassignedCount > 0) {
+      const firstHosp = await Hospital.findOne({});
+      if (firstHosp) {
+        console.log(`[MIGRATION] Assigning ${unassignedCount} unassigned wards to ${firstHosp.name}`);
+        await Ward.updateMany({ hospital: { $exists: false } }, { $set: { hospital: firstHosp.name } });
+      }
+    }
+  } catch (err) {
+    console.error("[MIGRATION_ERROR]", err);
+  }
+});
 
 const app = express();
 

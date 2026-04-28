@@ -530,12 +530,19 @@ const getPublicStats = async (req, res) => {
       User.countDocuments({ role: 'nurse', isVerified: true }),
       User.distinct('hospital', { role: 'nurse', isVerified: true }),
     ]);
+    
+    // Safely filter and count unique hospitals
+    const validHospitals = Array.isArray(hospitals) 
+      ? hospitals.filter(h => typeof h === 'string' && h.trim().length > 0)
+      : [];
+
     res.json({
-      nurses:    totalNurses,
-      hospitals: hospitals.filter(h => h && h.trim()).length,
+      nurses: totalNurses || 0,
+      hospitals: validHospitals.length,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('[AUTH_STATS_ERROR]', error);
+    res.status(500).json({ message: "Failed to load platform statistics" });
   }
 };
 

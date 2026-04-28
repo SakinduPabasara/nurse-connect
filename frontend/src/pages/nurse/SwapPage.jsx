@@ -297,24 +297,15 @@ export default function SwapPage() {
             {/* Target Nurse */}
             <div className="form-group">
               <label className="form-label">Target Nurse (Your Ward Only)</label>
-              <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text3)', display: 'flex', pointerEvents: 'none', zIndex: 1 }}><Ic.User size={16} /></span>
-                <select 
-                  className="form-select" 
-                  style={{ paddingLeft: 42 }} 
-                  name="targetNurse" 
-                  value={form.targetNurse} 
-                  onChange={handleChange}
-                >
-                  <option value="">Select a nurse to swap with...</option>
-                  {nurses
-                    .filter(n => n._id !== user?._id && n.ward === user?.ward)
-                    .map(n => (
-                      <option key={n._id} value={n._id}>{n.name}</option>
-                    ))
-                  }
-                </select>
-              </div>
+              <SearchableSelect
+                options={nurses
+                  .filter(n => n._id !== user?._id && n.ward === user?.ward)
+                  .map(n => ({ value: n._id, label: n.name }))
+                }
+                value={form.targetNurse}
+                onChange={val => setForm({ ...form, targetNurse: val })}
+                placeholder="Select a nurse to swap with..."
+              />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>

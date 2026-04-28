@@ -4,6 +4,7 @@ import useToastMessage from "../../hooks/useToastMessage";
 import { notify } from "../../utils/toast";
 import { useConfirm } from "../../context/ConfirmContext";
 import * as Ic from "../../components/icons";
+import SearchableSelect from "../../components/SearchableSelect";
 
 export default function WardManagementPage() {
   const confirm = useConfirm();
@@ -15,7 +16,8 @@ export default function WardManagementPage() {
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState({ type: "", text: "" });
   const [editId, setEditId] = useState(null);
-  const [editData, setEditData] = useState({ name: "", description: "" });
+  const [editData, setEditData] = useState({ name: "", description: "", hospital: "" });
+  const [hospitalFilter, setHospitalFilter] = useState("all");
   useToastMessage(msg);
 
   const fetchWards = async () => {
@@ -64,10 +66,15 @@ export default function WardManagementPage() {
     } catch (err) { notify.error("Decommissioning blocked."); }
   };
 
+  const filteredWards = useMemo(() => {
+     if (hospitalFilter === 'all') return wards;
+     return wards.filter(w => w.hospital === hospitalFilter);
+   }, [wards, hospitalFilter]);
+
   const stats = useMemo(() => ({
-     total: wards.length,
-     totalStaff: wards.reduce((s, w) => s + (w.userCount || 0), 0)
-  }), [wards]);
+     total: filteredWards.length,
+     totalStaff: filteredWards.reduce((s, w) => s + (w.userCount || 0), 0)
+  }), [filteredWards]);
 
   return (
     <div className="ward-mgmt-container" style={{ animation: 'fadeIn 0.4s ease' }}>
@@ -126,14 +133,24 @@ export default function WardManagementPage() {
           <div className="page-subtitle">Spatial governance and staff density management across medical blocks</div>
         </div>
         
-        <div style={{ display: 'flex', gap: 12 }}>
-           <div className="mini-stat" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '4px 16px', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Ic.User size={16} style={{ color: 'var(--primary)' }} />
-              <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>{stats.totalStaff} <span style={{ fontWeight: 400, color: 'var(--text3)' }}>Personnel</span></div>
-           </div>
-           <button className={`btn ${tab === 'add' ? 'btn-outline' : 'btn-primary'}`} style={{ borderRadius: 12 }} onClick={() => setTab(tab === 'list' ? 'add' : 'list')}>
-              {tab === 'list' ? '+ Commission New Ward' : '← Active Inventory'}
-           </button>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            {tab === 'list' && (
+              <div style={{ width: 220 }}>
+                <SearchableSelect
+                  options={[{ value: 'all', label: 'All Hospitals' }, ...hospitals.map(h => ({ value: h.name, label: h.name }))]}
+                  value={hospitalFilter}
+                  onChange={setHospitalFilter}
+                  placeholder="Filter by Hospital"
+                />
+              </div>
+            )}
+            <div className="mini-stat" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '4px 16px', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 10, height: 42 }}>
+               <Ic.User size={16} style={{ color: 'var(--primary)' }} />
+               <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>{stats.totalStaff} <span style={{ fontWeight: 400, color: 'var(--text3)' }}>Personnel</span></div>
+            </div>
+            <button className={`btn ${tab === 'add' ? 'btn-outline' : 'btn-primary'}`} style={{ borderRadius: 12, height: 42 }} onClick={() => setTab(tab === 'list' ? 'add' : 'list')}>
+               {tab === 'list' ? '+ Commission' : '← Back'}
+            </button>
         </div>
       </div>
 
@@ -143,10 +160,12 @@ export default function WardManagementPage() {
             <form onSubmit={handleAdd} style={{ display: 'grid', gap: 20 }}>
               <div className="form-group">
                  <label className="form-label">Parent Hospital</label>
-                 <select className="form-select" value={form.hospital} onChange={e => setForm({...form, hospital: e.target.value})} style={{ background: 'var(--bg2)', height: 48 }}>
-                    <option value="">Select Hospital...</option>
-                    {hospitals.map(h => <option key={h._id} value={h.name}>{h.name}</option>)}
-                 </select>
+                 <SearchableSelect
+                    options={hospitals.map(h => ({ value: h.name, label: h.name }))}
+                    value={form.hospital}
+                    onChange={val => setForm({...form, hospital: val})}
+                    placeholder="Select Hospital"
+                  />
               </div>
               <div className="form-group">
                  <label className="form-label">Scientific Ward Designation</label>
@@ -167,7 +186,7 @@ export default function WardManagementPage() {
              <div className="ward-bento-grid">
                 {Array.from({ length: 4 }).map((_, i) => <div key={i} className="skeleton-card" style={{ height: 240, borderRadius: 24 }} />)}
              </div>
-          ) : wards.length === 0 ? (
+          ) : filteredWards.length === 0 ? (
              <div className="empty-state" style={{ marginTop: 80 }}>
                 <div style={{ fontSize: '3rem', opacity: 0.2, marginBottom: 20 }}>🏥</div>
                 <div className="empty-state-text">No active medical wards found in the inventory</div>
@@ -175,12 +194,27 @@ export default function WardManagementPage() {
              </div>
           ) : (
              <div className="ward-bento-grid">
-                {wards.map(w => (
+                {filteredWards.map(w => (
                    <div key={w._id} className="ward-card-premium">
                       {editId === w._id ? (
                          <div style={{ display: 'grid', gap: 16 }}>
-                            <input className="form-input" value={editData.name} onChange={e => setEditData({...editData, name: e.target.value})} style={{ background: 'var(--bg3)' }} />
-                            <textarea className="form-input" value={editData.description} onChange={e => setEditData({...editData, description: e.target.value})} style={{ background: 'var(--bg3)', minHeight: 80 }} />
+                             <div className="form-group">
+                                <label className="form-label">Hospital</label>
+                                <SearchableSelect
+                                  options={hospitals.map(h => ({ value: h.name, label: h.name }))}
+                                  value={editData.hospital}
+                                  onChange={val => setEditData({ ...editData, hospital: val })}
+                                  placeholder="Select Hospital"
+                                />
+                             </div>
+                             <div className="form-group">
+                                <label className="form-label">Ward Name</label>
+                                <input className="form-input" value={editData.name} onChange={e => setEditData({...editData, name: e.target.value})} style={{ background: 'var(--bg3)' }} />
+                             </div>
+                             <div className="form-group">
+                                <label className="form-label">Description</label>
+                                <textarea className="form-input" value={editData.description} onChange={e => setEditData({...editData, description: e.target.value})} style={{ background: 'var(--bg3)', minHeight: 80 }} />
+                             </div>
                             <div style={{ display: 'flex', gap: 8 }}>
                                <button className="btn btn-primary btn-sm" onClick={() => handleUpdate(w._id)}>Apply</button>
                                <button className="btn btn-ghost btn-sm" onClick={() => setEditId(null)}>Cancel</button>
@@ -204,7 +238,7 @@ export default function WardManagementPage() {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border)', paddingTop: 20 }}>
                                <div style={{ fontSize: '0.7rem', color: 'var(--text3)', fontWeight: 600 }}>ID: {w._id.slice(-6).toUpperCase()}</div>
                                <div style={{ display: 'flex', gap: 8 }}>
-                                  <button className="btn btn-ghost btn-sm" onClick={() => { setEditId(w._id); setEditData({ name: w.name, description: w.description || "" }); }} style={{ color: 'var(--text2)' }}>
+                                  <button className="btn btn-ghost btn-sm" onClick={() => { setEditId(w._id); setEditData({ name: w.name, description: w.description || "", hospital: w.hospital }); }} style={{ color: 'var(--text2)' }}>
                                      <Ic.Edit size={16} />
                                   </button>
                                   <button className="btn btn-ghost btn-sm" onClick={() => handleDelete(w._id, w.name)} style={{ color: '#f43f5e' }}>

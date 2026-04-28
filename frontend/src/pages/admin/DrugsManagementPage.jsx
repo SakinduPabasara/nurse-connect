@@ -359,18 +359,23 @@ export default function DrugsManagementPage() {
               
               <div className="form-group">
                 <label className="form-label">Select Hospital</label>
-                <select className="form-select" value={form.hospital} onChange={e => setForm({...form, hospital: e.target.value, ward: ""})}>
-                  <option value="">Select Hospital</option>
-                  {hospitals.map(h => <option key={h._id} value={h.name}>{h.name}</option>)}
-                </select>
+                <SearchableSelect
+                  options={hospitals.map(h => ({ value: h.name, label: h.name }))}
+                  value={form.hospital}
+                  onChange={val => setForm({...form, hospital: val, ward: ""})}
+                  placeholder="Select Hospital"
+                />
               </div>
 
               <div className="form-group">
                 <label className="form-label">Assign to Ward</label>
-                <select className="form-select" value={form.ward} onChange={e => setForm({...form, ward: e.target.value})} disabled={!form.hospital}>
-                  <option value="">{form.hospital ? "Select Hospital Ward" : "Select Hospital First"}</option>
-                  {formWards.map(w => <option key={w._id} value={w.name}>{w.name}</option>)}
-                </select>
+                <SearchableSelect
+                  options={formWards.map(w => ({ value: w.name, label: w.name }))}
+                  value={form.ward}
+                  onChange={val => setForm({...form, ward: val})}
+                  placeholder={form.hospital ? "Select Hospital Ward" : "Select Hospital First"}
+                  disabled={!form.hospital}
+                />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
