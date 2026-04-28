@@ -13,23 +13,37 @@ export default function DrugsPage() {
   const [drugs, setDrugs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [wards, setWards] = useState([]);
+  const [hospitals, setHospitals] = useState([]);
+  const [hospital, setHospital] = useState('');
   const [ward, setWard] = useState('');
   const [search, setSearch] = useState('');
 
   const fetchDrugs = async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const url = ward ? `/drugs?ward=${encodeURIComponent(ward)}` : '/drugs';
+      let url = '/drugs?';
+      if (hospital) url += `hospital=${encodeURIComponent(hospital)}&`;
+      if (ward) url += `ward=${encodeURIComponent(ward)}&`;
       const { data } = await API.get(url);
       setDrugs(Array.isArray(data) ? data : []);
     } catch { setDrugs([]); } finally { if (!silent) setLoading(false); }
   };
 
-  useEffect(() => { fetchDrugs(); }, [ward]);
+  const filteredWards = useMemo(() => {
+    if (!hospital) return wards;
+    return wards.filter(w => w.hospital === hospital);
+  }, [wards, hospital]);
+
+  useEffect(() => { fetchDrugs(); }, [hospital, ward]);
 
   useEffect(() => {
+    API.get('/hospitals').then(r => setHospitals(Array.isArray(r.data) ? r.data : [])).catch(() => {});
     API.get('/wards').then(r => setWards(Array.isArray(r.data) ? r.data : [])).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    setWard('');
+  }, [hospital]);
 
   const filtered = useMemo(() => {
     return drugs.filter(d =>
@@ -102,11 +116,20 @@ export default function DrugsPage() {
         <select
           className="form-select"
           style={{ width: 240, height: 52, background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: 16 }}
+          value={hospital}
+          onChange={e => setHospital(e.target.value)}
+        >
+          <option value="">All Hospitals</option>
+          {hospitals.map(h => <option key={h._id} value={h.name}>{h.name}</option>)}
+        </select>
+        <select
+          className="form-select"
+          style={{ width: 240, height: 52, background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: 16 }}
           value={ward}
           onChange={e => setWard(e.target.value)}
         >
           <option value="">All Hospital Wards</option>
-          {wards.map(w => <option key={w._id} value={w.name}>{w.name}</option>)}
+          {filteredWards.map(w => <option key={w._id} value={w.name}>{w.name}</option>)}
         </select>
       </div>
 

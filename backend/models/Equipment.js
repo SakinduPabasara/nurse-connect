@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const equipmentSchema = new mongoose.Schema({
+  hospital: { type: String, required: true },
   name: { type: String, required: true },
   ward: { type: String, required: true },
   serialNumber: { type: String, default: '' },

@@ -314,8 +314,12 @@ export default function OvertimeManagementPage() {
   /* all-records table filters */
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [hospitalFilter, setHospitalFilter] = useState('all');
+  const [wardFilter, setWardFilter] = useState('all');
   const [nurseFilter, setNurseFilter] = useState('all');
   const [monthFilter, setMonthFilter] = useState('all');
+  const [hospitals, setHospitals] = useState([]);
+  const [wards, setWards] = useState([]);
 
   /* ── Fetch all OT records ── */
   const fetchRecords = useCallback(async (silent = false) => {
@@ -330,7 +334,20 @@ export default function OvertimeManagementPage() {
     }
   }, []);
 
-  useEffect(() => { fetchRecords(); }, [fetchRecords]);
+  useEffect(() => { 
+    fetchRecords(); 
+    API.get('/hospitals').then(r => setHospitals(r.data || [])).catch(() => {});
+    API.get('/wards').then(r => setWards(r.data || [])).catch(() => {});
+  }, [fetchRecords]);
+
+  const filteredWards = useMemo(() => {
+    if (hospitalFilter === 'all') return wards;
+    return wards.filter(w => w.hospital === hospitalFilter);
+  }, [wards, hospitalFilter]);
+
+  useEffect(() => {
+    setWardFilter("all");
+  }, [hospitalFilter]);
 
   useEffect(() => {
     let socket;
@@ -402,15 +419,15 @@ export default function OvertimeManagementPage() {
   const filteredRecords = useMemo(() => {
     return allRecords.filter((r) => {
       const q = search.toLowerCase();
-      const matchSearch = !search ||
-        (r.nurse?.name || '').toLowerCase().includes(q) ||
-        (r.reason || '').toLowerCase().includes(q);
-      const matchStatus = statusFilter === 'all' || r.status === statusFilter;
-      const matchNurse  = nurseFilter  === 'all' || r.nurse?._id === nurseFilter;
-      const matchMonth  = monthFilter  === 'all' || fmtMonthKey(r.date) === monthFilter;
-      return matchSearch && matchStatus && matchNurse && matchMonth;
+      const matchSearch   = !search || (r.nurse?.name || '').toLowerCase().includes(q) || (r.reason || '').toLowerCase().includes(q);
+      const matchHospital = hospitalFilter === 'all' || r.nurse?.hospital === hospitalFilter;
+      const matchWard     = wardFilter === 'all' || r.nurse?.ward === wardFilter;
+      const matchStatus   = statusFilter === 'all' || r.status === statusFilter;
+      const matchNurse    = nurseFilter  === 'all' || r.nurse?._id === nurseFilter;
+      const matchMonth    = monthFilter  === 'all' || fmtMonthKey(r.date) === monthFilter;
+      return matchSearch && matchHospital && matchWard && matchStatus && matchNurse && matchMonth;
     }).sort((a, b) => (a.date < b.date ? 1 : -1));
-  }, [allRecords, search, statusFilter, nurseFilter, monthFilter]);
+  }, [allRecords, search, hospitalFilter, wardFilter, statusFilter, nurseFilter, monthFilter]);
 
   /* ── Review handler (called from modal) ── */
   const handleReview = async (recordId, status, adminNote, approvedAmount) => {
@@ -758,6 +775,14 @@ export default function OvertimeManagementPage() {
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
+              <select className="ot-a-filter-select" value={hospitalFilter} onChange={(e) => setHospitalFilter(e.target.value)}>
+                <option value="all">All Hospitals</option>
+                {hospitals.map((h) => <option key={h._id} value={h.name}>{h.name}</option>)}
+              </select>
+              <select className="ot-a-filter-select" value={wardFilter} onChange={(e) => setWardFilter(e.target.value)}>
+                <option value="all">All Wards</option>
+                {filteredWards.map((w) => <option key={w._id} value={w.name}>{w.name}</option>)}
+              </select>
               <select className="ot-a-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
                 <option value="all">All Statuses</option>
                 <option value="pending">⏳ Pending</option>
@@ -772,8 +797,8 @@ export default function OvertimeManagementPage() {
                 <option value="all">All Months</option>
                 {monthOptions.map((m) => <option key={m} value={m}>{m}</option>)}
               </select>
-              {(search || statusFilter !== 'all' || nurseFilter !== 'all' || monthFilter !== 'all') && (
-                <button className="btn btn-ghost btn-sm" onClick={() => { setSearch(''); setStatusFilter('all'); setNurseFilter('all'); setMonthFilter('all'); }}>
+              {(search || hospitalFilter !== 'all' || wardFilter !== 'all' || statusFilter !== 'all' || nurseFilter !== 'all' || monthFilter !== 'all') && (
+                <button className="btn btn-ghost btn-sm" onClick={() => { setSearch(''); setHospitalFilter('all'); setWardFilter('all'); setStatusFilter('all'); setNurseFilter('all'); setMonthFilter('all'); }}>
                   Clear Filters
                 </button>
               )}

@@ -41,6 +41,20 @@ export default function UsersManagementPage() {
 
   useEffect(() => { fetchUsers(); fetchFilters(); }, []);
 
+  const filteredWards = useMemo(() => {
+    if (!filterHospital) return wards;
+    return wards.filter(w => w.hospital === filterHospital);
+  }, [wards, filterHospital]);
+
+  const editModalWards = useMemo(() => {
+    if (!editForm.hospital) return [];
+    return wards.filter(w => w.hospital === editForm.hospital);
+  }, [wards, editForm.hospital]);
+
+  useEffect(() => {
+    setFilterWard("");
+  }, [filterHospital]);
+
   const filteredUsers = useMemo(() => {
     let list = users;
     if (filterHospital) list = list.filter(u => u.hospital === filterHospital);
@@ -245,10 +259,10 @@ export default function UsersManagementPage() {
             <input className="form-input" placeholder="Query name, NIC, or phone..." value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: 44, background: 'var(--bg2)', border: 'none' }} />
          </div>
          <div style={{ width: 220 }}>
-            <SearchableSelect options={hospitals.map(h => ({ value: h.name, label: h.name }))} value={filterHospital} onChange={setFilterHospital} placeholder="Global Hospitals" />
+            <SearchableSelect options={hospitals.map(h => ({ value: h.name, label: h.name }))} value={filterHospital} onChange={setFilterHospital} placeholder="Filter Hospital" />
          </div>
          <div style={{ width: 200 }}>
-            <SearchableSelect options={wards.map(w => ({ value: w.name, label: w.name }))} value={filterWard} onChange={setFilterWard} placeholder="Global Wards" />
+            <SearchableSelect options={filteredWards.map(w => ({ value: w.name, label: w.name }))} value={filterWard} onChange={setFilterWard} placeholder={filterHospital ? "Filter Ward" : "Select Hospital First"} disabled={!filterHospital} />
          </div>
          <button className="btn btn-ghost" onClick={() => {setSearch(""); setFilterHospital(""); setFilterWard("");}} style={{ color: 'var(--text3)' }}>Reset</button>
       </div>
@@ -356,17 +370,18 @@ export default function UsersManagementPage() {
                    <SearchableSelect 
                       options={hospitals.map(h => ({ value: h.name, label: h.name }))} 
                       value={editForm.hospital} 
-                      onChange={val => setEditForm(prev => ({ ...prev, hospital: val }))}
+                      onChange={val => setEditForm(prev => ({ ...prev, hospital: val, ward: "" }))}
                       placeholder="Select Hospital"
                    />
                 </div>
                 <div className="form-group">
                    <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 8, display: 'block' }}>Ward Assignment</label>
                    <SearchableSelect 
-                      options={wards.map(w => ({ value: w.name, label: w.name }))} 
+                      options={editModalWards.map(w => ({ value: w.name, label: w.name }))} 
                       value={editForm.ward} 
                       onChange={val => setEditForm(prev => ({ ...prev, ward: val }))}
-                      placeholder="Select Ward"
+                      placeholder={editForm.hospital ? "Select Ward" : "Select Hospital First"}
+                      disabled={!editForm.hospital}
                    />
                 </div>
              </div>

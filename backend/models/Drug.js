@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const drugSchema = new mongoose.Schema({
+  hospital: { type: String, required: true },
   name: { type: String, required: true },
   ward: { type: String, required: true },
   quantity: { type: Number, required: true },

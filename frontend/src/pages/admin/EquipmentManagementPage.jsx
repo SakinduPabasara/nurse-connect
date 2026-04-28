@@ -16,7 +16,9 @@ export default function EquipmentManagementPage() {
   const [equipment, setEquipment] = useState([]);
   const [loading, setLoading] = useState(true);
   const [wards, setWards] = useState([]);
+  const [hospitals, setHospitals] = useState([]);
   const [search, setSearch] = useState("");
+  const [hospitalFilter, setHospitalFilter] = useState("all");
   const [wardFilter, setWardFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   
@@ -24,6 +26,7 @@ export default function EquipmentManagementPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [form, setForm] = useState({
+    hospital: "",
     name: "",
     ward: "",
     serialNumber: "",
@@ -50,8 +53,23 @@ export default function EquipmentManagementPage() {
 
   useEffect(() => {
     fetchEq();
+    API.get("/hospitals").then(r => setHospitals(Array.isArray(r.data) ? r.data : [])).catch(() => {});
     API.get("/wards").then(r => setWards(Array.isArray(r.data) ? r.data : [])).catch(() => {});
   }, []);
+
+  const filteredWards = useMemo(() => {
+    if (hospitalFilter === 'all') return wards;
+    return wards.filter(w => w.hospital === hospitalFilter);
+  }, [wards, hospitalFilter]);
+
+  const formWards = useMemo(() => {
+    if (!form.hospital) return [];
+    return wards.filter(w => w.hospital === form.hospital);
+  }, [wards, form.hospital]);
+
+  useEffect(() => {
+    setWardFilter("all");
+  }, [hospitalFilter]);
 
   const stats = useMemo(() => {
     const total = equipment.length;
@@ -68,17 +86,19 @@ export default function EquipmentManagementPage() {
 
   const filtered = useMemo(() => {
     return equipment.filter(e => {
-      const matchSearch = !search || e.name.toLowerCase().includes(search.toLowerCase()) || (e.serialNumber || '').toLowerCase().includes(search.toLowerCase());
-      const matchWard   = wardFilter === 'all' || e.ward === wardFilter;
-      const matchStatus = statusFilter === 'all' || e.status === statusFilter;
-      return matchSearch && matchWard && matchStatus;
+      const matchSearch   = !search || e.name.toLowerCase().includes(search.toLowerCase()) || (e.serialNumber || '').toLowerCase().includes(search.toLowerCase());
+      const matchHospital = hospitalFilter === 'all' || e.hospital === hospitalFilter;
+      const matchWard     = wardFilter === 'all' || e.ward === wardFilter;
+      const matchStatus   = statusFilter === 'all' || e.status === statusFilter;
+      return matchSearch && matchHospital && matchWard && matchStatus;
     });
-  }, [equipment, search, wardFilter, statusFilter]);
+  }, [equipment, search, hospitalFilter, wardFilter, statusFilter]);
 
   const openDrawer = (item = null) => {
     if (item) {
       setEditingItem(item);
       setForm({
+        hospital: item.hospital,
         name: item.name,
         ward: item.ward,
         serialNumber: item.serialNumber || "",
@@ -88,15 +108,15 @@ export default function EquipmentManagementPage() {
       });
     } else {
       setEditingItem(null);
-      setForm({ name: "", ward: "", serialNumber: "", description: "", status: "available", lastMaintenance: "" });
+      setForm({ hospital: "", name: "", ward: "", serialNumber: "", description: "", status: "available", lastMaintenance: "" });
     }
     setIsDrawerOpen(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.ward) {
-      notify.error("Equipment name and ward are mandatory.");
+    if (!form.hospital || !form.name || !form.ward) {
+      notify.error("Hospital, name and ward are mandatory.");
       return;
     }
     setSubmitting(true);
@@ -201,11 +221,20 @@ export default function EquipmentManagementPage() {
         <select 
           className="form-select" 
           style={{ width: 180, background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }}
+          value={hospitalFilter}
+          onChange={e => setHospitalFilter(e.target.value)}
+        >
+          <option value="all">All Hospitals</option>
+          {hospitals.map(h => <option key={h._id} value={h.name}>{h.name}</option>)}
+        </select>
+        <select 
+          className="form-select" 
+          style={{ width: 180, background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }}
           value={wardFilter}
           onChange={e => setWardFilter(e.target.value)}
         >
           <option value="all">All Wards</option>
-          {wards.map(w => <option key={w._id} value={w.name}>{w.name}</option>)}
+          {filteredWards.map(w => <option key={w._id} value={w.name}>{w.name}</option>)}
         </select>
         <select 
           className="form-select" 
@@ -263,7 +292,7 @@ export default function EquipmentManagementPage() {
                 <div style={{ marginBottom: 20 }}>
                   <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fff', marginBottom: 4 }}>{e.name}</div>
                   <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    SN: {e.serialNumber || 'N/A'} • {e.ward}
+                    SN: {e.serialNumber || 'N/A'} • {e.hospital} • {e.ward}
                   </div>
                 </div>
 
@@ -325,12 +354,19 @@ export default function EquipmentManagementPage() {
                 <label className="form-label">Asset Name</label>
                 <input className="form-input" placeholder="e.g. Philips Ventilator X3" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
               </div>
+              <div className="form-group">
+                <label className="form-label">Parent Hospital</label>
+                <select className="form-select" value={form.hospital} onChange={e => setForm({...form, hospital: e.target.value, ward: ""})}>
+                  <option value="">Select Hospital</option>
+                  {hospitals.map(h => <option key={h._id} value={h.name}>{h.name}</option>)}
+                </select>
+              </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                 <div className="form-group">
                   <label className="form-label">Ward / Location</label>
-                  <select className="form-select" value={form.ward} onChange={e => setForm({...form, ward: e.target.value})}>
-                    <option value="">Select Ward</option>
-                    {wards.map(w => <option key={w._id} value={w.name}>{w.name}</option>)}
+                  <select className="form-select" value={form.ward} onChange={e => setForm({...form, ward: e.target.value})} disabled={!form.hospital}>
+                    <option value="">{form.hospital ? "Select Ward" : "Select Hospital First"}</option>
+                    {formWards.map(w => <option key={w._id} value={w.name}>{w.name}</option>)}
                   </select>
                 </div>
                 <div className="form-group">

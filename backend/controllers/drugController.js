@@ -3,11 +3,11 @@ const mongoose = require('mongoose');
 
 // @POST /api/drugs
 const addDrug = async (req, res) => {
-  const { name, ward, quantity, unit, expiryDate } = req.body;
+  const { hospital, name, ward, quantity, unit, expiryDate } = req.body;
 
   // --- Validation ---
-  if (!name || !ward || quantity === undefined || !expiryDate) {
-    return res.status(400).json({ message: 'Please provide name, ward, quantity, and expiryDate' });
+  if (!hospital || !name || !ward || quantity === undefined || !expiryDate) {
+    return res.status(400).json({ message: 'Please provide hospital, name, ward, quantity, and expiryDate' });
   }
   if (isNaN(quantity) || Number(quantity) < 0) {
     return res.status(400).json({ message: 'Quantity must be a non-negative number' });
@@ -20,6 +20,7 @@ const addDrug = async (req, res) => {
 
   try {
     const drug = await Drug.create({
+      hospital: hospital.trim(),
       name: name.trim(),
       ward: ward.trim(),
       quantity: Number(quantity),
@@ -39,6 +40,7 @@ const addDrug = async (req, res) => {
 const getDrugs = async (req, res) => {
   try {
     const filter = {};
+    if (req.query.hospital) filter.hospital = req.query.hospital;
     if (req.query.ward) filter.ward = req.query.ward;
 
     const drugs = await Drug.find(filter)

@@ -205,6 +205,15 @@ export default function RegisterPage() {
     API.get('/hospitals').then(r => setHospitals(Array.isArray(r.data) ? r.data : [])).catch(() => setHospitals([]));
   }, []);
 
+  const filteredWards = useMemo(() => {
+    if (!form.hospital) return [];
+    return wards.filter(w => w.hospital === form.hospital);
+  }, [wards, form.hospital]);
+
+  useEffect(() => {
+    if (form.hospital) set('ward', '');
+  }, [form.hospital]);
+
   const set = useCallback((name, value) => {
     setForm(f => ({ ...f, [name]: value }));
     if (errors[name]) setErrors(e => ({ ...e, [name]: '' }));
@@ -503,7 +512,7 @@ export default function RegisterPage() {
                         padding: '4px',
                         marginBottom: 8
                       }}>
-                        {wards.map(w => {
+                        {filteredWards.map(w => {
                           const active = form.ward === w.name;
                           return (
                             <div 
@@ -531,10 +540,10 @@ export default function RegisterPage() {
                         })}
                       </div>
                       
-                      {wards.length === 0 && (
+                      {filteredWards.length === 0 && (
                         <div style={{ background: 'rgba(245,158,11,0.06)', border: '1px dashed rgba(245,158,11,0.25)', borderRadius: 11, padding: '16px', textAlign: 'center' }}>
                            <span style={{ fontSize: '0.78rem', color: 'rgba(245,158,11,0.7)' }}>
-                             ⚠️ No wards configured yet. Contact your administrator.
+                             {form.hospital ? '⚠️ No wards configured for this hospital.' : '👈 Please select a hospital first.'}
                            </span>
                         </div>
                       )}

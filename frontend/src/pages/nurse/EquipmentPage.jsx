@@ -18,6 +18,8 @@ export default function EquipmentPage() {
   const [equipment, setEquipment] = useState([]);
   const [loading, setLoading] = useState(true);
   const [wards, setWards] = useState([]);
+  const [hospitals, setHospitals] = useState([]);
+  const [hospital, setHospital] = useState('');
   const [ward, setWard] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -25,17 +27,29 @@ export default function EquipmentPage() {
   const fetchEquipment = async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const url = ward ? `/equipment?ward=${encodeURIComponent(ward)}` : '/equipment';
+      let url = '/equipment?';
+      if (hospital) url += `hospital=${encodeURIComponent(hospital)}&`;
+      if (ward) url += `ward=${encodeURIComponent(ward)}&`;
       const { data } = await API.get(url);
       setEquipment(Array.isArray(data) ? data : []);
     } catch { setEquipment([]); } finally { if (!silent) setLoading(false); }
   };
 
-  useEffect(() => { fetchEquipment(); }, [ward]);
+  const filteredWards = useMemo(() => {
+    if (!hospital) return wards;
+    return wards.filter(w => w.hospital === hospital);
+  }, [wards, hospital]);
+
+  useEffect(() => { fetchEquipment(); }, [hospital, ward]);
 
   useEffect(() => {
+    API.get('/hospitals').then(r => setHospitals(Array.isArray(r.data) ? r.data : [])).catch(() => {});
     API.get('/wards').then(r => setWards(Array.isArray(r.data) ? r.data : [])).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    setWard('');
+  }, [hospital]);
 
   const handleReportFault = async (item) => {
     const isConfirmed = await confirm({
@@ -125,13 +139,23 @@ export default function EquipmentPage() {
             onChange={e => setSearch(e.target.value)} 
           />
         </div>
+        <select
+          className="form-select"
+          style={{ width: 220, height: 48, background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: 14 }}
+          value={hospital}
+          onChange={e => setHospital(e.target.value)}
+        >
+          <option value="">All Hospitals</option>
+          {hospitals.map(h => <option key={h._id} value={h.name}>{h.name}</option>)}
+        </select>
         <SearchableSelect
           className="compact premium"
           style={{ width: 240, height: 48, borderRadius: 14 }}
-          options={wards.map(w => ({ value: w.name, label: w.name }))}
+          options={filteredWards.map(w => ({ value: w.name, label: w.name }))}
           value={ward}
           onChange={setWard}
-          placeholder="Filter by Ward"
+          placeholder={hospital ? "Filter by Ward" : "Select Hospital First"}
+          disabled={!hospital}
         />
       </div>
 
@@ -189,7 +213,10 @@ export default function EquipmentPage() {
                   <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#fff', marginBottom: 6 }}>{e.name}</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#94a3b8', fontSize: '0.8rem' }}>
-                      <Ic.Hospital size={14} /> <span>{e.ward || 'General Stock'}</span>
+                      <Ic.Hospital size={14} style={{ color: '#0ea5e9' }} /> 
+                      <span style={{ fontWeight: 600, color: '#fff' }}>{e.hospital}</span>
+                      <span>•</span>
+                      <span>{e.ward || 'General Stock'}</span>
                     </div>
                     {e.serialNumber && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#64748b', fontSize: '0.75rem', fontWeight: 600 }}>

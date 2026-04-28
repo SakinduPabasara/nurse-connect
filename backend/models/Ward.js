@@ -2,10 +2,14 @@ const mongoose = require('mongoose');
 
 const wardSchema = new mongoose.Schema(
   {
+    hospital: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     name: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
     },
     description: {

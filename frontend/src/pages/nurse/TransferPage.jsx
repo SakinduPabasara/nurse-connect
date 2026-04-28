@@ -40,6 +40,16 @@ export default function TransferPage() {
     API.get('/hospitals').then(r => setHospitals(Array.isArray(r.data) ? r.data : [])).catch(() => {});
   }, [fetchTransfers]);
 
+  const currentWards = useMemo(() => {
+    if (!form.currentHospital) return [];
+    return wards.filter(w => w.hospital === form.currentHospital);
+  }, [wards, form.currentHospital]);
+
+  const desiredWards = useMemo(() => {
+    if (!form.desiredHospital) return [];
+    return wards.filter(w => w.hospital === form.desiredHospital);
+  }, [wards, form.desiredHospital]);
+
   useEffect(() => {
     if (user) {
       setForm(prev => ({ ...prev, currentHospital: user.hospital || '', currentWard: user.ward || '' }));
@@ -125,10 +135,11 @@ export default function TransferPage() {
                 <div className="form-group">
                   <label className="form-label">Current Ward</label>
                   <SearchableSelect
-                    options={wards.map(w => ({ value: w.name, label: w.name }))}
+                    options={currentWards.map(w => ({ value: w.name, label: w.name }))}
                     value={form.currentWard}
                     onChange={val => setForm({ ...form, currentWard: val })}
-                    placeholder="Select ward..."
+                    placeholder={form.currentHospital ? "Select ward..." : "Select Hospital First"}
+                    disabled={!form.currentHospital}
                   />
                 </div>
               </div>
@@ -153,10 +164,11 @@ export default function TransferPage() {
                 <div className="form-group">
                   <label className="form-label">Target Ward</label>
                   <SearchableSelect
-                    options={wards.map(w => ({ value: w.name, label: w.name }))}
+                    options={desiredWards.map(w => ({ value: w.name, label: w.name }))}
                     value={form.desiredWard}
                     onChange={val => setForm({ ...form, desiredWard: val })}
-                    placeholder="Select ward..."
+                    placeholder={form.desiredHospital ? "Select ward..." : "Select Hospital First"}
+                    disabled={!form.desiredHospital}
                   />
                 </div>
               </div>

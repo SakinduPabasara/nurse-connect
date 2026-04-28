@@ -17,11 +17,14 @@ export default function DrugsManagementPage() {
   const [drugs, setDrugs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [wards, setWards] = useState([]);
+  const [hospitals, setHospitals] = useState([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [hospitalFilter, setHospitalFilter] = useState("all");
   const [wardFilter, setWardFilter] = useState("all");
   
   const [form, setForm] = useState({
+    hospital: "",
     name: "",
     ward: "",
     quantity: "",
@@ -49,8 +52,23 @@ export default function DrugsManagementPage() {
 
   useEffect(() => {
     fetchDrugs();
+    API.get("/hospitals").then(r => setHospitals(Array.isArray(r.data) ? r.data : [])).catch(() => {});
     API.get("/wards").then(r => setWards(Array.isArray(r.data) ? r.data : [])).catch(() => {});
   }, []);
+
+  const filteredWards = useMemo(() => {
+    if (hospitalFilter === 'all') return wards;
+    return wards.filter(w => w.hospital === hospitalFilter);
+  }, [wards, hospitalFilter]);
+
+  const formWards = useMemo(() => {
+    if (!form.hospital) return [];
+    return wards.filter(w => w.hospital === form.hospital);
+  }, [wards, form.hospital]);
+
+  useEffect(() => {
+    setWardFilter("all");
+  }, [hospitalFilter]);
 
   const stats = useMemo(() => {
     const today = new Date();
@@ -66,15 +84,16 @@ export default function DrugsManagementPage() {
 
   const filtered = useMemo(() => {
     return drugs.filter(d => {
-      const matchSearch = d.name.toLowerCase().includes(search.toLowerCase());
-      const matchWard   = wardFilter === 'all' || d.ward === wardFilter;
-      return matchSearch && matchWard;
+      const matchSearch   = d.name.toLowerCase().includes(search.toLowerCase());
+      const matchHospital = hospitalFilter === 'all' || d.hospital === hospitalFilter;
+      const matchWard     = wardFilter === 'all' || d.ward === wardFilter;
+      return matchSearch && matchHospital && matchWard;
     });
-  }, [drugs, search, wardFilter]);
+  }, [drugs, search, hospitalFilter, wardFilter]);
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.ward || !form.quantity || !form.expiryDate) {
+    if (!form.hospital || !form.name || !form.ward || !form.quantity || !form.expiryDate) {
       notify.error("All inventory fields are required.");
       return;
     }
@@ -82,7 +101,7 @@ export default function DrugsManagementPage() {
     try {
       await API.post("/drugs", { ...form, quantity: Number(form.quantity) });
       notify.success("Pharmaceutical stock registered.");
-      setForm({ name: "", ward: "", quantity: "", unit: "tablets", expiryDate: "" });
+      setForm({ hospital: "", name: "", ward: "", quantity: "", unit: "tablets", expiryDate: "" });
       setIsDrawerOpen(false);
       fetchDrugs(true);
     } catch (err) {
@@ -189,11 +208,20 @@ export default function DrugsManagementPage() {
         <select 
           className="form-select" 
           style={{ width: 220, background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }}
+          value={hospitalFilter}
+          onChange={e => setHospitalFilter(e.target.value)}
+        >
+          <option value="all">All Hospitals</option>
+          {hospitals.map(h => <option key={h._id} value={h.name}>{h.name}</option>)}
+        </select>
+        <select 
+          className="form-select" 
+          style={{ width: 220, background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }}
           value={wardFilter}
           onChange={e => setWardFilter(e.target.value)}
         >
           <option value="all">All Hospital Wards</option>
-          {wards.map(w => <option key={w._id} value={w.name}>{w.name}</option>)}
+          {filteredWards.map(w => <option key={w._id} value={w.name}>{w.name}</option>)}
         </select>
       </div>
 
@@ -232,8 +260,12 @@ export default function DrugsManagementPage() {
                         <div style={{ fontSize: '0.7rem', color: '#64748b' }}>Pharmaceutical Unit: {d.unit}</div>
                       </td>
                       <td style={{ padding: '16px 24px' }}>
-                        <span style={{ fontSize: '0.85rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <Ic.Hospital size={14} /> {d.ward}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                          <Ic.Hospital size={14} style={{ color: '#ec4899' }} />
+                          <span style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 600 }}>{d.hospital}</span>
+                        </div>
+                        <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <Ic.Inbox size={12} /> {d.ward}
                         </span>
                       </td>
                       <td style={{ padding: '16px 24px' }}>
@@ -326,10 +358,18 @@ export default function DrugsManagementPage() {
               </div>
               
               <div className="form-group">
+                <label className="form-label">Select Hospital</label>
+                <select className="form-select" value={form.hospital} onChange={e => setForm({...form, hospital: e.target.value, ward: ""})}>
+                  <option value="">Select Hospital</option>
+                  {hospitals.map(h => <option key={h._id} value={h.name}>{h.name}</option>)}
+                </select>
+              </div>
+
+              <div className="form-group">
                 <label className="form-label">Assign to Ward</label>
-                <select className="form-select" value={form.ward} onChange={e => setForm({...form, ward: e.target.value})}>
-                  <option value="">Select Hospital Ward</option>
-                  {wards.map(w => <option key={w._id} value={w.name}>{w.name}</option>)}
+                <select className="form-select" value={form.ward} onChange={e => setForm({...form, ward: e.target.value})} disabled={!form.hospital}>
+                  <option value="">{form.hospital ? "Select Hospital Ward" : "Select Hospital First"}</option>
+                  {formWards.map(w => <option key={w._id} value={w.name}>{w.name}</option>)}
                 </select>
               </div>
 

@@ -5,11 +5,11 @@ const VALID_STATUSES = ['available', 'maintenance', 'unavailable'];
 
 // @POST /api/equipment
 const addEquipment = async (req, res) => {
-  const { name, ward, status, lastMaintenance, serialNumber, description } = req.body;
+  const { hospital, name, ward, status, lastMaintenance, serialNumber, description } = req.body;
 
   // --- Validation ---
-  if (!name || !ward) {
-    return res.status(400).json({ message: 'Please provide both name and ward' });
+  if (!hospital || !name || !ward) {
+    return res.status(400).json({ message: 'Please provide hospital, name, and ward' });
   }
   if (status && !VALID_STATUSES.includes(status)) {
     return res.status(400).json({ message: `Status must be one of: ${VALID_STATUSES.join(', ')}` });
@@ -24,6 +24,7 @@ const addEquipment = async (req, res) => {
 
   try {
     const equipment = await Equipment.create({
+      hospital: hospital.trim(),
       name: name.trim(),
       ward: ward.trim(),
       serialNumber: serialNumber?.trim() || '',
@@ -44,6 +45,7 @@ const addEquipment = async (req, res) => {
 const getEquipment = async (req, res) => {
   try {
     const filter = {};
+    if (req.query.hospital) filter.hospital = req.query.hospital;
     if (req.query.ward) filter.ward = req.query.ward;
 
     const equipment = await Equipment.find(filter)

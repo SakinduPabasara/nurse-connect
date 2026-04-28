@@ -10,7 +10,8 @@ export default function WardManagementPage() {
   const [wards, setWards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("list");
-  const [form, setForm] = useState({ name: "", description: "" });
+  const [form, setForm] = useState({ hospital: "", name: "", description: "" });
+  const [hospitals, setHospitals] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState({ type: "", text: "" });
   const [editId, setEditId] = useState(null);
@@ -26,16 +27,20 @@ export default function WardManagementPage() {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchWards(); }, []);
+  useEffect(() => { 
+    fetchWards(); 
+    API.get("/hospitals").then(r => setHospitals(r.data)).catch(() => {});
+  }, []);
 
   const handleAdd = async (e) => {
     e.preventDefault();
+    if (!form.hospital) { notify.error("Hospital selection required."); return; }
     if (!form.name.trim()) { notify.error("Scientific ward designation required."); return; }
     setSubmitting(true);
     try {
       await API.post("/wards", form);
       notify.success(`Ward "${form.name.trim()}" commissioned.`);
-      setForm({ name: "", description: "" });
+      setForm({ hospital: "", name: "", description: "" });
       fetchWards(); setTab("list");
     } catch (err) { notify.error(err.response?.data?.message || "Commissioning failed."); }
     finally { setSubmitting(false); }
@@ -135,7 +140,14 @@ export default function WardManagementPage() {
       {tab === 'add' ? (
         <div className="form-card-premium" style={{ maxWidth: 600, margin: '40px auto' }}>
            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: 24 }}>Commission Medical Ward</h3>
-           <form onSubmit={handleAdd} style={{ display: 'grid', gap: 20 }}>
+            <form onSubmit={handleAdd} style={{ display: 'grid', gap: 20 }}>
+              <div className="form-group">
+                 <label className="form-label">Parent Hospital</label>
+                 <select className="form-select" value={form.hospital} onChange={e => setForm({...form, hospital: e.target.value})} style={{ background: 'var(--bg2)', height: 48 }}>
+                    <option value="">Select Hospital...</option>
+                    {hospitals.map(h => <option key={h._id} value={h.name}>{h.name}</option>)}
+                 </select>
+              </div>
               <div className="form-group">
                  <label className="form-label">Scientific Ward Designation</label>
                  <input className="form-input" placeholder="e.g. Intensive Care Unit (ICU-01)" value={form.name} onChange={e => setForm({...form, name: e.target.value})} style={{ background: 'var(--bg2)', height: 48 }} />
@@ -185,7 +197,8 @@ export default function WardManagementPage() {
                                </div>
                             </div>
                             
-                            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: 10 }}>{w.name}</h3>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: 4 }}>{w.name}</h3>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>{w.hospital}</div>
                             <p style={{ fontSize: '0.85rem', color: 'var(--text3)', lineHeight: 1.6, marginBottom: 24, minHeight: 40 }}>{w.description || 'Global clinical block for general nurse deployment.'}</p>
                             
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border)', paddingTop: 20 }}>
