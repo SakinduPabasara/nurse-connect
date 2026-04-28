@@ -4,67 +4,89 @@ import API from "../../api/axios";
 import { notify } from "../../utils/toast";
 import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
+import { useConfirm } from "../../context/ConfirmContext";
 
 /* ── Smart deep-link resolver ─────────────────────────────────── */
 // Returns the destination route for a notification based on its
 // message content and the role of the current user.
 function resolveNotificationLink(message, type, role) {
-  const m = (message || '').toLowerCase();
-  const t = (type || '').toLowerCase();
+  const m = (message || "").toLowerCase();
+  const t = (type || "").toLowerCase();
 
   /* ── ADMIN routes ── */
-  if (role === 'admin') {
+  if (role === "admin") {
     // 1. Level: Specific Action/Management Requests
-    if (t === 'overtime' || m.includes('overtime') || m.includes(' applied for ot'))
-      return '/admin/overtime';
-    
-    if (t === 'leave' || (m.includes('leave') && (m.includes('request') || m.includes('applied') || m.includes('approval'))))
-      return '/admin/leave';
-    
-    if (t === 'swap' || m.includes('swap request'))
-      return '/admin/swaps';
-      
-    if (m.includes('verification') || m.includes('registration pending') || m.includes('new nurse registration'))
-      return '/admin/verify';
+    if (
+      t === "overtime" ||
+      m.includes("overtime") ||
+      m.includes(" applied for ot")
+    )
+      return "/admin/overtime";
+
+    if (
+      t === "leave" ||
+      (m.includes("leave") &&
+        (m.includes("request") ||
+          m.includes("applied") ||
+          m.includes("approval")))
+    )
+      return "/admin/leave";
+
+    if (t === "swap" || m.includes("swap request")) return "/admin/swaps";
+
+    if (
+      m.includes("verification") ||
+      m.includes("registration pending") ||
+      m.includes("new nurse registration")
+    )
+      return "/admin/verify";
 
     // 2. Level: Dynamic/Content
-    if (t === 'news' || m.includes('news')) return '/admin/news';
-    if (t === 'notice' || m.includes('notice')) return '/admin/notices';
-    if (t === 'community' || m.includes('post') || m.includes('community')) return '/admin/community';
-    if (m.includes('drug') || m.includes('medication')) return '/admin/drugs';
-    if (m.includes('equipment')) return '/admin/equipment';
-    if (m.includes('document')) return '/admin/documents';
-    if (m.includes('opportunit')) return '/admin/opportunities';
+    if (t === "news" || m.includes("news")) return "/admin/news";
+    if (t === "notice" || m.includes("notice")) return "/admin/notices";
+    if (t === "community" || m.includes("post") || m.includes("community"))
+      return "/admin/community";
+    if (m.includes("drug") || m.includes("medication")) return "/admin/drugs";
+    if (m.includes("equipment")) return "/admin/equipment";
+    if (m.includes("document")) return "/admin/documents";
+    if (m.includes("opportunit")) return "/admin/opportunities";
 
     // 3. Level: Core Infrastructure
-    if (t === 'roster' || m.includes('roster') || m.includes('shift')) return '/admin/roster';
-    if (m.includes('hospital')) return '/admin/hospitals';
-    if (m.includes('ward')) return '/admin/wards';
-    
+    if (t === "roster" || m.includes("roster") || m.includes("shift"))
+      return "/admin/roster";
+    if (m.includes("hospital")) return "/admin/hospitals";
+    if (m.includes("ward")) return "/admin/wards";
+
     return null;
   }
 
   /* ── NURSE routes ── */
   // 1. Level: Personal Status/Requests
-  if (t === 'overtime' || m.includes('overtime')) return '/overtime';
-  if (t === 'leave' || m.includes('leave')) return '/leave';
-  if (t === 'swap' || m.includes('swap')) return '/swap';
-  if (t === 'transfer' || m.includes('transfer')) return '/transfer';
-  
-  if (m.includes('verified') || m.includes('account approved') || m.includes('registration approved'))
-    return '/dashboard';
+  if (t === "overtime" || m.includes("overtime")) return "/overtime";
+  if (t === "leave" || m.includes("leave")) return "/leave";
+  if (t === "swap" || m.includes("swap")) return "/swap";
+  if (t === "transfer" || m.includes("transfer")) return "/transfer";
+
+  if (
+    m.includes("verified") ||
+    m.includes("account approved") ||
+    m.includes("registration approved")
+  )
+    return "/dashboard";
 
   // 2. Level: Core Operations
-  if (t === 'roster' || m.includes('roster') || m.includes('shift')) return '/my-roster';
+  if (t === "roster" || m.includes("roster") || m.includes("shift"))
+    return "/my-roster";
 
   // 3. Level: Hospital Content
-  if (t === 'news' || m.includes('news')) return '/news';
-  if (t === 'notice' || m.includes('notice')) return '/notices';
-  if (m.includes('drug') || m.includes('medication')) return '/drugs';
-  if (m.includes('equipment')) return '/equipment';
-  if (m.includes('document')) return '/documents';
-  if (m.includes('community') || m.includes('post') || m.includes('community')) return '/community';
-  if (m.includes('opportunit')) return '/opportunities';
+  if (t === "news" || m.includes("news")) return "/news";
+  if (t === "notice" || m.includes("notice")) return "/notices";
+  if (m.includes("drug") || m.includes("medication")) return "/drugs";
+  if (m.includes("equipment")) return "/equipment";
+  if (m.includes("document")) return "/documents";
+  if (m.includes("community") || m.includes("post") || m.includes("community"))
+    return "/community";
+  if (m.includes("opportunit")) return "/opportunities";
 
   return null;
 }
@@ -184,7 +206,9 @@ const GROUP_ORDER = ["Today", "Yesterday", "This Week", "This Month", "Older"];
 export default function NotificationsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { refresh: refreshBadge, notifications: newSocketNotifs } = useNotifications();
+  const confirm = useConfirm();
+  const { refresh: refreshBadge, notifications: newSocketNotifs } =
+    useNotifications();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -192,8 +216,9 @@ export default function NotificationsPage() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [selected, setSelected] = useState(new Set());
   const [markingAll, setMarkingAll] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
   const [socketConnected, setSocketConnected] = useState(false);
-  const role = user?.role || 'nurse';
+  const role = user?.role || "nurse";
 
   const fetchNotifications = async () => {
     try {
@@ -208,14 +233,14 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     fetchNotifications();
-    
+
     // Check if socket is connected
     import("../../utils/socketClient").then(({ getSocket }) => {
       const socket = getSocket();
       if (socket) {
         setSocketConnected(socket.connected);
-        socket.on('connect', () => setSocketConnected(true));
-        socket.on('disconnect', () => setSocketConnected(false));
+        socket.on("connect", () => setSocketConnected(true));
+        socket.on("disconnect", () => setSocketConnected(false));
       }
     });
   }, []);
@@ -225,8 +250,8 @@ export default function NotificationsPage() {
     if (newSocketNotifs?.length > 0) {
       setNotifications((prev) => {
         // Prevent duplicates
-        const existingIds = new Set(prev.map(n => n._id));
-        const toAdd = newSocketNotifs.filter(n => !existingIds.has(n._id));
+        const existingIds = new Set(prev.map((n) => n._id));
+        const toAdd = newSocketNotifs.filter((n) => !existingIds.has(n._id));
         if (toAdd.length === 0) return prev;
         return [...toAdd, ...prev];
       });
@@ -236,7 +261,7 @@ export default function NotificationsPage() {
   /* ── Derived counts ── */
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.isRead).length,
-    [notifications]
+    [notifications],
   );
 
   /* ── Filter & search ── */
@@ -270,7 +295,7 @@ export default function NotificationsPage() {
     try {
       await API.put(`/notifications/${id}/read`);
       setNotifications((prev) =>
-        prev.map((n) => (n._id === id ? { ...n, isRead: true } : n))
+        prev.map((n) => (n._id === id ? { ...n, isRead: true } : n)),
       );
       setSelected((prev) => {
         const s = new Set(prev);
@@ -300,14 +325,41 @@ export default function NotificationsPage() {
     }
   };
 
+  const deleteAll = async () => {
+    if (notifications.length === 0) return;
+
+    // Show modern confirmation modal
+    const confirmed = await confirm({
+      title: "🗑️ Clear All Notifications",
+      message: `Are you sure you want to delete all ${notifications.length} notifications? This action cannot be undone.`,
+      confirmText: "Delete All",
+      cancelText: "Cancel",
+    });
+
+    if (!confirmed) return;
+
+    setDeletingAll(true);
+    try {
+      await API.delete("/notifications");
+      setNotifications([]);
+      setSelected(new Set());
+      notify.success("All notifications deleted successfully.");
+      refreshBadge(); // update sidebar badge immediately
+    } catch {
+      notify.error("Failed to delete all notifications.");
+    } finally {
+      setDeletingAll(false);
+    }
+  };
+
   const markSelectedRead = async () => {
     const ids = [...selected].filter(
-      (id) => !notifications.find((n) => n._id === id)?.isRead
+      (id) => !notifications.find((n) => n._id === id)?.isRead,
     );
     try {
       await Promise.all(ids.map((id) => API.put(`/notifications/${id}/read`)));
       setNotifications((prev) =>
-        prev.map((n) => (selected.has(n._id) ? { ...n, isRead: true } : n))
+        prev.map((n) => (selected.has(n._id) ? { ...n, isRead: true } : n)),
       );
       setSelected(new Set());
       notify.success(`${ids.length} notification(s) marked as read.`);
@@ -344,7 +396,7 @@ export default function NotificationsPage() {
     const total = notifications.length;
     const unread = notifications.filter((n) => !n.isRead).length;
     const today = notifications.filter(
-      (n) => getGroup(n.createdAt) === "Today"
+      (n) => getGroup(n.createdAt) === "Today",
     ).length;
     return { total, unread, today };
   }, [notifications]);
@@ -570,7 +622,6 @@ export default function NotificationsPage() {
                 {unreadCount} new
               </span>
             )}
-            
             {socketConnected && (
               <span
                 style={{
@@ -587,11 +638,19 @@ export default function NotificationsPage() {
                   verticalAlign: "middle",
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: "6px"
+                  gap: "6px",
                 }}
                 title="Real-time updates active"
               >
-                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981", animation: "pulse-dot 2s infinite" }} />
+                <div
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: "#10b981",
+                    animation: "pulse-dot 2s infinite",
+                  }}
+                />
                 Live
               </span>
             )}
@@ -608,6 +667,16 @@ export default function NotificationsPage() {
               disabled={markingAll}
             >
               {markingAll ? "Marking…" : "✓ Mark All Read"}
+            </button>
+          )}
+          {notifications.length > 0 && (
+            <button
+              className="btn btn-danger btn-sm"
+              onClick={deleteAll}
+              disabled={deletingAll}
+              title="Delete all notifications"
+            >
+              {deletingAll ? "Deleting…" : "🗑️ Clear All"}
             </button>
           )}
           <button
@@ -776,7 +845,9 @@ export default function NotificationsPage() {
             checked={selected.size === visible.length}
             onChange={toggleSelectAll}
           />
-          <span style={{ fontSize: "0.875rem", color: "#93c5fd", fontWeight: 600 }}>
+          <span
+            style={{ fontSize: "0.875rem", color: "#93c5fd", fontWeight: 600 }}
+          >
             {selected.size} selected
           </span>
           <button
@@ -797,7 +868,10 @@ export default function NotificationsPage() {
 
       {/* ── Content ── */}
       {loading ? (
-        <div className="loading-center" style={{ flexDirection: "column", gap: 16 }}>
+        <div
+          className="loading-center"
+          style={{ flexDirection: "column", gap: 16 }}
+        >
           <div className="spinner" style={{ margin: 0 }} />
           <span style={{ color: "var(--text2)", fontSize: "0.875rem" }}>
             Loading notifications…
@@ -808,12 +882,15 @@ export default function NotificationsPage() {
           <div className="empty-state-icon">
             {search ? "🔍" : filterTab === "unread" ? "✅" : "🔔"}
           </div>
-          <div className="empty-state-text" style={{ fontSize: "1.1rem", fontWeight: 600 }}>
+          <div
+            className="empty-state-text"
+            style={{ fontSize: "1.1rem", fontWeight: 600 }}
+          >
             {search
               ? "No notifications match your search"
               : filterTab === "unread"
-              ? "You're all caught up!"
-              : "No notifications yet"}
+                ? "You're all caught up!"
+                : "No notifications yet"}
           </div>
           <div
             style={{
@@ -825,8 +902,8 @@ export default function NotificationsPage() {
             {search
               ? "Try a different keyword"
               : filterTab === "unread"
-              ? "All notifications have been read"
-              : "Notifications will appear here"}
+                ? "All notifications have been read"
+                : "Notifications will appear here"}
           </div>
           {(search || filterTab !== "all" || typeFilter !== "all") && (
             <button
@@ -863,7 +940,13 @@ export default function NotificationsPage() {
             <span style={{ fontSize: "0.78rem", color: "var(--text3)" }}>
               Select all
             </span>
-            <span style={{ marginLeft: "auto", fontSize: "0.78rem", color: "var(--text3)" }}>
+            <span
+              style={{
+                marginLeft: "auto",
+                fontSize: "0.78rem",
+                color: "var(--text3)",
+              }}
+            >
               {visible.length} notification{visible.length !== 1 ? "s" : ""}
             </span>
           </div>
@@ -880,7 +963,11 @@ export default function NotificationsPage() {
 
                   const handleCardClick = (e) => {
                     // Don't trigger if user clicked checkbox or Mark Read button
-                    if (e.target.closest('input[type="checkbox"]') || e.target.closest('.mark-read-btn')) return;
+                    if (
+                      e.target.closest('input[type="checkbox"]') ||
+                      e.target.closest(".mark-read-btn")
+                    )
+                      return;
                     if (!dest) return;
                     if (!n.isRead) markRead(n._id);
                     navigate(dest);
@@ -897,13 +984,13 @@ export default function NotificationsPage() {
                         background: isSelected
                           ? "rgba(37,99,235,0.08)"
                           : n.isRead
-                          ? "var(--surface)"
-                          : cfg.bg,
+                            ? "var(--surface)"
+                            : cfg.bg,
                         borderColor: isSelected
                           ? "rgba(37,99,235,0.4)"
                           : !n.isRead
-                          ? cfg.border
-                          : "var(--border)",
+                            ? cfg.border
+                            : "var(--border)",
                       }}
                     >
                       {/* Checkbox */}
@@ -912,7 +999,7 @@ export default function NotificationsPage() {
                         className="notif-checkbox"
                         checked={isSelected}
                         onChange={() => toggleSelect(n._id)}
-                        onClick={e => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
                       />
 
                       {/* Icon */}
@@ -1005,11 +1092,21 @@ export default function NotificationsPage() {
                             gap: 8,
                           }}
                         >
-                          <span style={{ fontSize: "0.75rem", color: "var(--text3)" }}>
+                          <span
+                            style={{
+                              fontSize: "0.75rem",
+                              color: "var(--text3)",
+                            }}
+                          >
                             🕐 {timeAgo(n.createdAt)}
                           </span>
                           <span style={{ color: "var(--border)" }}>·</span>
-                          <span style={{ fontSize: "0.75rem", color: "var(--text3)" }}>
+                          <span
+                            style={{
+                              fontSize: "0.75rem",
+                              color: "var(--text3)",
+                            }}
+                          >
                             {new Date(n.createdAt).toLocaleString()}
                           </span>
                         </div>
@@ -1030,7 +1127,10 @@ export default function NotificationsPage() {
                             <div className="unread-dot" />
                             <button
                               className="mark-read-btn"
-                              onClick={(e) => { e.stopPropagation(); markRead(n._id); }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                markRead(n._id);
+                              }}
                             >
                               Mark Read
                             </button>
