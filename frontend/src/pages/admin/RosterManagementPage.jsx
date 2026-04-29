@@ -5,6 +5,7 @@ import { notify } from "../../utils/toast";
 import { useConfirm } from "../../context/ConfirmContext";
 import SearchableSelect from "../../components/SearchableSelect";
 import * as Ic from "../../components/icons";
+import { getSocket } from "../../utils/socketClient";
 
 const SHIFTS = ["7AM-1PM", "1PM-7PM", "7AM-7PM", "7PM-7AM"];
 const SHIFT_MAP = {
@@ -44,6 +45,19 @@ export default function RosterManagementPage() {
     API.get("/hospitals").then(r => setHospitals(r.data)).catch(() => {});
     API.get("/wards").then(r => setWards(Array.isArray(r.data) ? r.data.map(w => w.name) : [])).catch(() => []);
   }, []);
+
+   useEffect(() => {
+      const socket = getSocket();
+      if (!socket) return;
+
+      const onUserUpdated = (updated) => {
+         if (!updated?._id) return;
+         setNurses(prev => prev.map(n => (n._id === updated._id ? { ...n, ...updated } : n)));
+      };
+
+      socket.on("user:updated", onUserUpdated);
+      return () => socket.off("user:updated", onUserUpdated);
+   }, []);
 
   const fetchRoster = async () => {
     setLoading(true);

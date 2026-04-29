@@ -14,7 +14,7 @@ const NotificationContext = createContext({
 const POLL_INTERVAL_MS = 30_000; // poll every 30 seconds
 
 export const NotificationProvider = ({ children }) => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
   const timerRef = useRef(null);
@@ -51,6 +51,13 @@ export const NotificationProvider = ({ children }) => {
         addNewNotification(notif);
         notify.success(`New Notification: ${notif.message}`);
       });
+
+      socket.on('user:updated', (updated) => {
+        if (!updated?._id || !user?._id) return;
+        if (String(updated._id) === String(user._id)) {
+          updateUser(updated);
+        }
+      });
       
       // Resync when reconnecting just in case changes were missed
       socket.on('connect', refresh);
@@ -60,7 +67,7 @@ export const NotificationProvider = ({ children }) => {
       clearInterval(timerRef.current);
       disconnectSocket();
     };
-  }, [user, refresh, addNewNotification]);
+  }, [user, refresh, addNewNotification, updateUser]);
 
   // Reset to 0 on logout
   useEffect(() => {

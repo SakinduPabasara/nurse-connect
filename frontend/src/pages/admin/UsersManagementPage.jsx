@@ -4,6 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import { notify } from "../../utils/toast";
 import { useConfirm } from "../../context/ConfirmContext";
 import SearchableSelect from "../../components/SearchableSelect";
+import { getSocket } from "../../utils/socketClient";
 import * as Ic from "../../components/icons";
 
 export default function UsersManagementPage() {
@@ -40,6 +41,19 @@ export default function UsersManagementPage() {
   };
 
   useEffect(() => { fetchUsers(); fetchFilters(); }, []);
+
+   useEffect(() => {
+      const socket = getSocket();
+      if (!socket) return;
+
+      const onUserUpdated = (updated) => {
+         if (!updated?._id) return;
+         setUsers(prev => prev.map(u => (u._id === updated._id ? { ...u, ...updated } : u)));
+      };
+
+      socket.on("user:updated", onUserUpdated);
+      return () => socket.off("user:updated", onUserUpdated);
+   }, []);
 
   const filteredWards = useMemo(() => {
     if (!filterHospital) return wards;

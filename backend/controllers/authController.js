@@ -3,6 +3,7 @@ const Notification = require("../models/Notification");
 const Roster = require("../models/Roster");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
+const { getIO } = require("../utils/socketManager");
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
@@ -420,6 +421,16 @@ const updateProfile = async (req, res) => {
 
     await user.save();
 
+    const safeUser = user.toObject();
+    delete safeUser.password;
+
+    try {
+      getIO().to("user:" + user._id.toString()).emit("user:updated", safeUser);
+      getIO().to("admin").emit("user:updated", safeUser);
+    } catch (err) {
+      // Socket not ready or not configured; ignore to avoid breaking the request.
+    }
+
     res.json({
       _id: user._id,
       name: user.name,
@@ -572,7 +583,18 @@ const updateUser = async (req, res) => {
     if (nic !== undefined) user.nic = nic.trim().toUpperCase();
 
     await user.save();
-    res.json({ message: "User updated successfully", user });
+
+    const safeUser = user.toObject();
+    delete safeUser.password;
+
+    try {
+      getIO().to("user:" + user._id.toString()).emit("user:updated", safeUser);
+      getIO().to("admin").emit("user:updated", safeUser);
+    } catch (err) {
+      // Socket not ready or not configured; ignore to avoid breaking the request.
+    }
+
+    res.json({ message: "User updated successfully", user: safeUser });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

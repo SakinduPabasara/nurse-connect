@@ -52,6 +52,10 @@ export default function WardRosterPage() {
   }, []);
 
   useEffect(() => {
+    setWard(user?.ward || '');
+  }, [user?.ward]);
+
+  useEffect(() => {
     if (!ward) { setRoster([]); return; }
     setLoading(true);
     API.get(`/roster/ward/${ward === '__ALL__' ? 'all' : encodeURIComponent(ward)}?month=${month}`)
