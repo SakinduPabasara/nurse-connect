@@ -17,14 +17,33 @@ connectDB().then(async () => {
   try {
     const Ward = require("./models/Ward");
     const Hospital = require("./models/Hospital");
-    const unassignedCount = await Ward.countDocuments({ hospital: { $exists: false } });
+    const unassignedCount = await Ward.countDocuments({
+      hospital: { $exists: false },
+    });
     if (unassignedCount > 0) {
       const firstHosp = await Hospital.findOne({});
       if (firstHosp) {
-        console.log(`[MIGRATION] Assigning ${unassignedCount} unassigned wards to ${firstHosp.name}`);
-        await Ward.updateMany({ hospital: { $exists: false } }, { $set: { hospital: firstHosp.name } });
+        console.log(
+          `[MIGRATION] Assigning ${unassignedCount} unassigned wards to ${firstHosp.name}`,
+        );
+        await Ward.updateMany(
+          { hospital: { $exists: false } },
+          { $set: { hospital: firstHosp.name } },
+        );
       }
     }
+
+    // Drop legacy global unique index on ward name, then ensure compound index.
+    const indexes = await Ward.collection.indexes();
+    const legacy = indexes.find((i) => i.name === "name_1");
+    if (legacy) {
+      await Ward.collection.dropIndex("name_1");
+      console.log("[MIGRATION] Dropped legacy wards.name unique index");
+    }
+    await Ward.collection.createIndex(
+      { hospital: 1, name: 1 },
+      { unique: true },
+    );
   } catch (err) {
     console.error("[MIGRATION_ERROR]", err);
   }

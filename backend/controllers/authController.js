@@ -19,8 +19,16 @@ const PASSWORD_REGEX =
 // @POST /api/auth/register  (PUBLIC — nurse self-registers)
 // ─────────────────────────────────────────────
 const registerUser = async (req, res) => {
-  const { name, nic, address, telephone, hospital, ward, password, confirmPassword } =
-    req.body;
+  const {
+    name,
+    nic,
+    address,
+    telephone,
+    hospital,
+    ward,
+    password,
+    confirmPassword,
+  } = req.body;
 
   // --- Field presence ---
   if (
@@ -230,28 +238,37 @@ const sendSMSVerification = (telephone, name) => {
 // ─────────────────────────────────────────────
 const rejectUser = async (req, res) => {
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-    return res.status(400).json({ message: 'Invalid user ID.' });
+    return res.status(400).json({ message: "Invalid user ID." });
   }
 
   const { reason } = req.body; // optional rejection reason
 
   try {
     const user = await User.findById(req.params.id);
-    if (!user) return res.status(404).json({ message: 'User not found.' });
+    if (!user) return res.status(404).json({ message: "User not found." });
 
-    if (user.role !== 'nurse') {
-      return res.status(400).json({ message: 'Only nurse accounts can be rejected.' });
+    if (user.role !== "nurse") {
+      return res
+        .status(400)
+        .json({ message: "Only nurse accounts can be rejected." });
     }
     if (user.isVerified) {
-      return res.status(400).json({ message: 'Cannot reject an already-verified nurse account.' });
+      return res
+        .status(400)
+        .json({ message: "Cannot reject an already-verified nurse account." });
     }
 
-    const nurseInfo = { name: user.name, nic: user.nic, hospital: user.hospital, telephone: user.telephone };
+    const nurseInfo = {
+      name: user.name,
+      nic: user.nic,
+      hospital: user.hospital,
+      telephone: user.telephone,
+    };
 
     // Log rejection for audit trail
     console.log(
       `[REJECT] Admin ${req.user.name} (${req.user._id}) rejected nurse registration: ${user.name} (NIC: ${user.nic}).` +
-      (reason ? ` Reason: ${reason}` : ' No reason provided.'),
+        (reason ? ` Reason: ${reason}` : " No reason provided."),
     );
 
     await user.deleteOne();
@@ -371,19 +388,41 @@ const deleteUser = async (req, res) => {
 // @PUT /api/auth/profile  (Logged-in user updates own info)
 // ─────────────────────────────────────────────
 const updateProfile = async (req, res) => {
-  const { name, address, telephone, ward, email, hospital, currentPassword, newPassword } = req.body;
+  const {
+    name,
+    address,
+    telephone,
+    ward,
+    email,
+    hospital,
+    currentPassword,
+    newPassword,
+  } = req.body;
 
-  if (!name && !address && !telephone && !ward && !email && !hospital && !newPassword) {
-    return res.status(400).json({ message: "Please provide at least one field to update" });
+  if (
+    !name &&
+    !address &&
+    !telephone &&
+    !ward &&
+    !email &&
+    !hospital &&
+    !newPassword
+  ) {
+    return res
+      .status(400)
+      .json({ message: "Please provide at least one field to update" });
   }
 
   if (telephone && !PHONE_REGEX.test(telephone.trim())) {
-    return res.status(400).json({ message: "Telephone number must be exactly 10 digits" });
+    return res
+      .status(400)
+      .json({ message: "Telephone number must be exactly 10 digits" });
   }
 
   if (newPassword && !PASSWORD_REGEX.test(newPassword)) {
     return res.status(400).json({
-      message: "Password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
+      message:
+        "Password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
     });
   }
 
@@ -393,22 +432,39 @@ const updateProfile = async (req, res) => {
 
     if (newPassword) {
       if (!currentPassword) {
-        return res.status(400).json({ message: "You must provide your current password to set a new password." });
+        return res
+          .status(400)
+          .json({
+            message:
+              "You must provide your current password to set a new password.",
+          });
       }
       const isMatch = await user.matchPassword(currentPassword);
       if (!isMatch) {
-        return res.status(401).json({ message: "Current password is incorrect." });
+        return res
+          .status(401)
+          .json({ message: "Current password is incorrect." });
       }
       user.password = newPassword;
     }
 
-    if (req.user.role !== 'admin') {
+    if (req.user.role !== "admin") {
       // Prevent changing ward/hospital if you're a nurse
       if (ward !== undefined && ward.trim() !== user.ward) {
-        return res.status(403).json({ message: "Clinical ward assignment is locked for your account level. Contact an administrator for re-assignment." });
+        return res
+          .status(403)
+          .json({
+            message:
+              "Clinical ward assignment is locked for your account level. Contact an administrator for re-assignment.",
+          });
       }
       if (hospital !== undefined && hospital.trim() !== user.hospital) {
-        return res.status(403).json({ message: "Medical center assignment is locked. Contact an administrator for institutional transfer." });
+        return res
+          .status(403)
+          .json({
+            message:
+              "Medical center assignment is locked. Contact an administrator for institutional transfer.",
+          });
       }
     }
 
@@ -425,7 +481,9 @@ const updateProfile = async (req, res) => {
     delete safeUser.password;
 
     try {
-      getIO().to("user:" + user._id.toString()).emit("user:updated", safeUser);
+      getIO()
+        .to("user:" + user._id.toString())
+        .emit("user:updated", safeUser);
       getIO().to("admin").emit("user:updated", safeUser);
     } catch (err) {
       // Socket not ready or not configured; ignore to avoid breaking the request.
@@ -490,7 +548,7 @@ const uploadAvatar = async (req, res) => {
         role: user.role,
         hospital: user.hospital,
         isVerified: user.isVerified,
-      }
+      },
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -503,32 +561,32 @@ const uploadAvatar = async (req, res) => {
 const deleteAvatar = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!user) return res.status(404).json({ message: "User not found" });
 
     if (user.profilePic) {
-      const fs = require('fs');
-      const path = require('path');
-      const filePath = path.join(__dirname, '..', user.profilePic);
-      
+      const fs = require("fs");
+      const path = require("path");
+      const filePath = path.join(__dirname, "..", user.profilePic);
+
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
     }
 
-    user.profilePic = '';
+    user.profilePic = "";
     await user.save();
 
     res.json({
-      message: 'Profile picture deleted successfully',
+      message: "Profile picture deleted successfully",
       user: {
         _id: user._id,
         name: user.name,
         nic: user.nic,
-        profilePic: '',
+        profilePic: "",
         role: user.role,
         hospital: user.hospital,
         isVerified: user.isVerified,
-      }
+      },
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -538,13 +596,13 @@ const deleteAvatar = async (req, res) => {
 const getPublicStats = async (req, res) => {
   try {
     const [totalNurses, hospitals] = await Promise.all([
-      User.countDocuments({ role: 'nurse', isVerified: true }),
-      User.distinct('hospital', { role: 'nurse', isVerified: true }),
+      User.countDocuments({ role: "nurse", isVerified: true }),
+      User.distinct("hospital", { role: "nurse", isVerified: true }),
     ]);
-    
+
     // Safely filter and count unique hospitals
-    const validHospitals = Array.isArray(hospitals) 
-      ? hospitals.filter(h => typeof h === 'string' && h.trim().length > 0)
+    const validHospitals = Array.isArray(hospitals)
+      ? hospitals.filter((h) => typeof h === "string" && h.trim().length > 0)
       : [];
 
     res.json({
@@ -552,7 +610,7 @@ const getPublicStats = async (req, res) => {
       hospitals: validHospitals.length,
     });
   } catch (error) {
-    console.error('[AUTH_STATS_ERROR]', error);
+    console.error("[AUTH_STATS_ERROR]", error);
     res.status(500).json({ message: "Failed to load platform statistics" });
   }
 };
@@ -571,9 +629,9 @@ const updateUser = async (req, res) => {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // Protect against self-demotion or self-unverification if needed, 
+    // Protect against self-demotion or self-unverification if needed,
     // but usually admins can manage themselves except for deletion.
-    
+
     if (hospital !== undefined) user.hospital = hospital.trim();
     if (ward !== undefined) user.ward = ward.trim();
     if (role !== undefined) user.role = role;
@@ -588,7 +646,9 @@ const updateUser = async (req, res) => {
     delete safeUser.password;
 
     try {
-      getIO().to("user:" + user._id.toString()).emit("user:updated", safeUser);
+      getIO()
+        .to("user:" + user._id.toString())
+        .emit("user:updated", safeUser);
       getIO().to("admin").emit("user:updated", safeUser);
     } catch (err) {
       // Socket not ready or not configured; ignore to avoid breaking the request.

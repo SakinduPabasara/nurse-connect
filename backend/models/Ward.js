@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const wardSchema = new mongoose.Schema(
   {
@@ -14,15 +14,18 @@ const wardSchema = new mongoose.Schema(
     },
     description: {
       type: String,
-      default: '',
+      default: "",
       trim: true,
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-module.exports = mongoose.model('Ward', wardSchema);
+// Enforce uniqueness per hospital (same ward name can exist in different hospitals).
+wardSchema.index({ hospital: 1, name: 1 }, { unique: true });
+
+module.exports = mongoose.model("Ward", wardSchema);
