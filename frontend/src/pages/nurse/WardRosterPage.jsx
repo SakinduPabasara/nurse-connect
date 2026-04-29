@@ -68,18 +68,21 @@ export default function WardRosterPage() {
   }, [user?.ward, wards]);
 
   useEffect(() => {
-    Promise.all([
-      API.get("/wards")
-        .then((r) => (Array.isArray(r.data) ? r.data.map((w) => w.name) : []))
-        .catch(() => []),
-      API.get("/roster/wards")
-        .then((r) => (Array.isArray(r.data) ? r.data : []))
-        .catch(() => []),
-    ]).then(([managed, rosterWards]) => {
-      const merged = [...new Set([...managed, ...rosterWards])].sort();
-      setWards(merged);
-    });
-  }, []);
+    if (!user?.hospital) {
+      setWards(user?.ward ? [user.ward] : []);
+      return;
+    }
+
+    API.get(`/wards?hospital=${encodeURIComponent(user.hospital)}`)
+      .then((r) => (Array.isArray(r.data) ? r.data.map((w) => w.name) : []))
+      .then((managed) => {
+        const merged = [
+          ...new Set([...(user?.ward ? [user.ward] : []), ...managed]),
+        ].sort();
+        setWards(merged);
+      })
+      .catch(() => setWards(user?.ward ? [user.ward] : []));
+  }, [user?.hospital, user?.ward]);
 
   useEffect(() => {
     setWard(user?.ward || "");
