@@ -247,6 +247,25 @@ function DistributionBarChart({ config }) {
   );
 }
 
+function HUD_Header({ status }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative', zIndex: 2, marginBottom: 10 }}>
+      <div>
+        <div className="sidebar-group-label" style={{ padding: 0, marginBottom: 4 }}>Mission Intel</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--primary)', fontSize: '0.8rem', fontWeight: 800 }}>
+          <Ic.Activity size={14} /> ACTIVE
+        </div>
+      </div>
+      <div style={{ textAlign: 'right' }}>
+        <div className="sidebar-group-label" style={{ padding: 0, marginBottom: 4 }}>System Real-Time</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--success)', fontSize: '0.8rem', fontWeight: 800, justifyContent: 'flex-end' }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)', boxShadow: `0 0 8px var(--success)` }} /> LIVE
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function EarningsChart({ data }) {
   if (!data || data.length < 2) return <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', color: THEME.textDim }}>Awaiting log cycle...</div>;
   const width = 400, height = 120, padding = 15;
@@ -366,79 +385,63 @@ export default function DashboardPage() {
   const greeting = new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 17 ? 'Afternoon' : 'Evening';
 
   return (
-    <div style={{ animation: 'screen-entry 0.6s cubic-bezier(0.16, 1, 0.3, 1)' }}>
+    <div className="animate-fade-up">
       
       {/* ── High-Fidelity Header ── */}
-      <div className="mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28, gap: 20 }}>
+      <div className="page-header">
         <div>
-          <div style={{ fontSize: '0.72rem', fontWeight: 900, color: THEME.primary, textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: 4 }}>Command Center v2.4</div>
-          <DigitalClock />
+          <div className="sidebar-brand-role" style={{ color: 'var(--primary)', marginBottom: 8 }}>Command Center v2.5</div>
+          <div className="stat-value-premium" style={{ fontSize: '2rem' }}>
+            <DigitalClock />
+          </div>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <div style={{ 
-            display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px', 
-            background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: 12 
-          }}>
-            <Ic.Sunset size={16} color={THEME.warning} />
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: THEME.text }}>28°C Optimal</span>
+          <div className="btn btn-outline" style={{ cursor: 'default' }}>
+            <Ic.Sunset size={16} color="var(--warning)" />
+            <span>28°C Optimal</span>
           </div>
           <StatusIndicator online={true} />
         </div>
       </div>
 
       {/* ── Executive Hero Card ── */}
-      <div className="hero-card-container">
-        {/* Parallax Orbs */}
-        <div style={{ position: 'absolute', top: -50, left: '20%', width: 250, height: 250, background: 'radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: -100, right: '10%', width: 350, height: 350, background: 'radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      <div className="glass-card-premium" style={{ marginBottom: 28 }}>
+        <div className="mesh-bg" />
 
-        <div className="mobile-stack" style={{ display: 'flex', alignItems: 'center', gap: 24, position: 'relative', zIndex: 1 }}>
-          <div style={{
-            width: 72, height: 72, borderRadius: 20, flexShrink: 0,
-            background: user?.profilePic ? `url(http://localhost:5000${user.profilePic}) center/cover` : 'linear-gradient(135deg, #6366f1, #a855f7)',
-            border: '3px solid rgba(255,255,255,0.1)', boxShadow: '0 12px 40px rgba(0,0,0,0.4)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '1.8rem', fontWeight: 900
+        <div style={{ display: 'flex', alignItems: 'center', gap: 24, position: 'relative', zIndex: 1, marginBottom: 32 }}>
+          <div className="topbar-avatar" style={{ 
+            width: 80, height: 80, fontSize: '2rem', 
+            background: user?.profilePic ? `url(http://localhost:5000${user.profilePic}) center/cover` : undefined 
           }}>
             {!user?.profilePic && user?.name?.charAt(0)}
           </div>
           <div>
-            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: THEME.textDim, marginBottom: 2 }}>Good {greeting},</div>
-            <div className="hero-name" style={{ fontSize: '1.8rem', fontWeight: 900, color: THEME.text, letterSpacing: '-0.03em', fontFamily: "'Outfit', sans-serif" }}>{user?.name}</div>
-            <div style={{ display: 'flex', gap: 15, marginTop: 6, fontSize: '0.8rem', color: THEME.textDim }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Ic.Hospital size={12} /> {user?.hospital}</span>
-              <span style={{ color: 'rgba(255,255,255,0.1)' }}>|</span>
-              <span style={{ fontWeight: 600 }}>Active Hub: {user?.ward}</span>
+            <div className="page-subtitle">Good {greeting},</div>
+            <div className="page-title" style={{ fontSize: '2.2rem' }}>{user?.name}</div>
+            <div style={{ display: 'flex', gap: 15, marginTop: 8 }} className="page-subtitle">
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Ic.Hospital size={14} /> {user?.hospital}</span>
+              <span style={{ opacity: 0.2 }}>|</span>
+              <span style={{ fontWeight: 600, color: 'var(--text2)' }}>Ward: {user?.ward}</span>
             </div>
           </div>
         </div>
 
-        <div className="hero-metrics-grid" style={{ position: 'relative', zIndex: 1 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, position: 'relative', zIndex: 1 }}>
           {[
-            { label: 'Operational Duty', value: stats.total, color: THEME.primary, icon: Ic.Activity },
-            { label: 'Night Resilience', value: stats.night, color: '#818cf8', icon: Ic.Moon },
-            { label: 'Extra Earnings', value: `LKR ${((otData.totalApprovedHours || 0) * 150).toLocaleString()}`, color: THEME.success, icon: Ic.TrendUp },
+            { label: 'Operational Duty', value: stats.total, color: 'var(--primary)', icon: Ic.Activity },
+            { label: 'Night Resilience', value: stats.night, color: 'var(--info)', icon: Ic.Moon },
+            { label: 'Extra Earnings', value: `LKR ${((otData.totalApprovedHours || 0) * 150).toLocaleString()}`, color: 'var(--success)', icon: Ic.TrendUp },
           ].map(m => (
-            <div key={m.label} style={{ 
-              background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', 
-              borderRadius: 22, padding: '20px 24px', textAlign: 'left', backdropFilter: 'blur(12px)',
-              minWidth: 175, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', cursor: 'default'
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = `${m.color}44`; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                 <div style={{ 
-                   fontSize: m.value.toString().length > 8 ? '1.4rem' : '1.8rem', 
-                   fontWeight: 900, color: m.color, lineHeight: 1.2, letterSpacing: '-0.02em',
-                   display: 'flex', alignItems: 'baseline', gap: 4
-                 }}>
+            <div key={m.label} className="bento-cell" style={{ padding: '24px', '--glow-color': `${m.color}22` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                 <div className="stat-value-premium" style={{ color: m.color, fontSize: m.value.toString().length > 8 ? '1.5rem' : '2rem' }}>
                     {m.value}
                  </div>
-                 <div style={{ padding: 8, borderRadius: 10, background: `${m.color}15`, display: 'flex' }}>
-                    <m.icon size={16} color={m.color} />
+                 <div style={{ padding: 8, borderRadius: 12, background: `${m.color}15`, display: 'flex' }}>
+                    <m.icon size={18} color={m.color} />
                  </div>
               </div>
-              <div style={{ fontSize: '0.68rem', fontWeight: 800, color: THEME.textDim, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{m.label}</div>
+              <div className="sidebar-group-label" style={{ padding: 0 }}>{m.label}</div>
             </div>
           ))}
         </div>
@@ -522,85 +525,72 @@ export default function DashboardPage() {
         <div style={{ 
           position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%',
           background: `radial-gradient(circle, ${status.color}10 0%, transparent 60%)`,
-          animation: 'cd-rotate-slow 30s linear infinite', pointerEvents: 'none'
-        }} />
+          animation: 'cd-rota      {/* ── Modern Bento Grid ── */}
+      <div className="bento-grid">
         
-        {/* ── HUD Header ── */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative', zIndex: 2, marginBottom: 10 }}>
-          <div>
-            <div style={{ fontSize: '0.6rem', fontWeight: 800, color: THEME.textDim, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 4 }}>Mission Intel</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: THEME.primary, fontSize: '0.8rem', fontWeight: 900 }}>
-              <Ic.Activity size={14} /> ACTIVE
-            </div>
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '0.6rem', fontWeight: 800, color: THEME.textDim, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 4 }}>System Real-Time</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: THEME.success, fontSize: '0.8rem', fontWeight: 900, justifyContent: 'flex-end' }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: THEME.success, boxShadow: `0 0 8px ${THEME.success}` }} /> LIVE
-            </div>
-          </div>
-        </div>
-
-        <ShiftCountdown targetDate={nextShiftDate} />
-
-        <div style={{ textAlign: 'center', marginTop: 15, position: 'relative', zIndex: 2 }}>
-          <div style={{ fontSize: '1.4rem', fontWeight: 900, color: THEME.text, letterSpacing: '-0.02em' }}>
-            {getShiftCfg(upcoming[0]?.shift).label} Deployment
-          </div>
-          <div style={{ fontSize: '0.9rem', color: THEME.textDim, marginTop: 8, fontWeight: 500 }}>
-            {upcoming[0]?.date && new Date(upcoming[0].date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-          </div>
-          <div style={{ 
-            display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 20, 
-            padding: '8px 18px', background: 'rgba(15, 23, 42, 0.5)', borderRadius: 12,
-            border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)'
+        {/* Column 1: Readiness & Stats */}
+        <div className="bento-stack">
+          <div className="glass-card-premium" style={{ 
+            padding: '32px', border: `1px solid ${diffHours < 2 ? 'var(--danger)' : 'var(--border)'}`,
+            minHeight: 480
           }}>
-            <Ic.MapPin size={14} color={THEME.primary} />
-            <span style={{ fontSize: '0.85rem', color: THEME.text, fontWeight: 700 }}>{upcoming[0]?.ward || 'TBA'} Station</span>
-          </div>
-        </div>
-      </div>
+            <HUD_Header status={status} />
+            <ShiftCountdown targetDate={nextShiftDate} />
 
-          <div className="bento-cell" style={{ padding: 24, background: THEME.glass, border: `1px solid ${THEME.border}` }}>
+            <div style={{ textAlign: 'center', marginTop: 24, position: 'relative', zIndex: 2 }}>
+              <div className="page-title" style={{ fontSize: '1.5rem' }}>
+                {getShiftCfg(upcoming[0]?.shift).label} Deployment
+              </div>
+              <div className="page-subtitle" style={{ marginTop: 8 }}>
+                {upcoming[0]?.date && new Date(upcoming[0].date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+              </div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginTop: 24 }} className="btn btn-outline">
+                <Ic.MapPin size={14} color="var(--primary)" />
+                <span style={{ fontWeight: 700 }}>{upcoming[0]?.ward || 'TBA'} Station</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bento-cell" style={{ padding: 32 }}>
             <div className="bento-label"><Ic.TrendUp size={14} /> Shift Density Index</div>
             <DistributionBarChart config={[
-              { type: 'Day', count: stats.morning, color: THEME.warning, Icon: Ic.Sun, percent: (stats.morning/stats.total)*100 || 0 },
-              { type: 'Night', count: stats.night, color: '#818cf8', Icon: Ic.Moon, percent: (stats.night/stats.total)*100 || 0 },
-              { type: 'Other', count: Math.max(0, stats.total - stats.morning - stats.night), color: THEME.primary, Icon: Ic.Clock, percent: ((stats.total - stats.morning - stats.night)/stats.total)*100 || 0 },
+              { type: 'Day', count: stats.morning, color: 'var(--warning)', Icon: Ic.Sun, percent: (stats.morning/stats.total)*100 || 0 },
+              { type: 'Night', count: stats.night, color: 'var(--info)', Icon: Ic.Moon, percent: (stats.night/stats.total)*100 || 0 },
+              { type: 'Other', count: Math.max(0, stats.total - stats.morning - stats.night), color: 'var(--primary)', Icon: Ic.Clock, percent: ((stats.total - stats.morning - stats.night)/stats.total)*100 || 0 },
             ]} />
           </div>
         </div>
 
         {/* Column 2: The Core Roster */}
-        <div className="bento-cell" style={{ background: THEME.glass, border: `1px solid ${THEME.border}`, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ padding: '24px 28px', borderBottom: `1px solid ${THEME.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: '0.9rem', fontWeight: 800, color: THEME.text, display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Ic.Calendar size={16} color={THEME.primary} /> Active Deployment Roster
+        <div className="bento-cell" style={{ padding: 0, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="sidebar-group-label" style={{ color: 'var(--text)', padding: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Ic.Calendar size={18} color="var(--primary)" /> Active Deployment Roster
             </div>
-            <span style={{ fontSize: '0.62rem', fontWeight: 900, color: THEME.textDim, textTransform: 'uppercase' }}>{upcoming.length} Sessions Pending</span>
+            <span className="badge badge-blue">{upcoming.length} Sessions</span>
           </div>
-          <div style={{ flex: 1, overflowY: 'auto', padding: '10px 0' }}>
+          <div style={{ flex: 1, overflowY: 'auto' }}>
             {upcoming.length === 0 ? (
-               <div style={{ padding: 100, textAlign: 'center', color: THEME.textDim }}>No active deployments found.</div>
+               <div style={{ padding: 100, textAlign: 'center', color: 'var(--text3)' }}>No active deployments found.</div>
             ) : upcoming.map((s, i) => {
               const cfg = getShiftCfg(s.shift);
               const isToday = new Date(s.date).toDateString() === new Date().toDateString();
               return (
                 <div key={s._id} style={{ 
-                  display: 'flex', alignItems: 'center', gap: 20, padding: '18px 28px', 
-                  borderBottom: `1px solid ${THEME.border}`, background: isToday ? 'rgba(99,102,241,0.04)' : 'transparent',
-                  transition: 'background 0.2s'
+                  display: 'flex', alignItems: 'center', gap: 20, padding: '20px 32px', 
+                  borderBottom: '1px solid var(--border-light)', background: isToday ? 'hsla(226, 70%, 55%, 0.05)' : 'transparent',
+                  transition: 'background var(--transition)'
                 }}>
-                  <div style={{ width: 48, height: 48, borderRadius: 14, background: `${cfg.color}15`, border: `1px solid ${cfg.color}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: cfg.color }}>
-                    <cfg.Icon size={20} />
+                  <div style={{ width: 52, height: 52, borderRadius: 16, background: `${cfg.color}15`, border: `1px solid ${cfg.color}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: cfg.color }}>
+                    <cfg.Icon size={22} />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '1rem', fontWeight: 800, color: THEME.text }}>{cfg.label} Log</div>
-                    <div style={{ fontSize: '0.75rem', color: THEME.textDim, marginTop: 4 }}>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text)' }}>{cfg.label} Log</div>
+                    <div className="page-subtitle" style={{ fontSize: '0.75rem' }}>
                       {new Date(s.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                     </div>
                   </div>
-                  {isToday ? <span style={{ background: THEME.success + '22', color: THEME.success, border: `1px solid ${THEME.success}44`, fontSize: '0.65rem', fontWeight: 900, padding: '4px 10px', borderRadius: 8 }}>LIVE</span> : null}
+                  {isToday ? <span className="badge badge-green">LIVE</span> : null}
                 </div>
               );
             })}
@@ -608,49 +598,45 @@ export default function DashboardPage() {
         </div>
 
         {/* Column 3: Insights & Actions */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-          <div className="bento-cell" style={{ padding: 24, background: THEME.glass, border: `1px solid ${THEME.border}` }}>
-            <div className="bento-label"><Ic.TrendUp size={14} color={THEME.success} /> Financial Growth Trend</div>
+        <div className="bento-stack">
+          <div className="bento-cell" style={{ padding: 32 }}>
+            <div className="bento-label"><Ic.TrendUp size={14} color="var(--success)" /> Financial Growth Trend</div>
             <EarningsChart data={otData.records?.filter(r => r.status !== 'rejected').slice(0, 6).reverse().map(r => ({ value: r.approvedAmount || (r.extraHours * 150) }))} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 15, paddingTop: 15, borderTop: `1px solid ${THEME.border}` }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, paddingTop: 24, borderTop: '1px solid var(--border)' }}>
               <div>
-                <div style={{ fontSize: '0.6rem', fontWeight: 800, color: THEME.textDim, textTransform: 'uppercase' }}>Available Payout</div>
-                <div style={{ fontSize: '1.2rem', fontWeight: 900, color: THEME.success }}>LKR {((otData.totalApprovedHours || 0) * 150).toLocaleString()}</div>
+                <div className="sidebar-group-label" style={{ padding: 0 }}>Available Payout</div>
+                <div className="stat-value-premium" style={{ color: 'var(--success)', fontSize: '1.5rem' }}>LKR {((otData.totalApprovedHours || 0) * 150).toLocaleString()}</div>
               </div>
-              <button onClick={() => navigate('/overtime')} style={{ all: 'unset', cursor: 'pointer', width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: THEME.textDim, border: `1px solid ${THEME.border}`, transition: 'all 0.2s' }}>
-                <Ic.ArrowRight size={16} />
+              <button onClick={() => navigate('/overtime')} className="btn btn-ghost" style={{ padding: 10 }}>
+                <Ic.ArrowRight size={18} />
               </button>
             </div>
           </div>
 
-          <div className="grid-2">
-            <button onClick={() => navigate('/ward-roster')} style={{ all: 'unset', cursor: 'pointer' }}>
-              <div className="bento-cell" style={{ padding: 20, textAlign: 'center', background: THEME.glass, border: `1px solid ${THEME.border}`, transition: 'all 0.2s', borderRadius: 16 }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = '#818cf844'}
-                onMouseLeave={e => e.currentTarget.style.borderColor = THEME.border}>
-                <Ic.Moon size={22} color="#818cf8" />
-                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: THEME.text, marginTop: 8 }}>Ward Roster</div>
-                <div style={{ fontSize: '0.62rem', color: THEME.textDim, marginTop: 3 }}>View all shifts</div>
-              </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <button onClick={() => navigate('/ward-roster')} className="bento-cell" style={{ padding: 24, textAlign: 'center' }}>
+              <Ic.Moon size={24} color="var(--info)" />
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, marginTop: 12 }}>Ward Roster</div>
             </button>
-            <button onClick={() => navigate('/overtime')} style={{ all: 'unset', cursor: 'pointer' }}>
-              <div className="bento-cell" style={{ padding: 20, textAlign: 'center', background: THEME.glass, border: `1px solid ${THEME.border}`, transition: 'all 0.2s', borderRadius: 16 }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = `${THEME.warning}44`}
-                onMouseLeave={e => e.currentTarget.style.borderColor = THEME.border}>
-                <Ic.Clock size={22} color={THEME.warning} />
-                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: THEME.text, marginTop: 8 }}>Overtime</div>
-                <div style={{ fontSize: '0.62rem', color: THEME.textDim, marginTop: 3 }}>Log extra hours</div>
-              </div>
+            <button onClick={() => navigate('/overtime')} className="bento-cell" style={{ padding: 24, textAlign: 'center' }}>
+              <Ic.Clock size={24} color="var(--warning)" />
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, marginTop: 12 }}>Overtime</div>
             </button>
           </div>
 
-          <div className="bento-cell" style={{ padding: 20, background: 'linear-gradient(135deg, rgba(99,102,241,0.1) 0%, transparent 100%)', border: `1px solid ${THEME.primary}33` }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-              <Ic.Hospital size={16} color={THEME.primary} />
-              <span style={{ fontSize: '0.8rem', fontWeight: 800, color: THEME.text }}>Stability Insight</span>
+          <div className="bento-cell" style={{ padding: 24, background: 'linear-gradient(135deg, hsla(226, 70%, 55%, 0.1), transparent)', borderColor: 'hsla(226, 70%, 55%, 0.2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <Ic.Hospital size={16} color="var(--primary)" />
+              <span className="sidebar-brand-name" style={{ fontSize: '0.85rem' }}>Stability Insight</span>
             </div>
-            <p style={{ fontSize: '0.75rem', color: THEME.textDim, lineHeight: 1.5, margin: 0 }}>
+            <p className="page-subtitle" style={{ fontSize: '0.78rem', lineHeight: 1.6 }}>
               {readiness > 85 ? "Your circadian rhythm alignment is optimal for the current week." : "High night shift density detected. Recommend 90min morning rest."}
+            </p>
+          </div>
+        </div>
+
+      </div>
+. Recommend 90min morning rest."}
             </p>
           </div>
         </div>

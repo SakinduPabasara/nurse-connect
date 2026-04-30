@@ -28,6 +28,7 @@ const createNotice = async (req, res) => {
       content: content.trim(),
       category: category || 'circular',
       postedBy: req.user._id,
+      hospital: req.user.hospital || "Global",
     });
 
     const populated = await notice.populate('postedBy', 'name');
@@ -52,7 +53,12 @@ const createNotice = async (req, res) => {
 // @GET /api/notices
 const getNotices = async (req, res) => {
   try {
-    const notices = await Notice.find()
+    const filter = {};
+    if (req.user.hospital) {
+      filter.hospital = req.user.hospital;
+    }
+
+    const notices = await Notice.find(filter)
       .populate('postedBy', 'name')
       .sort({ createdAt: -1 });
     res.json(notices);

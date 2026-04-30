@@ -57,6 +57,7 @@ const uploadDocument = async (req, res) => {
       fileMimeType: req.file ? req.file.mimetype : "",
       fileSize: req.file ? req.file.size : 0,
       uploadedBy: req.user._id,
+      hospital: req.user.hospital || "Global",
     });
 
     const populated = await doc.populate("uploadedBy", "name");
@@ -99,6 +100,11 @@ const getAllDocuments = async (req, res) => {
     }
     if (req.query.search) {
       filter.title = { $regex: req.query.search, $options: "i" };
+    }
+
+    // Strict Hospital Scoping
+    if (req.user.hospital) {
+      filter.hospital = req.user.hospital;
     }
 
     const documents = await Document.find(filter)

@@ -13,6 +13,11 @@ const noticeSchema = new mongoose.Schema({
     enum: ['circular', 'training', 'guideline', 'alert'],
     default: 'circular',
   },
+  hospital: {
+    type: String,
+    required: true,
+    trim: true,
+  },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Notice', noticeSchema);

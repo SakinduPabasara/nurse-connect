@@ -40,7 +40,14 @@ const addDrug = async (req, res) => {
 const getDrugs = async (req, res) => {
   try {
     const filter = {};
-    if (req.query.hospital) filter.hospital = req.query.hospital;
+    
+    // Strict Hospital Scoping
+    if (req.user.hospital) {
+      filter.hospital = req.user.hospital;
+    } else if (req.query.hospital) {
+      filter.hospital = req.query.hospital;
+    }
+
     if (req.query.ward) filter.ward = req.query.ward;
 
     const drugs = await Drug.find(filter)

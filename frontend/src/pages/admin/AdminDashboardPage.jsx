@@ -124,26 +124,21 @@ export default function AdminDashboardPage() {
       `}</style>
 
       {/* Welcome */}
-      <div className="admin-welcome-banner" style={{
-        display: 'flex', alignItems: 'center', gap: 16, marginBottom: 28,
-        padding: '20px 24px',
-        background: 'linear-gradient(135deg, rgba(217,119,6,0.06) 0%, rgba(16,185,129,0.04) 100%)',
-        border: '1px solid rgba(217,119,6,0.12)',
-        borderRadius: 14, flexWrap: 'wrap',
-      }}>
-        <AdminCross />
-        <div>
-          <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: '1.2rem', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
-            Operational Command Center
+      <div className="glass-card-premium" style={{ marginBottom: 28, padding: '24px 32px' }}>
+        <div className="mesh-bg" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20, position: 'relative', zIndex: 1 }}>
+          <AdminCross />
+          <div>
+            <div className="page-title" style={{ fontSize: '1.4rem' }}>Operational Command Center</div>
+            <div className="page-subtitle" style={{ marginTop: 2 }}>
+              Centralized monitoring for <span style={{ color: 'var(--text)', fontWeight: 600 }}>{user?.hospital || "Hospital Management"}</span>
+            </div>
           </div>
-          <div style={{ fontSize: '0.82rem', color: 'var(--text3)', marginTop: 2 }}>
-            Centralized monitoring for {user?.hospital || "Hospital Management"}
+          <div style={{ marginLeft: 'auto' }}>
+            <span className="badge badge-amber" style={{ padding: '6px 16px', fontSize: '0.75rem' }}>
+              Auth: Administrator
+            </span>
           </div>
-        </div>
-        <div style={{ marginLeft: 'auto', display:'flex', gap:8 }}>
-          <span style={{ background: 'rgba(217,119,6,0.12)', border: '1px solid rgba(217,119,6,0.2)', color: '#fbbf24', padding: '4px 12px', borderRadius: 999, fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            Auth: Administrator
-          </span>
         </div>
       </div>
 
@@ -155,28 +150,20 @@ export default function AdminDashboardPage() {
       ) : (
         <>
           {/* Stats Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 16, marginBottom: 28 }}>
+          <div className="bento-grid" style={{ marginBottom: 28 }}>
             {STAT_CARDS.map(c => (
               <Link key={c.label} to={c.link} style={{ textDecoration: 'none' }}>
-                <div style={{
-                  background: c.bg, border: `1px solid ${c.border}`,
-                  borderRadius: 16, padding: '22px',
-                  transition: 'all 0.2s ease',
-                  position: 'relative', overflow: 'hidden',
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 10px 30px rgba(0,0,0,0.4)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 16 }}>
-                    <span style={{ fontSize: '1.6rem' }}>{c.icon}</span>
+                <div className="bento-cell" style={{ padding: '24px', '--glow-color': `${c.color}22` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                    <span style={{ fontSize: '1.8rem' }}>{c.icon}</span>
                     {c.badge && (
-                      <span style={{ background: c.color, color: '#fff', fontSize: '0.65rem', fontWeight: 800, padding: '3px 10px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      <span className="badge" style={{ background: c.color, color: '#fff' }}>
                         {c.badge}
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>{c.label}</div>
-                  <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: '2.4rem', fontWeight: 800, color: c.color, letterSpacing: '-0.02em', lineHeight: 1 }}>{c.value}</div>
+                  <div className="sidebar-group-label" style={{ padding: 0, marginBottom: 8 }}>{c.label}</div>
+                  <div className="stat-value-premium" style={{ color: c.color, fontSize: '2.4rem' }}>{c.value}</div>
                 </div>
               </Link>
             ))}

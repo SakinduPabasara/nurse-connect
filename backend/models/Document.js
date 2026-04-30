@@ -18,6 +18,11 @@ const documentSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    hospital: {
+      type: String,
+      required: true,
+      trim: true,
+    },
   },
   { timestamps: true },
 );

@@ -156,24 +156,24 @@ const MedCross = () => (
     fill="none"
     aria-hidden="true"
   >
-    <rect width="32" height="32" rx="8" fill="url(#g1)" />
+    <rect width="32" height="32" rx="10" fill="url(#g1)" />
     <rect
-      x="13"
-      y="6"
-      width="6"
-      height="20"
-      rx="2"
+      x="13.5"
+      y="7"
+      width="5"
+      height="18"
+      rx="1.5"
       fill="white"
-      opacity="0.95"
+      opacity="1"
     />
     <rect
-      x="6"
-      y="13"
-      width="20"
-      height="6"
-      rx="2"
+      x="7"
+      y="13.5"
+      width="18"
+      height="5"
+      rx="1.5"
       fill="white"
-      opacity="0.95"
+      opacity="1"
     />
     <defs>
       <linearGradient
@@ -184,7 +184,7 @@ const MedCross = () => (
         y2="32"
         gradientUnits="userSpaceOnUse"
       >
-        <stop offset="0%" stopColor="#2563eb" />
+        <stop offset="0%" stopColor="#4f46e5" />
         <stop offset="100%" stopColor="#06b6d4" />
       </linearGradient>
     </defs>
@@ -199,24 +199,24 @@ const AdminCross = () => (
     fill="none"
     aria-hidden="true"
   >
-    <rect width="32" height="32" rx="8" fill="url(#g2)" />
+    <rect width="32" height="32" rx="10" fill="url(#g2)" />
     <rect
-      x="13"
-      y="6"
-      width="6"
-      height="20"
-      rx="2"
+      x="13.5"
+      y="7"
+      width="5"
+      height="18"
+      rx="1.5"
       fill="white"
-      opacity="0.95"
+      opacity="1"
     />
     <rect
-      x="6"
-      y="13"
-      width="20"
-      height="6"
-      rx="2"
+      x="7"
+      y="13.5"
+      width="18"
+      height="5"
+      rx="1.5"
       fill="white"
-      opacity="0.95"
+      opacity="1"
     />
     <defs>
       <linearGradient
@@ -227,8 +227,8 @@ const AdminCross = () => (
         y2="32"
         gradientUnits="userSpaceOnUse"
       >
-        <stop offset="0%" stopColor="#d97706" />
-        <stop offset="100%" stopColor="#10b981" />
+        <stop offset="0%" stopColor="#f59e0b" />
+        <stop offset="100%" stopColor="#ef4444" />
       </linearGradient>
     </defs>
   </svg>

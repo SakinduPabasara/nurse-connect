@@ -347,55 +347,26 @@ export default function WardRosterPage() {
           </div>
         </div>
       ) : (
-        /* Flat grid — all entries */
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-            gap: 14,
-          }}
-        >
+        <div className="bento-grid">
           {filtered.map((entry) => {
             const isMe = entry.nurse?._id === user?._id;
             const meta = getMeta(entry.shift);
             const dateObj = new Date(entry.date);
             const isToday = dateObj.toDateString() === now.toDateString();
-            const nurseName = entry.nurse?.name || "Assigned Nurse";
+            const nurseName = entry.nurse?.name || "Assigned Personnel";
             const grad = avatarGradient(nurseName);
 
             return (
               <div
                 key={entry._id}
-                className="roster-item-card"
+                className="bento-cell"
                 style={{
-                  background: isMe ? "rgba(37,99,235,0.06)" : "var(--surface)",
-                  border: `1px solid ${isMe ? "rgba(37,99,235,0.3)" : "var(--border)"}`,
-                  borderRadius: 18,
-                  padding: "18px 20px",
+                  padding: "20px 24px",
                   display: "flex",
                   alignItems: "center",
-                  gap: 14,
-                  transition: "all 0.22s ease",
-                  position: "relative",
-                  overflow: "hidden",
-                  boxShadow: isMe ? "0 0 20px rgba(37,99,235,0.1)" : "none",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-3px)";
-                  e.currentTarget.style.boxShadow =
-                    "0 12px 30px rgba(0,0,0,0.4)";
-                  e.currentTarget.style.borderColor = isMe
-                    ? "rgba(37,99,235,0.5)"
-                    : "rgba(148,163,184,0.2)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = isMe
-                    ? "0 0 20px rgba(37,99,235,0.1)"
-                    : "none";
-                  e.currentTarget.style.borderColor = isMe
-                    ? "rgba(37,99,235,0.3)"
-                    : "var(--border)";
+                  gap: 16,
+                  borderColor: isMe ? "var(--primary)" : "var(--border)",
+                  background: isMe ? "hsla(226, 70%, 55%, 0.05)" : "var(--glass)",
                 }}
               >
                 {/* Date mini badge */}
@@ -404,30 +375,25 @@ export default function WardRosterPage() {
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
-                    width: 44,
+                    width: 48,
                     flexShrink: 0,
-                    background: "rgba(255,255,255,0.04)",
-                    borderRadius: 11,
-                    padding: "7px 4px",
-                    border: "1px solid var(--border-light)",
+                    background: "var(--border-light)",
+                    borderRadius: 14,
+                    padding: "8px 4px",
+                    border: "1px solid var(--border)",
                   }}
                 >
                   <span
-                    style={{
-                      fontSize: "0.6rem",
-                      fontWeight: 700,
-                      color: "var(--text3)",
-                      textTransform: "uppercase",
-                    }}
+                    className="sidebar-group-label"
+                    style={{ fontSize: "0.55rem", padding: 0 }}
                   >
                     {dateObj.toLocaleDateString("en-US", { month: "short" })}
                   </span>
                   <span
                     style={{
-                      fontFamily: "'DM Sans',sans-serif",
-                      fontSize: "1.3rem",
+                      fontSize: "1.2rem",
                       fontWeight: 800,
-                      color: isToday ? "#34d399" : "var(--text)",
+                      color: isToday ? "var(--success)" : "var(--text)",
                       lineHeight: 1,
                     }}
                   >
@@ -438,19 +404,20 @@ export default function WardRosterPage() {
                 {/* Avatar */}
                 <div
                   style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 13,
+                    width: 48,
+                    height: 48,
+                    borderRadius: 15,
                     flexShrink: 0,
                     background: entry.nurse?.profilePic ? "transparent" : grad,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     color: "#fff",
-                    fontWeight: 700,
+                    fontWeight: 800,
                     fontSize: "1rem",
-                    boxShadow: "0 3px 10px rgba(0,0,0,0.3)",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
                     overflow: "hidden",
+                    border: "2px solid var(--border)",
                   }}
                 >
                   {entry.nurse?.profilePic ? (
@@ -474,65 +441,37 @@ export default function WardRosterPage() {
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: 7,
+                      gap: 8,
                       marginBottom: 4,
-                      flexWrap: "wrap",
                     }}
                   >
                     <span
-                      style={{
-                        fontWeight: 700,
-                        fontSize: "0.9rem",
-                        color: "var(--text)",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
+                      className="nurse-name-text"
+                      style={{ fontWeight: 700, fontSize: "0.95rem" }}
                     >
                       {nurseName}
                     </span>
-                    {isMe && (
-                      <span
-                        style={{
-                          background: "var(--primary)",
-                          color: "#fff",
-                          fontSize: "0.56rem",
-                          fontWeight: 900,
-                          padding: "2px 7px",
-                          borderRadius: 5,
-                          textTransform: "uppercase",
-                          letterSpacing: "0.05em",
-                          flexShrink: 0,
-                        }}
-                      >
-                        Me
-                      </span>
-                    )}
+                    {isMe && <span className="badge badge-blue">Me</span>}
                   </div>
                   <div
+                    className="page-subtitle"
                     style={{
+                      fontSize: "0.75rem",
                       display: "flex",
                       alignItems: "center",
-                      gap: 8,
-                      fontSize: "0.73rem",
-                      color: "var(--text3)",
-                      flexWrap: "wrap",
+                      gap: 10,
                     }}
                   >
                     <span
                       style={{ display: "flex", alignItems: "center", gap: 4 }}
                     >
-                      <Ic.Clock size={11} /> {entry.shift}
+                      <Ic.Clock size={12} /> {entry.shift}
                     </span>
                     {ward === "__ALL__" && (
                       <span
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 4,
-                        }}
+                        style={{ display: "flex", alignItems: "center", gap: 4 }}
                       >
-                        <Ic.Hospital size={11} /> {entry.ward}
+                        <Ic.Hospital size={12} /> {entry.ward}
                       </span>
                     )}
                   </div>
@@ -544,29 +483,23 @@ export default function WardRosterPage() {
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
-                    gap: 5,
+                    gap: 6,
                     flexShrink: 0,
                   }}
                 >
                   <div
                     style={{
-                      width: 10,
-                      height: 10,
+                      width: 12,
+                      height: 12,
                       borderRadius: "50%",
                       background: meta.color,
-                      boxShadow: `0 0 8px ${meta.color}`,
+                      boxShadow: `0 0 10px ${meta.color}`,
                     }}
                   />
                   {isToday && (
                     <span
-                      style={{
-                        fontSize: "0.57rem",
-                        fontWeight: 800,
-                        color: "#34d399",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.04em",
-                        animation: "glow-pulse 2s ease infinite",
-                      }}
+                      className="badge badge-green"
+                      style={{ fontSize: "0.5rem" }}
                     >
                       Live
                     </span>
