@@ -198,7 +198,12 @@ const getWardRoster = async (req, res) => {
   }
 
   try {
-    const filter = { hospital: req.user.hospital };
+    let hospitalFilter = req.user.hospital;
+    if (req.user.role === "admin" && req.query.hospital) {
+      hospitalFilter = req.query.hospital;
+    }
+
+    const filter = { hospital: hospitalFilter };
     if (req.params.ward !== "all") {
       filter.ward = req.params.ward;
     }
@@ -211,7 +216,7 @@ const getWardRoster = async (req, res) => {
     const roster = rosterDocs.filter(entry => {
       // Strict hospital scoping
       const entryHospital = entry.hospital || (entry.nurse && entry.nurse.hospital);
-      return entry.nurse && entryHospital === req.user.hospital;
+      return entry.nurse && entryHospital === hospitalFilter;
     });
 
     res.json(roster);
@@ -223,7 +228,14 @@ const getWardRoster = async (req, res) => {
 // @GET /api/roster/all
 const getAllRosters = async (req, res) => {
   try {
-    const filter = { hospital: req.user.hospital };
+    let hospitalFilter = req.user.hospital;
+
+    // Allow Admins to override the hospital filter if a specific one is requested
+    if (req.user.role === "admin" && req.query.hospital) {
+      hospitalFilter = req.query.hospital;
+    }
+
+    const filter = { hospital: hospitalFilter };
     if (req.query.month) filter.month = req.query.month;
     if (req.query.ward) filter.ward = req.query.ward;
     if (req.query.nurse && mongoose.Types.ObjectId.isValid(req.query.nurse)) {
@@ -237,7 +249,7 @@ const getAllRosters = async (req, res) => {
     const roster = rosterDocs.filter(entry => {
       // Strict hospital scoping
       const entryHospital = entry.hospital || (entry.nurse && entry.nurse.hospital);
-      return entry.nurse && entryHospital === req.user.hospital;
+      return entry.nurse && entryHospital === hospitalFilter;
     });
 
     res.json(roster);
@@ -249,12 +261,17 @@ const getAllRosters = async (req, res) => {
 // @GET /api/roster/wards
 const getWardNames = async (req, res) => {
   try {
+    let hospitalFilter = req.user.hospital;
+    if (req.user.role === "admin" && req.query.hospital) {
+      hospitalFilter = req.query.hospital;
+    }
+
     const [rosterWards, userWards, drugWards, equipmentWards] =
       await Promise.all([
-        Roster.distinct("ward", { hospital: req.user.hospital, ward: { $exists: true, $ne: null } }),
-        User.distinct("ward", { hospital: req.user.hospital, ward: { $exists: true, $ne: null } }),
-        Drug.distinct("ward", { hospital: req.user.hospital, ward: { $exists: true, $ne: null } }),
-        Equipment.distinct("ward", { hospital: req.user.hospital, ward: { $exists: true, $ne: null } }),
+        Roster.distinct("ward", { hospital: hospitalFilter, ward: { $exists: true, $ne: null } }),
+        User.distinct("ward", { hospital: hospitalFilter, ward: { $exists: true, $ne: null } }),
+        Drug.distinct("ward", { hospital: hospitalFilter, ward: { $exists: true, $ne: null } }),
+        Equipment.distinct("ward", { hospital: hospitalFilter, ward: { $exists: true, $ne: null } }),
       ]);
 
     const wards = [

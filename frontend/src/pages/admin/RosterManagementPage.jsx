@@ -6,6 +6,7 @@ import { useConfirm } from "../../context/ConfirmContext";
 import SearchableSelect from "../../components/SearchableSelect";
 import * as Ic from "../../components/icons";
 import { getSocket } from "../../utils/socketClient";
+import { useAuth } from "../../context/AuthContext";
 
 const SHIFTS = ["7AM-1PM", "1PM-7PM", "7AM-7PM", "7PM-7AM"];
 const SHIFT_MAP = {
@@ -40,12 +41,13 @@ const SHIFT_MAP = {
 };
 
 export default function RosterManagementPage() {
+  const { user } = useAuth();
   const confirm = useConfirm();
   const [nurses, setNurses] = useState([]);
   const [wards, setWards] = useState([]);
   const [roster, setRoster] = useState([]);
   const [rosterWard, setRosterWard] = useState("");
-  const [rosterHospital, setRosterHospital] = useState(""); // NEW: hospital filter for view tab
+  const [rosterHospital, setRosterHospital] = useState(user?.hospital || "");
   const [tab, setTab] = useState("view");
   const now = new Date();
   const [month, setMonth] = useState(
@@ -105,7 +107,7 @@ export default function RosterManagementPage() {
     setLoading(true);
     try {
       const { data } = await API.get(
-        `/roster/all?month=${month}&ward=${rosterWard}`,
+        `/roster/all?month=${month}&ward=${rosterWard}&hospital=${rosterHospital}`,
       );
       setRoster(data);
     } catch {
@@ -117,7 +119,7 @@ export default function RosterManagementPage() {
 
   useEffect(() => {
     fetchRoster();
-  }, [rosterWard, month]);
+  }, [rosterWard, rosterHospital, month]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -174,20 +176,29 @@ export default function RosterManagementPage() {
   // Wards available in the view filter — when a hospital is selected, only show wards
   // that have at least one nurse belonging to that hospital.
   const viewWards = useMemo(() => {
-    if (!rosterHospital) return wards;
+    const uniqueWards = [...new Set(wards)];
+    if (!rosterHospital) return uniqueWards;
+    
+    // Filter wards to only show those that have nurses in the selected hospital
+    // OR are explicitly registered to that hospital in the wards collection.
     const wardsInHospital = new Set(
       nurses
         .filter((n) => n.hospital === rosterHospital)
         .map((n) => n.ward)
         .filter(Boolean),
     );
-    return wards.filter((w) => wardsInHospital.has(w));
+    
+    return uniqueWards.filter((w) => wardsInHospital.has(w));
   }, [rosterHospital, nurses, wards]);
 
   const groupedRoster = useMemo(() => {
     const g = {};
     roster
-      .filter((r) => !rosterHospital || r.nurse?.hospital === rosterHospital)
+      .filter((r) => {
+        if (!rosterHospital) return true;
+        const entryHospital = r.hospital || r.nurse?.hospital || "";
+        return entryHospital.trim() === rosterHospital.trim();
+      })
       .forEach((r) => {
         const nurseId = r.nurse?._id || (typeof r.nurse === "string" ? r.nurse : null) || "unknown";
         const name = r.nurse?.name || r.nurseName || "Unknown Nurse";
