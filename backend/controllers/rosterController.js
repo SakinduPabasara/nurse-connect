@@ -30,7 +30,7 @@ const createRoster = async (req, res) => {
   // ------------------
 
   try {
-    const nurseUser = await User.findById(nurse).select("name");
+    const nurseUser = await User.findById(nurse).select("name hospital");
     if (!nurseUser) {
       return res.status(404).json({ message: "Nurse not found" });
     }
@@ -38,6 +38,7 @@ const createRoster = async (req, res) => {
     const entry = await Roster.create({
       nurse,
       nurseName: nurseUser.name,
+      hospital: nurseUser.hospital,
       ward,
       date,
       shift,
@@ -105,13 +106,14 @@ const createRosterBulk = async (req, res) => {
   }
 
   try {
-    const nurseUser = await User.findById(nurse).select("name");
+    const nurseUser = await User.findById(nurse).select("name hospital");
     if (!nurseUser) {
       return res.status(404).json({ message: "Nurse not found" });
     }
 
     const existing = await Roster.find({
       nurse,
+      hospital: nurseUser.hospital,
       ward,
       shift,
       month,
@@ -135,6 +137,7 @@ const createRosterBulk = async (req, res) => {
     const docs = toCreateDates.map((date) => ({
       nurse,
       nurseName: nurseUser.name,
+      hospital: nurseUser.hospital,
       ward: ward.trim(),
       date,
       shift,
@@ -195,22 +198,20 @@ const getWardRoster = async (req, res) => {
   }
 
   try {
-    const filter = {};
+    const filter = { hospital: req.user.hospital };
     if (req.params.ward !== "all") {
       filter.ward = req.params.ward;
     }
     if (req.query.month) filter.month = req.query.month;
 
     const rosterDocs = await Roster.find(filter)
-      .populate("nurse", "name email")
+      .populate("nurse", "name email hospital")
       .sort({ date: 1 });
 
-    const roster = rosterDocs.map((entry) => {
-      const obj = entry.toObject();
-      if (!obj.nurse && obj.nurseName) {
-        obj.nurse = { name: obj.nurseName };
-      }
-      return obj;
+    const roster = rosterDocs.filter(entry => {
+      // Strict hospital scoping
+      const entryHospital = entry.hospital || (entry.nurse && entry.nurse.hospital);
+      return entry.nurse && entryHospital === req.user.hospital;
     });
 
     res.json(roster);
@@ -222,7 +223,7 @@ const getWardRoster = async (req, res) => {
 // @GET /api/roster/all
 const getAllRosters = async (req, res) => {
   try {
-    const filter = {};
+    const filter = { hospital: req.user.hospital };
     if (req.query.month) filter.month = req.query.month;
     if (req.query.ward) filter.ward = req.query.ward;
     if (req.query.nurse && mongoose.Types.ObjectId.isValid(req.query.nurse)) {
@@ -233,17 +234,10 @@ const getAllRosters = async (req, res) => {
       .populate("nurse", "name email hospital ward")
       .sort({ date: 1, ward: 1 });
 
-    const roster = rosterDocs.map((entry) => {
-      const obj = entry.toObject();
-      if (!obj.nurse) {
-        // If populate fails, we retrieve the original ID used for population
-        const originalId = entry.populated("nurse");
-        obj.nurse = { 
-          _id: originalId, 
-          name: obj.nurseName || "Unknown Nurse" 
-        };
-      }
-      return obj;
+    const roster = rosterDocs.filter(entry => {
+      // Strict hospital scoping
+      const entryHospital = entry.hospital || (entry.nurse && entry.nurse.hospital);
+      return entry.nurse && entryHospital === req.user.hospital;
     });
 
     res.json(roster);
@@ -257,10 +251,10 @@ const getWardNames = async (req, res) => {
   try {
     const [rosterWards, userWards, drugWards, equipmentWards] =
       await Promise.all([
-        Roster.distinct("ward", { ward: { $exists: true, $ne: null } }),
-        User.distinct("ward", { ward: { $exists: true, $ne: null } }),
-        Drug.distinct("ward", { ward: { $exists: true, $ne: null } }),
-        Equipment.distinct("ward", { ward: { $exists: true, $ne: null } }),
+        Roster.distinct("ward", { hospital: req.user.hospital, ward: { $exists: true, $ne: null } }),
+        User.distinct("ward", { hospital: req.user.hospital, ward: { $exists: true, $ne: null } }),
+        Drug.distinct("ward", { hospital: req.user.hospital, ward: { $exists: true, $ne: null } }),
+        Equipment.distinct("ward", { hospital: req.user.hospital, ward: { $exists: true, $ne: null } }),
       ]);
 
     const wards = [

@@ -16,6 +16,11 @@ const rosterSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    hospital: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     date: {
       type: String, // e.g. "2024-07-15"
       required: true,

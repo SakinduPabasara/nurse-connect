@@ -1,6 +1,16 @@
 const User = require("../models/User");
 const Notification = require("../models/Notification");
 const Roster = require("../models/Roster");
+const Leave = require("../models/Leave");
+const Overtime = require("../models/Overtime");
+const SwapRequest = require("../models/SwapRequest");
+const TransferRequest = require("../models/TransferRequest");
+const Post = require("../models/Post");
+const Notice = require("../models/Notice");
+const Document = require("../models/Document");
+const Opportunity = require("../models/Opportunity");
+const Drug = require("../models/Drug");
+const Equipment = require("../models/Equipment");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const { getIO } = require("../utils/socketManager");
@@ -368,14 +378,42 @@ const deleteUser = async (req, res) => {
       }
     }
 
-    // Preserve nurse names in historical roster rows after account deletion.
-    await Roster.updateMany(
-      {
-        nurse: targetUser._id,
-        $or: [{ nurseName: { $exists: false } }, { nurseName: "" }],
-      },
-      { $set: { nurseName: targetUser.name || "Deleted user" } },
-    );
+    // Cascade delete: Remove all records associated with this user
+    await Promise.all([
+      Roster.deleteMany({ nurse: targetUser._id }),
+      Notification.deleteMany({ recipient: targetUser._id }),
+      Leave.deleteMany({ nurse: targetUser._id }),
+      Leave.updateMany(
+        { reviewedBy: targetUser._id },
+        { $set: { reviewedBy: null } },
+      ),
+      Overtime.deleteMany({ nurse: targetUser._id }),
+      Overtime.updateMany(
+        { reviewedBy: targetUser._id },
+        { $set: { reviewedBy: null } },
+      ),
+      SwapRequest.deleteMany({
+        $or: [{ requester: targetUser._id }, { targetNurse: targetUser._id }],
+      }),
+      TransferRequest.deleteMany({
+        $or: [
+          { requester: targetUser._id },
+          { matchedWith: targetUser._id },
+          { decidedBy: targetUser._id },
+        ],
+      }),
+      Post.deleteMany({ author: targetUser._id }),
+      // Also remove user's comments from other posts
+      Post.updateMany({}, { $pull: { comments: { author: targetUser._id } } }),
+      Notice.deleteMany({ postedBy: targetUser._id }),
+      Document.deleteMany({ uploadedBy: targetUser._id }),
+      Opportunity.deleteMany({ postedBy: targetUser._id }),
+      Equipment.updateMany(
+        { addedBy: targetUser._id },
+        { $set: { addedBy: null } },
+      ),
+      Drug.updateMany({ addedBy: targetUser._id }, { $set: { addedBy: null } }),
+    ]);
 
     await targetUser.deleteOne();
     res.json({ message: "User deleted successfully" });
