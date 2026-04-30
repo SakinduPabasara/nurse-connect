@@ -111,7 +111,7 @@ export default function MyRosterPage() {
           <div style={{ position: 'absolute', top: -80, right: -60, width: 260, height: 260, background: 'radial-gradient(circle, rgba(37,99,235,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
           {/* Icon box */}
-          <div style={{ width: 72, height: 72, borderRadius: 20, background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: '0 14px 36px rgba(37,99,235,0.42)', zIndex: 1, flexShrink: 0 }}>
+          <div className="hero-icon-box" style={{ width: 72, height: 72, borderRadius: 20, background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: '0 14px 36px rgba(37,99,235,0.42)', zIndex: 1, flexShrink: 0 }}>
             {Ic.shiftIcon(nextShift.shift)}
           </div>
 
@@ -219,7 +219,7 @@ export default function MyRosterPage() {
                 const cfg = Ic.shiftColor(s.shift);
 
                 return (
-                  <div key={s._id} style={{
+                  <div key={s._id} className="shift-card-row" style={{
                     background: 'var(--surface)',
                     border: `1px solid ${isToday ? '#34d399' : 'var(--border)'}`,
                     borderRadius: 18,
@@ -233,7 +233,7 @@ export default function MyRosterPage() {
                     onMouseLeave={e => { e.currentTarget.style.transform = 'translateX(0)'; e.currentTarget.style.borderColor = isToday ? '#34d399' : 'var(--border)'; e.currentTarget.style.boxShadow = isToday ? '0 0 24px rgba(52,211,153,0.12)' : 'none'; }}
                   >
                     {/* Date box */}
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 46, flexShrink: 0, background: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: '8px 4px', border: '1px solid var(--border-light)' }}>
+                    <div className="shift-date-box" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 46, flexShrink: 0, background: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: '8px 4px', border: '1px solid var(--border-light)' }}>
                       <span style={{ fontSize: '0.63rem', fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase' }}>{d.toLocaleDateString('en-US', { weekday: 'short' })}</span>
                       <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: '1.4rem', fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>{d.getDate()}</span>
                     </div>
@@ -267,7 +267,7 @@ export default function MyRosterPage() {
                     </div>
 
                     {/* Action area */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                    <div className="shift-actions" style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
                       <div style={{ padding: '4px 12px', background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`, borderRadius: 8, fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         {s.shift}
                       </div>
@@ -308,6 +308,14 @@ export default function MyRosterPage() {
           </div>
         ))
       )}
+      <style>{`
+        @media (max-width: 768px) {
+          .shift-card-row { flex-direction: column; align-items: flex-start !important; gap: 14px !important; }
+          .shift-date-box { width: 100% !important; flex-direction: row !important; justify-content: space-between; padding: 12px 16px !important; }
+          .shift-actions { width: 100%; justify-content: space-between; margin-top: 8px; }
+          .hero-icon-box { display: none !important; } /* Hide icon on mobile to save space */
+        }
+      `}</style>
     </div>
   );
 }

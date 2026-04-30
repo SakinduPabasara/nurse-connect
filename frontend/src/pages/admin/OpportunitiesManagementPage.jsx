@@ -116,7 +116,7 @@ export default function OpportunitiesManagementPage() {
       </div>
 
       {/* ── KPI Grid ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 32 }}>
+      <div className="grid-3" style={{ marginBottom: 32 }}>
         {[
           { label: 'Active Listings', value: stats.total, color: '#f59e0b', icon: Ic.Inbox },
           { label: 'International Roles', value: stats.intl, color: '#22d3ee', icon: Ic.Globe },
@@ -264,7 +264,7 @@ export default function OpportunitiesManagementPage() {
                 <input className="form-input" placeholder="e.g. Senior ICU Specialist - London" value={form.title} onChange={e => setForm({...form, title: e.target.value})} />
               </div>
               
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+              <div className="grid-2">
                 <div className="form-group">
                   <label className="form-label">Global Location</label>
                   <input className="form-input" placeholder="City, Country" value={form.location} onChange={e => setForm({...form, location: e.target.value})} />

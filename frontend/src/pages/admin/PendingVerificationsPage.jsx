@@ -301,8 +301,10 @@ export default function PendingVerificationsPage() {
         }
         .pv-stat:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
 
-        @media (max-width: 600px) {
-          .pv-stat-bar { grid-template-columns: 1fr 1fr; }
+        @media (max-width: 768px) {
+          .pv-stat-bar { grid-template-columns: 1fr; }
+          .pv-stat { padding: 16px; }
+          .alert-info { font-size: 0.8rem; }
         }
       `}</style>
 

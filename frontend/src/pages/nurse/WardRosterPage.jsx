@@ -123,6 +123,12 @@ export default function WardRosterPage() {
 
   return (
     <div style={{ animation: "fadeInUp 0.35s ease" }}>
+      <style>{`
+        @media (max-width: 768px) {
+          .roster-item-card { flex-direction: column !important; align-items: flex-start !important; gap: 16px !important; }
+          .roster-item-card > div { width: 100%; }
+        }
+      `}</style>
       {/* ── Page Header ── */}
       <div className="page-header">
         <div>
@@ -150,6 +156,7 @@ export default function WardRosterPage() {
 
       {/* ── Control Panel ── */}
       <div
+        className="mobile-stack"
         style={{
           background:
             "linear-gradient(135deg, rgba(37,99,235,0.08) 0%, rgba(6,182,212,0.04) 100%)",
@@ -230,6 +237,7 @@ export default function WardRosterPage() {
 
         {/* Controls */}
         <div
+          className="mobile-stack"
           style={{
             display: "flex",
             gap: 12,
@@ -238,7 +246,7 @@ export default function WardRosterPage() {
             alignItems: "center",
           }}
         >
-          <div style={{ width: 220 }}>
+          <div className="mobile-w-full" style={{ width: 220 }}>
             <SearchableSelect
               options={wardOptions}
               value={ward}
@@ -248,7 +256,7 @@ export default function WardRosterPage() {
           </div>
           <input
             type="month"
-            className="form-input"
+            className="form-input mobile-w-full"
             style={{
               width: 160,
               height: 48,
@@ -290,7 +298,7 @@ export default function WardRosterPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
             gap: 14,
           }}
         >
@@ -343,7 +351,7 @@ export default function WardRosterPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
             gap: 14,
           }}
         >
@@ -358,6 +366,7 @@ export default function WardRosterPage() {
             return (
               <div
                 key={entry._id}
+                className="roster-item-card"
                 style={{
                   background: isMe ? "rgba(37,99,235,0.06)" : "var(--surface)",
                   border: `1px solid ${isMe ? "rgba(37,99,235,0.3)" : "var(--border)"}`,

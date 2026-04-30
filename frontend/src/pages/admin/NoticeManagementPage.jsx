@@ -115,7 +115,7 @@ export default function NoticeManagementPage() {
       </div>
 
       {/* ── KPI Grid ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 32 }}>
+      <div className="grid-3" style={{ marginBottom: 32 }}>
         {[
           { label: 'Active Broadcasts', value: stats.total, color: '#6366f1', icon: Ic.Inbox },
           { label: 'Critical Alerts', value: stats.alerts, color: '#f43f5e', icon: Ic.AlertTriangle },
@@ -186,7 +186,7 @@ export default function NoticeManagementPage() {
           {filtered.map(n => {
             const cfg = CAT_CONFIG[n.category] || CAT_CONFIG.circular;
             return (
-              <div key={n._id} style={{ 
+              <div key={n._id} className="notice-card" style={{ 
                 background: 'rgba(30, 41, 59, 0.4)', border: '1px solid rgba(255,255,255,0.06)', 
                 borderRadius: 24, padding: '24px', display: 'flex', gap: 24,
                 transition: 'all 0.3s ease', backdropFilter: 'blur(12px)',
@@ -235,7 +235,7 @@ export default function NoticeManagementPage() {
           background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)',
           animation: 'fadeIn 0.3s ease'
         }} onClick={() => setIsDrawerOpen(false)}>
-          <div style={{ 
+          <div className="broadcast-drawer" style={{ 
             width: '100%', maxWidth: 450, background: '#0f172a', height: '100%', 
             padding: '40px', display: 'flex', flexDirection: 'column', 
             boxShadow: '-20px 0 50px rgba(0,0,0,0.5)', borderLeft: '1px solid rgba(255,255,255,0.1)',
@@ -259,7 +259,7 @@ export default function NoticeManagementPage() {
               
               <div className="form-group">
                 <label className="form-label">Priority Intelligence Category</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div className="grid-2" style={{ gap: 10 }}>
                   {Object.keys(CAT_CONFIG).map(s => (
                     <button 
                       key={s} type="button" 
@@ -312,6 +312,10 @@ export default function NoticeManagementPage() {
         @keyframes slideInRight {
           from { transform: translateX(100%); }
           to { transform: translateX(0); }
+        }
+        @media (max-width: 768px) {
+          .broadcast-drawer { padding: 24px !important; width: 100% !important; }
+          .notice-card { flex-direction: column !important; align-items: stretch !important; }
         }
       `}</style>
     </div>

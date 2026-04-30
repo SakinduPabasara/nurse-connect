@@ -161,7 +161,7 @@ export default function EquipmentPage() {
 
       {/* ── Asset Grid ── */}
       {loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 24 }}>
+        <div className="grid-3">
           {Array.from({ length: 8 }).map((_, i) => <div key={i} className="skeleton-card" style={{ height: 240, borderRadius: 24 }} />)}
         </div>
       ) : filtered.length === 0 ? (
@@ -170,7 +170,7 @@ export default function EquipmentPage() {
           <div style={{ fontSize: '1rem', color: '#94a3b8' }}>No equipment found in the current view.</div>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 24 }}>
+        <div className="grid-3">
           {filtered.map(e => {
             const cfg = getCfg(e.status);
             const isAvailable = e.status === 'available';

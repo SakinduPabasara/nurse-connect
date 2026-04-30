@@ -146,7 +146,7 @@ export default function DrugsManagementPage() {
     <div style={{ animation: 'screen-entry 0.4s ease-out' }}>
       
       {/* ── Header ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 32 }}>
+      <div className="mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 32 }}>
         <div>
           <div style={{ fontSize: '0.75rem', fontWeight: 900, color: '#ec4899', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 6 }}>Pharmacy Inventory</div>
           <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: 15 }}>
@@ -169,7 +169,7 @@ export default function DrugsManagementPage() {
       </div>
 
       {/* ── KPI Grid ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 32 }}>
+      <div className="grid-3" style={{ marginBottom: 32 }}>
         {[
           { label: 'Inventory SKU', value: stats.total, color: '#6366f1', icon: Ic.Inbox },
           { label: 'Expiring Soon', value: stats.expiring, color: '#f59e0b', icon: Ic.AlertTriangle },
@@ -191,11 +191,11 @@ export default function DrugsManagementPage() {
       </div>
 
       {/* ── Control Bar ── */}
-      <div style={{ 
+      <div className="mobile-stack" style={{ 
         display: 'flex', gap: 15, marginBottom: 24, padding: '16px 20px', 
         background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 18
       }}>
-        <div style={{ position: 'relative', flex: 1 }}>
+        <div className="mobile-w-full" style={{ position: 'relative', flex: 1 }}>
           <Ic.Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
           <input 
             className="form-input" 
@@ -206,7 +206,7 @@ export default function DrugsManagementPage() {
           />
         </div>
         <select 
-          className="form-select" 
+          className="form-select mobile-w-full" 
           style={{ width: 220, background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }}
           value={hospitalFilter}
           onChange={e => setHospitalFilter(e.target.value)}
@@ -215,7 +215,7 @@ export default function DrugsManagementPage() {
           {hospitals.map(h => <option key={h._id} value={h.name}>{h.name}</option>)}
         </select>
         <select 
-          className="form-select" 
+          className="form-select mobile-w-full" 
           style={{ width: 220, background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }}
           value={wardFilter}
           onChange={e => setWardFilter(e.target.value)}
@@ -378,7 +378,7 @@ export default function DrugsManagementPage() {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+              <div className="grid-2">
                 <div className="form-group">
                   <label className="form-label">Quantity</label>
                   <input className="form-input" type="number" min="1" value={form.quantity} onChange={e => setForm({...form, quantity: e.target.value})} />

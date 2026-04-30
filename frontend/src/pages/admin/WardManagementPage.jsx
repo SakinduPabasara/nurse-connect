@@ -119,7 +119,7 @@ export default function WardManagementPage() {
       <style>{`
         .ward-bento-grid {
            display: grid;
-           grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+           grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
            gap: 20px;
            margin-top: 32px;
         }
@@ -188,9 +188,9 @@ export default function WardManagementPage() {
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+        <div className="mobile-stack" style={{ display: "flex", gap: 12, alignItems: "center" }}>
           {tab === "list" && (
-            <div style={{ width: 220 }}>
+            <div className="mobile-w-full" style={{ width: 220 }}>
               <SearchableSelect
                 options={[
                   { value: "all", label: "All Hospitals" },

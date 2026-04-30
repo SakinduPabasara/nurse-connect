@@ -178,7 +178,7 @@ export default function LeavePage() {
             </div>
 
             {/* Dates */}
-            <div className="form-row">
+            <div className="grid-2">
               <div className="form-group">
                 <label className="form-label">Effective From</label>
                 <input className="form-input" type="date" value={form.startDate} onChange={e => setForm({ ...form, startDate: e.target.value })} />

@@ -683,7 +683,7 @@ export default function ProfilePage() {
               />
             </div>
 
-            <div className="form-row">
+            <div className="grid-2">
               <div className="form-group">
                 <label className="form-label">Telephone</label>
                 <input
@@ -720,7 +720,7 @@ export default function ProfilePage() {
               />
             </div>
 
-            <div className="form-row" style={{ marginTop: "24px" }}>
+            <div className="grid-2" style={{ marginTop: "24px" }}>
               <div className="form-group">
                 <label className="form-label">Assigned Hospital</label>
                 {user?.role === "admin" ? (

@@ -111,10 +111,20 @@ export default function AdminDashboardPage() {
           border-radius: 12px; margin-bottom: 8px; transition: 0.2s;
         }
         .admin-alert-item:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.15); }
+        
+        .admin-main-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; }
+        
+        @media (max-width: 1024px) {
+          .admin-main-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+          .admin-welcome-banner { padding: 16px !important; }
+          .admin-welcome-banner div[style*="margin-left: auto"] { margin-left: 0 !important; margin-top: 10px; width: 100%; }
+        }
       `}</style>
 
       {/* Welcome */}
-      <div style={{
+      <div className="admin-welcome-banner" style={{
         display: 'flex', alignItems: 'center', gap: 16, marginBottom: 28,
         padding: '20px 24px',
         background: 'linear-gradient(135deg, rgba(217,119,6,0.06) 0%, rgba(16,185,129,0.04) 100%)',
@@ -172,7 +182,7 @@ export default function AdminDashboardPage() {
             ))}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 340px', gap: 20 }}>
+          <div className="admin-main-grid">
             
             {/* Left Column: Quick Actions + Verifications */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>

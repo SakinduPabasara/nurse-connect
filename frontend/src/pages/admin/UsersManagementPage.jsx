@@ -263,6 +263,14 @@ export default function UsersManagementPage() {
            flex: 1;
            min-width: 140px;
         }
+        @media (max-width: 768px) {
+           .user-row-premium { flex-direction: column; align-items: stretch; gap: 12px; }
+           .col-main, .col-hospital, .col-ward, .col-meta { min-width: unset; flex: unset; }
+           .col-actions { justify-content: flex-start; }
+           .col-meta { text-align: left; }
+           .filter-bar-premium { flex-direction: column; align-items: stretch !important; }
+           .filter-bar-premium > div { width: 100% !important; }
+        }
       `}</style>
 
       <div className="page-header">

@@ -338,6 +338,11 @@ export default function RosterManagementPage() {
             box-shadow: 0 4px 10px rgba(244,63,94,0.35);
           }
           .duty-cell:hover .duty-delete { display: flex; }
+          @media (max-width: 768px) {
+            .sticky-nurse { width: 120px !important; font-size: 0.75rem; padding-left: 10px !important; }
+            .roster-table th, .roster-table td { padding: 6px 4px; }
+            .roster-explorer { border-radius: 12px; }
+          }
       `}</style>
 
       <div className="page-header">
@@ -385,13 +390,7 @@ export default function RosterManagementPage() {
             Strategic Shift Allocation
           </h3>
           <form onSubmit={handleCreate} style={{ display: "grid", gap: 24 }}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 20,
-              }}
-            >
+            <div className="grid-2">
               <div className="form-group">
                 <label className="form-label">Medical Center Filter</label>
                 <SearchableSelect
@@ -428,13 +427,7 @@ export default function RosterManagementPage() {
               </div>
             </div>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr 1fr",
-                gap: 20,
-              }}
-            >
+            <div className="grid-3">
               <div className="form-group">
                 <label className="form-label">Deployment Block (Ward)</label>
                 <SearchableSelect
@@ -536,7 +529,7 @@ export default function RosterManagementPage() {
       ) : (
         <>
           <div
-            className="filter-bar-premium"
+            className="filter-bar-premium mobile-stack"
             style={{
               background: "var(--surface)",
               padding: 16,
@@ -550,7 +543,7 @@ export default function RosterManagementPage() {
             }}
           >
             {/* Hospital filter */}
-            <div style={{ width: 220 }}>
+            <div className="mobile-w-full" style={{ width: 220 }}>
               <SearchableSelect
                 options={hospitals.map((h) => ({
                   value: h.name,
@@ -565,7 +558,7 @@ export default function RosterManagementPage() {
               />
             </div>
             {/* Ward filter — narrows to wards in selected hospital */}
-            <div style={{ width: 220 }}>
+            <div className="mobile-w-full" style={{ width: 220 }}>
               <SearchableSelect
                 options={viewWards.map((w) => ({ value: w, label: w }))}
                 value={rosterWard}
@@ -575,7 +568,7 @@ export default function RosterManagementPage() {
             </div>
             <input
               type="month"
-              className="form-input"
+              className="form-input mobile-w-full"
               value={month}
               onChange={(e) => setMonth(e.target.value)}
               style={{
@@ -590,7 +583,7 @@ export default function RosterManagementPage() {
               style={{
                 flex: 1,
                 display: "flex",
-                justifyContent: "flex-end",
+                flexWrap: "wrap",
                 gap: 12,
               }}
             >

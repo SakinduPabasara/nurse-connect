@@ -114,7 +114,7 @@ export default function NewsManagementPage() {
       </div>
 
       {/* ── KPI Grid ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 32 }}>
+      <div className="grid-3" style={{ marginBottom: 32 }}>
         {[
           { label: 'Intelligence Feed', value: stats.total, color: '#10b981', icon: Ic.News },
           { label: 'Clinical Focus', value: stats.healthcare, color: '#6366f1', icon: Ic.Activity },
@@ -185,7 +185,7 @@ export default function NewsManagementPage() {
           {filtered.map(n => {
             const cfg = CAT_CONFIG[n.category] || CAT_CONFIG.healthcare;
             return (
-              <div key={n._id} style={{ 
+              <div key={n._id} className="news-card" style={{ 
                 background: 'rgba(30, 41, 59, 0.4)', border: '1px solid rgba(255,255,255,0.06)', 
                 borderRadius: 24, padding: '24px', display: 'flex', gap: 24,
                 transition: 'all 0.3s ease', backdropFilter: 'blur(12px)'
@@ -235,7 +235,7 @@ export default function NewsManagementPage() {
           background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)',
           animation: 'fadeIn 0.3s ease'
         }} onClick={() => setIsDrawerOpen(false)}>
-          <div style={{ 
+          <div className="publication-drawer" style={{ 
             width: '100%', maxWidth: 450, background: '#0f172a', height: '100%', 
             padding: '40px', display: 'flex', flexDirection: 'column', 
             boxShadow: '-20px 0 50px rgba(0,0,0,0.5)', borderLeft: '1px solid rgba(255,255,255,0.1)',
@@ -257,7 +257,7 @@ export default function NewsManagementPage() {
                 <input className="form-input" placeholder="e.g. Breakthrough in Cardiovascular Nursing" value={form.title} onChange={e => setForm({...form, title: e.target.value})} />
               </div>
               
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+              <div className="grid-2">
                 <div className="form-group">
                   <label className="form-label">Source / Origin</label>
                   <input className="form-input" placeholder="WHO / Lancet / etc." value={form.source} onChange={e => setForm({...form, source: e.target.value})} />
@@ -302,6 +302,10 @@ export default function NewsManagementPage() {
         @keyframes slideInRight {
           from { transform: translateX(100%); }
           to { transform: translateX(0); }
+        }
+        @media (max-width: 768px) {
+          .publication-drawer { padding: 24px !important; width: 100% !important; }
+          .news-card { flex-direction: column !important; align-items: stretch !important; }
         }
       `}</style>
     </div>

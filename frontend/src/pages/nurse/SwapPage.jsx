@@ -213,6 +213,12 @@ export default function SwapPage() {
 
   return (
     <div style={{ animation: "fadeInUp 0.35s ease" }}>
+      <style>{`
+        @media (max-width: 768px) {
+          .swap-arrow { transform: rotate(90deg); margin: 10px auto; }
+          .swap-card-header { flex-direction: column; align-items: flex-start !important; gap: 12px; }
+        }
+      `}</style>
       {/* ── Page Header ── */}
       <div className="page-header">
         <div>
@@ -351,11 +357,12 @@ export default function SwapPage() {
                 >
                   {/* Header */}
                   <div
+                    className="swap-card-header mobile-stack"
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
-                      marginBottom: 18,
+                      marginBottom: 16,
                     }}
                   >
                     <div
@@ -414,6 +421,7 @@ export default function SwapPage() {
 
                   {/* Exchange visual */}
                   <div
+                    className="mobile-stack"
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -490,6 +498,7 @@ export default function SwapPage() {
 
                     {/* Arrow */}
                     <div
+                      className="swap-arrow"
                       style={{
                         width: 44,
                         height: 44,
@@ -649,9 +658,8 @@ export default function SwapPage() {
             </div>
 
             <div
+              className="grid-2"
               style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
                 gap: 20,
               }}
             >

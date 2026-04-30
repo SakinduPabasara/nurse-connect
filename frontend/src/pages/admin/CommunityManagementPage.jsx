@@ -147,8 +147,8 @@ export default function CommunityManagementPage() {
       </div>
 
       {/* Control Bar */}
-      <div className="filter-bar" style={{ background:'rgba(255,255,255,0.02)', padding:'14px 16px', borderRadius:14, border:'1px solid var(--border)', marginBottom:26 }}>
-        <div className="topbar-search-wrap" style={{ maxWidth:'none', flex:1 }}>
+      <div className="mobile-stack" style={{ display: 'flex', alignItems: 'center', background:'rgba(255,255,255,0.02)', padding:'14px 16px', borderRadius:14, border:'1px solid var(--border)', marginBottom:26 }}>
+        <div className="topbar-search-wrap mobile-w-full" style={{ maxWidth:'none', flex:1 }}>
           <Ic.Search size={18} />
           <input
             className="topbar-search-input"
@@ -159,7 +159,7 @@ export default function CommunityManagementPage() {
           />
         </div>
         <div style={{ width:1, height:24, background:'var(--border)', margin:'0 10px' }} />
-        <div style={{ display:'flex', gap:6 }}>
+        <div style={{ display:'flex', gap:6, flexWrap: 'wrap' }}>
           {['all', 'discussion', 'advice', 'experience', 'support'].map(c => (
             <button
               key={c}
@@ -186,7 +186,7 @@ export default function CommunityManagementPage() {
         <div>
           {filtered.map((p) => (
             <div key={p._id} className="post-card">
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:20 }}>
+              <div className="mobile-stack" style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:20 }}>
                 <div style={{ display:'flex', gap:14 }}>
                   <div style={{ 
                     width:42, height:42, borderRadius:99, background:'linear-gradient(135deg, var(--primary), var(--accent))',
@@ -227,7 +227,7 @@ export default function CommunityManagementPage() {
                           {c.author?.name?.charAt(0)}
                         </div>
                         <div style={{ flex:1 }}>
-                          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+                          <div className="mobile-stack" style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
                             <div style={{ fontSize:'0.8rem', fontWeight:700, color:'var(--text2)', marginBottom:2 }}>{c.author?.name}</div>
                             <button className="btn btn-ghost btn-xs" style={{ padding:2, color:'var(--text4)' }} onClick={() => handleDeleteComment(p._id, c._id)}>
                                <Ic.Trash size={13} />

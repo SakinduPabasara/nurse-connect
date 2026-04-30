@@ -222,7 +222,7 @@ export default function TransferPage() {
                 />
                 Current Deployment
               </div>
-              <div className="form-row">
+              <div className="grid-2">
                 <div className="form-group">
                   <label className="form-label">Current Hospital</label>
                   <SearchableSelect
@@ -282,7 +282,7 @@ export default function TransferPage() {
                 />
                 Desired Destination
               </div>
-              <div className="form-row">
+              <div className="grid-2">
                 <div className="form-group">
                   <label className="form-label">Target Hospital</label>
                   <SearchableSelect
@@ -317,7 +317,7 @@ export default function TransferPage() {
               </div>
             </div>
 
-            <div className="form-row">
+            <div className="grid-2">
               <div className="form-group">
                 <label className="form-label">Target Timeframe</label>
                 <input
@@ -552,6 +552,7 @@ export default function TransferPage() {
 
                     {/* Top row */}
                     <div
+                      className="mobile-stack"
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
@@ -634,6 +635,7 @@ export default function TransferPage() {
 
                     {/* Route visualization */}
                     <div
+                      className="mobile-stack"
                       style={{
                         display: "flex",
                         alignItems: "center",

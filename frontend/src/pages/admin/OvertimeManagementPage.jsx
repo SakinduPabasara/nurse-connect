@@ -117,7 +117,7 @@ function ReviewModal({ nurseGroup, allRecords, onClose, onReview }) {
         </div>
 
         {/* Sub-stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 20 }}>
+      <div className="grid-3" style={{ marginBottom: 20 }}>
           {[
             { label: 'Pending',         value: pendingEntries.length,                                                     color: '#fbbf24' },
             { label: 'Pending Hours',  value: `${pendingEntries.reduce((s, r) => s + r.extraHours, 0)}h`,                 color: '#22d3ee' },
@@ -172,7 +172,7 @@ function ReviewModal({ nurseGroup, allRecords, onClose, onReview }) {
                   </div>
 
                   {/* Amount + Note inputs */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                  <div className="grid-2" style={{ marginBottom: 10 }}>
                     {/* Approved amount */}
                     <div>
                       <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>
@@ -720,7 +720,7 @@ export default function OvertimeManagementPage() {
                     </div>
 
                     {/* Stats row */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                    <div className="grid-3">
                       <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 10, padding: '9px 10px', textAlign: 'center' }}>
                         <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fbbf24', fontFamily: "'DM Sans', sans-serif" }}>{group.pendingCount}</div>
                         <div style={{ fontSize: '0.65rem', color: 'var(--text3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 2 }}>Pending</div>

@@ -376,6 +376,7 @@ export default function LoginPage() {
 
         /* ── Responsive ── */
         @media (max-width: 860px) { .lp-brand { display: none !important; } }
+        @media (max-width: 480px) { .lp-form-panel { padding: 20px 24px; } }
       `}</style>
 
       <div className="lp-root">

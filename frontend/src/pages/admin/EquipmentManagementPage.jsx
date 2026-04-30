@@ -158,7 +158,7 @@ export default function EquipmentManagementPage() {
     <div style={{ animation: 'screen-entry 0.4s ease-out' }}>
       
       {/* ── Header & KPI Section ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 32 }}>
+      <div className="mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 32 }}>
         <div>
           <div style={{ fontSize: '0.75rem', fontWeight: 900, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 6 }}>Asset Inventory</div>
           <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: 15 }}>
@@ -181,7 +181,7 @@ export default function EquipmentManagementPage() {
       </div>
 
       {/* ── KPI Grid ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, marginBottom: 32 }}>
+      <div className="grid-2" style={{ marginBottom: 32 }}>
         {[
           { label: 'Total Assets', value: stats.total, color: '#6366f1', icon: Ic.Award },
           { label: 'Available', value: stats.available, color: '#10b981', icon: Ic.Check },
@@ -204,11 +204,11 @@ export default function EquipmentManagementPage() {
       </div>
 
       {/* ── Filters ── */}
-      <div style={{ 
+      <div className="mobile-stack" style={{ 
         display: 'flex', gap: 15, marginBottom: 24, padding: '16px 20px', 
         background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 18
       }}>
-        <div style={{ position: 'relative', flex: 1 }}>
+        <div className="mobile-w-full" style={{ position: 'relative', flex: 1 }}>
           <Ic.Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
           <input 
             className="form-input" 
@@ -219,7 +219,7 @@ export default function EquipmentManagementPage() {
           />
         </div>
         <select 
-          className="form-select" 
+          className="form-select mobile-w-full" 
           style={{ width: 180, background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }}
           value={hospitalFilter}
           onChange={e => setHospitalFilter(e.target.value)}
@@ -228,7 +228,7 @@ export default function EquipmentManagementPage() {
           {hospitals.map(h => <option key={h._id} value={h.name}>{h.name}</option>)}
         </select>
         <select 
-          className="form-select" 
+          className="form-select mobile-w-full" 
           style={{ width: 180, background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }}
           value={wardFilter}
           onChange={e => setWardFilter(e.target.value)}
@@ -237,7 +237,7 @@ export default function EquipmentManagementPage() {
           {filteredWards.map(w => <option key={w._id} value={w.name}>{w.name}</option>)}
         </select>
         <select 
-          className="form-select" 
+          className="form-select mobile-w-full" 
           style={{ width: 160, background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }}
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
@@ -249,7 +249,7 @@ export default function EquipmentManagementPage() {
 
       {/* ── Asset Grid ── */}
       {loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 24 }}>
+        <div className="grid-3">
           {Array.from({ length: 6 }).map((_, i) => <div key={i} className="skeleton-card" style={{ height: 200, borderRadius: 24 }} />)}
         </div>
       ) : filtered.length === 0 ? (
@@ -258,7 +258,7 @@ export default function EquipmentManagementPage() {
           <div style={{ fontSize: '1rem', color: '#94a3b8' }}>No assets found matching the filter criteria.</div>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 24 }}>
+        <div className="grid-3">
           {filtered.map(e => {
             const cfg = STATUS_CFG[e.status] || STATUS_CFG.available;
             const overdue = e.lastMaintenance ? (new Date() - new Date(e.lastMaintenance)) / (1000 * 60 * 60 * 24) > 180 : true;
@@ -363,7 +363,7 @@ export default function EquipmentManagementPage() {
                   placeholder="Select Hospital"
                 />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+              <div className="grid-2">
                 <div className="form-group">
                   <label className="form-label">Ward / Location</label>
                   <SearchableSelect
@@ -381,7 +381,7 @@ export default function EquipmentManagementPage() {
               </div>
               <div className="form-group">
                 <label className="form-label">Operational Status</label>
-                <div style={{ display: 'flex', gap: 10 }}>
+                <div className="mobile-stack" style={{ display: 'flex', gap: 10 }}>
                   {Object.keys(STATUS_CFG).map(s => (
                     <button 
                       key={s} type="button" 

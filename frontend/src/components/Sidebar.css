@@ -352,7 +352,8 @@
 
   /* Slightly larger tap targets on mobile */
   .sidebar-link {
-    padding: 11px 10px 11px 12px;
+    padding: 14px 12px;
     font-size: 0.88rem;
+    min-height: 44px;
   }
 }

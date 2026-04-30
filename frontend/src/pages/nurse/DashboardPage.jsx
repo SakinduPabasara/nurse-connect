@@ -369,7 +369,7 @@ export default function DashboardPage() {
     <div style={{ animation: 'screen-entry 0.6s cubic-bezier(0.16, 1, 0.3, 1)' }}>
       
       {/* ── High-Fidelity Header ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28, gap: 20 }}>
+      <div className="mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28, gap: 20 }}>
         <div>
           <div style={{ fontSize: '0.72rem', fontWeight: 900, color: THEME.primary, textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: 4 }}>Command Center v2.4</div>
           <DigitalClock />
@@ -387,17 +387,12 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Executive Hero Card ── */}
-      <div style={{
-        background: 'linear-gradient(165deg, #0f172a 0%, #1e1b4b 100%)',
-        border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 28, padding: '32px 40px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 30, marginBottom: 24,
-        position: 'relative', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
-      }}>
+      <div className="hero-card-container">
         {/* Parallax Orbs */}
         <div style={{ position: 'absolute', top: -50, left: '20%', width: 250, height: 250, background: 'radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', bottom: -100, right: '10%', width: 350, height: 350, background: 'radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24, position: 'relative', zIndex: 1 }}>
+        <div className="mobile-stack" style={{ display: 'flex', alignItems: 'center', gap: 24, position: 'relative', zIndex: 1 }}>
           <div style={{
             width: 72, height: 72, borderRadius: 20, flexShrink: 0,
             background: user?.profilePic ? `url(http://localhost:5000${user.profilePic}) center/cover` : 'linear-gradient(135deg, #6366f1, #a855f7)',
@@ -408,7 +403,7 @@ export default function DashboardPage() {
           </div>
           <div>
             <div style={{ fontSize: '0.85rem', fontWeight: 600, color: THEME.textDim, marginBottom: 2 }}>Good {greeting},</div>
-            <div style={{ fontSize: '1.8rem', fontWeight: 900, color: THEME.text, letterSpacing: '-0.03em', fontFamily: "'Outfit', sans-serif" }}>{user?.name}</div>
+            <div className="hero-name" style={{ fontSize: '1.8rem', fontWeight: 900, color: THEME.text, letterSpacing: '-0.03em', fontFamily: "'Outfit', sans-serif" }}>{user?.name}</div>
             <div style={{ display: 'flex', gap: 15, marginTop: 6, fontSize: '0.8rem', color: THEME.textDim }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Ic.Hospital size={12} /> {user?.hospital}</span>
               <span style={{ color: 'rgba(255,255,255,0.1)' }}>|</span>
@@ -417,7 +412,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 16, position: 'relative', zIndex: 1 }}>
+        <div className="hero-metrics-grid" style={{ position: 'relative', zIndex: 1 }}>
           {[
             { label: 'Operational Duty', value: stats.total, color: THEME.primary, icon: Ic.Activity },
             { label: 'Night Resilience', value: stats.night, color: '#818cf8', icon: Ic.Moon },
@@ -471,7 +466,7 @@ export default function DashboardPage() {
       )}
 
       {/* ── Quick Actions Row ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 24 }}>
+      <div className="quick-actions-grid" style={{ marginBottom: 24 }}>
         {[
           { icon: Ic.Calendar, label: 'My Roster', sub: 'View schedule', path: '/my-roster', color: THEME.primary },
           { icon: Ic.Leave,    label: 'Leave',     sub: 'Apply / track', path: '/leave',     color: THEME.success },
@@ -514,7 +509,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Modern Bento Grid ── */}
-      <div className="bento-grid" style={{ gridTemplateColumns: '1fr 1.4fr 1fr', gap: 24 }}>
+      <div className="bento-grid dashboard-bento">
         
         {/* Column 1: Readiness & Stats */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -628,7 +623,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div className="grid-2">
             <button onClick={() => navigate('/ward-roster')} style={{ all: 'unset', cursor: 'pointer' }}>
               <div className="bento-cell" style={{ padding: 20, textAlign: 'center', background: THEME.glass, border: `1px solid ${THEME.border}`, transition: 'all 0.2s', borderRadius: 16 }}
                 onMouseEnter={e => e.currentTarget.style.borderColor = '#818cf844'}
@@ -661,6 +656,58 @@ export default function DashboardPage() {
         </div>
 
       </div>
+      <style>{`
+        .hero-card-container {
+          background: linear-gradient(165deg, #0f172a 0%, #1e1b4b 100%);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 28px;
+          padding: 32px 40px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 30px;
+          margin-bottom: 24px;
+          position: relative;
+          overflow: hidden;
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .hero-metrics-grid {
+          display: flex;
+          gap: 16px;
+        }
+        .quick-actions-grid {
+          display: grid;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 12px;
+        }
+        .dashboard-bento {
+          display: grid;
+          grid-template-columns: 1.4fr 1fr;
+          gap: 24px;
+          margin-bottom: 24px;
+        }
+        @media (max-width: 1200px) {
+          .dashboard-bento { grid-template-columns: 1fr; }
+        }
+        .hero-name {
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          line-height: 1.2;
+        }
+        @media (max-width: 1024px) {
+          .hero-card-container { flex-direction: column; align-items: stretch; gap: 24px; padding: 24px; }
+          .hero-metrics-grid { flex-direction: column; }
+          .hero-metrics-grid > div { min-width: 0 !important; }
+        }
+        @media (max-width: 768px) {
+          .hero-card-container { padding: 20px 16px; border-radius: 20px; }
+          .hero-name { font-size: 1.4rem !important; }
+          .quick-actions-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 480px) {
+          .quick-actions-grid { grid-template-columns: 1fr; }
+        }
+      `}</style>
     </div>
   );
 }

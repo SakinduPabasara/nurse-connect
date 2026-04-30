@@ -436,7 +436,7 @@ export default function RegisterPage() {
                 {step === 0 && (
                   <div className="step-content">
                     <Field id="name" label="Full Name" value={form.name} onChange={e => set('name', e.target.value)} error={errors.name} autoComplete="name" hint="As per your official identification" />
-                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                    <div className="grid-2">
                       <Field id="nic" label="NIC Number" value={form.nic} onChange={e => set('nic', e.target.value.toUpperCase())} error={errors.nic} autoComplete="off" hint="9V/X or 12-digit format" />
                       <Field id="telephone" label="Telephone" value={form.telephone} onChange={e => set('telephone', e.target.value)} error={errors.telephone} autoComplete="tel" hint="e.g. 0712345678" />
                     </div>

@@ -298,7 +298,7 @@ export default function OvertimePage() {
             </div>
 
             {/* Date + Hours */}
-            <div className="form-row">
+            <div className="grid-2">
               <div className="form-group">
                 <label className="form-label">Duty Date</label>
                 <input className="form-input" type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} />

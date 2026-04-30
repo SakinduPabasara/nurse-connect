@@ -148,7 +148,7 @@ export default function DocumentsManagementPage() {
                 }
               />
             </div>
-            <div className="form-row">
+            <div className="grid-2">
               <div className="form-group">
                 <label className="form-label">Category</label>
                 <select

@@ -159,7 +159,7 @@ export default function HospitalManagementPage() {
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
               />
             </div>
-            <div style={{ display:'flex', gap:10, marginTop:10 }}>
+            <div className="mobile-stack" style={{ display:'flex', gap:10, marginTop:10 }}>
               <button className="btn btn-primary" type="submit" disabled={submitting} style={{ flex: 1 }}>
                 {submitting ? "Processing..." : editTarget ? "Update Facility" : "Create Facility"}
               </button>

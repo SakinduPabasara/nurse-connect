@@ -135,7 +135,7 @@ export default function DrugsPage() {
 
       {/* ── Inventory Grid ── */}
       {loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
+        <div className="grid-3">
           {Array.from({ length: 9 }).map((_, i) => <div key={i} className="skeleton-card" style={{ height: 100, borderRadius: 18 }} />)}
         </div>
       ) : filtered.length === 0 ? (
@@ -144,7 +144,7 @@ export default function DrugsPage() {
           <div style={{ fontSize: '1rem', color: '#94a3b8' }}>Inventory search returned no clinical matches.</div>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
+        <div className="grid-3">
           {filtered.map(d => {
             const exp = expiryInfo(d.expiryDate);
             const isLowStock = d.quantity < 10;
