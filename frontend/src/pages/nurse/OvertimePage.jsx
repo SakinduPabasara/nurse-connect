@@ -8,10 +8,10 @@ import * as Ic from '../../components/icons';
 const OT_HOURLY_RATE = 150;
 
 const SHIFTS = [
-  { id: 'morning', Icon: Ic.Sun,      label: 'Morning', time: '6 AM – 2 PM',   color: '#fbbf24', bg: 'rgba(245,158,11,0.12)',   border: 'rgba(245,158,11,0.22)'  },
-  { id: 'evening', Icon: Ic.Sunset,   label: 'Evening', time: '2 PM – 10 PM',  color: '#fb923c', bg: 'rgba(249,115,22,0.12)',   border: 'rgba(249,115,22,0.22)'  },
-  { id: 'night',   Icon: Ic.Moon,     label: 'Night',   time: '10 PM – 6 AM',  color: '#a78bfa', bg: 'rgba(139,92,246,0.12)',   border: 'rgba(139,92,246,0.22)'  },
-  { id: 'custom',  Icon: Ic.Clock,    label: 'Custom',  time: 'Other / split', color: '#94a3b8', bg: 'rgba(100,116,139,0.12)',  border: 'rgba(100,116,139,0.22)' },
+  { id: 'morning',   Icon: Ic.Sun,      label: 'Morning Block',   time: '7 AM – 1 PM',   color: '#60a5fa', bg: 'rgba(37,99,235,0.12)',   border: 'rgba(37,99,235,0.22)'  },
+  { id: 'afternoon', Icon: Ic.Sunset,   label: 'Afternoon Block', time: '1 PM – 7 PM',   color: '#22d3ee', bg: 'rgba(6,182,212,0.12)',   border: 'rgba(6,182,212,0.22)'  },
+  { id: 'night',     Icon: Ic.Moon,     label: 'Night Block',     time: '7 PM – 7 AM',   color: '#a78bfa', bg: 'rgba(139,92,246,0.12)',   border: 'rgba(139,92,246,0.22)'  },
+  { id: 'custom',    Icon: Ic.Clock,    label: 'Custom Shift',    time: 'Other / Split', color: '#94a3b8', bg: 'rgba(100,116,139,0.12)',  border: 'rgba(100,116,139,0.22)' },
 ];
 
 const STATUS_CFG = {
@@ -278,19 +278,31 @@ export default function OvertimePage() {
                       key={s.id}
                       onClick={() => setForm({ ...form, shift: s.id })}
                       style={{
-                        padding: '16px 12px',
-                        borderRadius: 14,
+                        padding: '20px 12px',
+                        borderRadius: 18,
                         border: `1px solid ${active ? s.color : 'var(--border)'}`,
                         background: active ? s.bg : 'rgba(255,255,255,0.03)',
                         cursor: 'pointer',
                         textAlign: 'center',
-                        transition: 'all 0.18s ease',
-                        boxShadow: active ? `0 6px 18px ${s.color}22` : 'none',
+                        transition: 'all 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
+                        boxShadow: active ? `0 8px 24px ${s.color}25` : 'none',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        minHeight: 110,
                       }}
+                      onMouseEnter={e => !active && (e.currentTarget.style.borderColor = s.color + '44')}
+                      onMouseLeave={e => !active && (e.currentTarget.style.borderColor = 'var(--border)')}
                     >
-                      <div style={{ color: active ? s.color : 'var(--text3)', marginBottom: 8, display: 'flex', justifyContent: 'center' }}><Icon size={22} /></div>
-                      <div style={{ fontWeight: 700, fontSize: '0.84rem', color: active ? s.color : 'var(--text2)', marginBottom: 3 }}>{s.label}</div>
-                      <div style={{ fontSize: '0.65rem', color: 'var(--text4)' }}>{s.time}</div>
+                      <div style={{ color: active ? s.color : 'var(--text3)', display: 'flex' }}>
+                        <Icon size={24} />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <div style={{ fontWeight: 800, fontSize: '0.85rem', color: active ? s.color : 'var(--text1)', whiteSpace: 'nowrap' }}>{s.label}</div>
+                        <div style={{ fontSize: '0.68rem', fontWeight: 600, color: active ? s.color : 'var(--text4)', opacity: active ? 0.9 : 0.6 }}>{s.time}</div>
+                      </div>
                     </button>
                   );
                 })}
