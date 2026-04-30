@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import API from '../../api/axios';
 import * as Ic from '../../components/icons';
 import { notify } from '../../utils/toast';
+import { useConfirm } from '../../context/ConfirmContext';
 
 const STATUS_CFG = {
   pending:  { icon: '⏳', label: 'Pending',  color: '#fbbf24', bg: 'rgba(245,158,11,0.1)',  border: 'rgba(245,158,11,0.25)'  },
@@ -15,6 +16,7 @@ const fmtDate = (ds) => {
 };
 
 export default function SwapManagementPage() {
+  const confirm = useConfirm();
   const [swaps, setSwaps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -35,6 +37,23 @@ export default function SwapManagementPage() {
   useEffect(() => {
     fetchSwaps();
   }, [fetchSwaps]);
+
+  const handleDelete = async (id, label) => {
+    const confirmed = await confirm({
+      title: "Delete Swap Request",
+      message: `Delete swap request${label ? ` for ${label}` : ""}? This cannot be undone.`,
+      confirmText: "Delete",
+    });
+    if (!confirmed) return;
+
+    try {
+      await API.delete(`/swap/${id}`);
+      notify.success("Swap request deleted.");
+      fetchSwaps();
+    } catch (err) {
+      notify.error(err.response?.data?.message || "Failed to delete swap request.");
+    }
+  };
 
   useEffect(() => {
     let socket;
@@ -150,7 +169,7 @@ export default function SwapManagementPage() {
                 </div>
 
                 {/* Status & Options */}
-                <div style={{ minWidth: 140, textAlign: 'right' }}>
+                <div style={{ minWidth: 180, textAlign: 'right' }}>
                   <div style={{
                     display: 'inline-flex', alignItems: 'center', gap: 6,
                     padding: '6px 14px', borderRadius: 99, fontSize: '0.75rem', fontWeight: 700,
@@ -161,6 +180,15 @@ export default function SwapManagementPage() {
                   }}>
                     <span>{STATUS_CFG[s.status]?.icon}</span>
                     {s.status.toUpperCase()}
+                  </div>
+                  <div>
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      style={{ color: '#f43f5e', border: '1px solid rgba(244,63,94,0.25)' }}
+                      onClick={() => handleDelete(s._id, s.requester?.name)}
+                    >
+                      Delete
+                    </button>
                   </div>
                   <div style={{ fontSize: '0.7rem', color: 'var(--text4)' }}>
                     Created: {new Date(s.createdAt).toLocaleDateString()}

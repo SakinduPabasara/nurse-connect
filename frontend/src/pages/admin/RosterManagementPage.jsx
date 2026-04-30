@@ -187,15 +187,36 @@ export default function RosterManagementPage() {
   const groupedRoster = useMemo(() => {
     const g = {};
     roster
-      .filter((r) => !rosterHospital || r.nurse?.hospital === rosterHospital) // hospital filter
+      .filter((r) => !rosterHospital || r.nurse?.hospital === rosterHospital)
       .forEach((r) => {
+        const nurseId = r.nurse?._id || (typeof r.nurse === "string" ? r.nurse : null) || "unknown";
         const name = r.nurse?.name || r.nurseName || "Unknown Nurse";
-        if (!g[name]) g[name] = {};
+        if (!g[nurseId]) g[nurseId] = { name, days: {} };
         const day = parseInt(r.date.split("-").pop());
-        g[name][day] = r;
+        g[nurseId].days[day] = r;
       });
     return g;
   }, [roster, rosterHospital]);
+
+  const handleDeleteNurseMonth = async (nurseId, nurseName) => {
+    if (!nurseId || nurseId === "unknown") {
+      notify.error("Cannot resolve target nurse identity.");
+      return;
+    }
+    const isConfirmed = await confirm({
+      title: "Delete Monthly Roster",
+      message: `Delete all roster entries for ${nurseName} in ${month}?`,
+      confirmText: "Delete Month",
+    });
+    if (!isConfirmed) return;
+    try {
+      await API.delete(`/roster/nurse/${nurseId}?month=${month}`);
+      fetchRoster();
+      notify.success("Monthly roster removed.");
+    } catch (err) {
+      notify.error(err.response?.data?.message || "Failed to remove monthly roster.");
+    }
+  };
 
   return (
     <div
@@ -239,9 +260,47 @@ export default function RosterManagementPage() {
            z-index: 5;
            text-align: left !important;
            padding-left: 16px !important;
+           padding-right: 12px !important;
            font-weight: 700;
-           width: 180px;
+           width: 200px;
            border-right: 2px solid var(--border) !important;
+        }
+        .nurse-cell-content {
+           display: flex;
+           align-items: center;
+           justify-content: space-between;
+           gap: 12px;
+           width: 100%;
+        }
+        .nurse-name-text {
+           white-space: nowrap;
+           overflow: hidden;
+           text-overflow: ellipsis;
+           flex: 1;
+           font-size: 0.85rem;
+           color: var(--text1);
+        }
+        .nurse-delete-btn {
+           opacity: 0.6;
+           transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+           color: #f43f5e;
+           background: rgba(244,63,94,0.08);
+           border: 1px solid rgba(244,63,94,0.15);
+           border-radius: 8px;
+           width: 28px;
+           height: 28px;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           cursor: pointer;
+           flex-shrink: 0;
+        }
+        .nurse-delete-btn:hover {
+           opacity: 1;
+           background: #f43f5e;
+           color: #fff;
+           box-shadow: 0 4px 12px rgba(244,63,94,0.3);
+           transform: scale(1.05);
         }
         .duty-marker {
            width: 24px;
@@ -253,7 +312,7 @@ export default function RosterManagementPage() {
            font-size: 0.7rem;
            font-weight: 900;
            margin: 0 auto;
-           cursor: pointer;
+            cursor: default;
            transition: all 0.2s;
            position: relative;
         }
@@ -261,21 +320,24 @@ export default function RosterManagementPage() {
            transform: scale(1.2);
            z-index: 10;
         }
-        .cancel-tip {
-           position: absolute;
-           top: -8px;
-           right: -8px;
-           width: 14px;
-           height: 14px;
-           background: #f43f5e;
-           color: #fff;
-           border-radius: 50%;
-           font-size: 8px;
-           display: none;
-           align-items: center;
-           justify-content: center;
-        }
-        .duty-marker:hover .cancel-tip { display: flex; }
+          .duty-cell { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+          .duty-delete {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #f43f5e;
+            color: #fff;
+            border: none;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(244,63,94,0.35);
+          }
+          .duty-cell:hover .duty-delete { display: flex; }
       `}</style>
 
       <div className="page-header">
@@ -600,27 +662,50 @@ export default function RosterManagementPage() {
                   </thead>
                   <tbody>
                     {Object.entries(groupedRoster)
-                      .sort()
-                      .map(([name, days]) => (
-                        <tr key={name}>
-                          <td className="sticky-nurse">{name}</td>
+                      .sort((a, b) => a[1].name.localeCompare(b[1].name))
+                      .map(([nurseId, info]) => (
+                        <tr key={nurseId}>
+                          <td className="sticky-nurse">
+                            <div className="nurse-cell-content">
+                              <span className="nurse-name-text" title={info.name}>
+                                {info.name}
+                              </span>
+                              <button
+                                type="button"
+                                className="nurse-delete-btn"
+                                onClick={() => handleDeleteNurseMonth(nurseId, info.name)}
+                                title="Delete Monthly Roster"
+                              >
+                                <Ic.Trash size={14} />
+                              </button>
+                            </div>
+                          </td>
                           {daysInMonth.map((d) => {
-                            const entry = days[d];
+                            const entry = info.days[d];
                             const cfg = entry ? SHIFT_MAP[entry.shift] : null;
                             return (
                               <td key={d}>
                                 {entry && cfg && (
-                                  <div
-                                    className="duty-marker"
-                                    style={{
-                                      background: cfg.bg,
-                                      color: cfg.color,
-                                      border: `1px solid ${cfg.border}`,
-                                    }}
-                                    onClick={() => handleDelete(entry._id)}
-                                  >
-                                    {cfg.label}
-                                    <div className="cancel-tip">✕</div>
+                                  <div className="duty-cell">
+                                    <div
+                                      className="duty-marker"
+                                      style={{
+                                        background: cfg.bg,
+                                        color: cfg.color,
+                                        border: `1px solid ${cfg.border}`,
+                                      }}
+                                      title={`Shift ${cfg.title}`}
+                                    >
+                                      {cfg.label}
+                                    </div>
+                                    <button
+                                      className="duty-delete"
+                                      type="button"
+                                      title="Delete roster entry"
+                                      onClick={() => handleDelete(entry._id)}
+                                    >
+                                      <Ic.Trash size={10} />
+                                    </button>
                                   </div>
                                 )}
                               </td>

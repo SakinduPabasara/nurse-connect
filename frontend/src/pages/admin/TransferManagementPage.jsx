@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import API from "../../api/axios";
 import { notify } from "../../utils/toast";
 import { useConfirm } from "../../context/ConfirmContext";
@@ -14,6 +15,7 @@ const fmtDate = (iso) => {
 
 export default function TransferManagementPage() {
   const confirm = useConfirm();
+  const navigate = useNavigate();
   const [transfers, setTransfers] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -83,17 +85,34 @@ export default function TransferManagementPage() {
   const handleApprovePair = async (aId, bId) => {
     const confirmed = await confirm({
       title: "Approve Transfer Pair",
-      message: "Approve and execute this reciprocal transfer? This will clear wards and remove future rosters.",
+      message:
+        "Approve and execute this reciprocal transfer? This will clear wards and remove future rosters.",
       confirmText: "Approve",
     });
     if (!confirmed) return;
 
     try {
-      await API.post("/transfers/approve-pair", { requestAId: aId, requestBId: bId });
+      const { data } = await API.post("/transfers/approve-pair", {
+        requestAId: aId,
+        requestBId: bId,
+      });
       notify.success("Transfer pair approved.");
+      const approved = Array.isArray(data?.approved) ? data.approved : [];
+      const names = approved.map((r) => r?.requester?.name).filter(Boolean);
+      const label = names.length ? names.join(" and ") : "the approved users";
+      const goAssign = await confirm({
+        title: "Assign New Wards",
+        message: `Assign new wards for ${label} now?`,
+        confirmText: "Go to Users",
+      });
+      if (goAssign) {
+        navigate("/admin/users");
+      }
       fetchTransfers();
     } catch (err) {
-      notify.error(err.response?.data?.message || "Failed to approve transfer pair.");
+      notify.error(
+        err.response?.data?.message || "Failed to approve transfer pair.",
+      );
     }
   };
 
@@ -110,7 +129,9 @@ export default function TransferManagementPage() {
       notify.success("Transfer request rejected.");
       fetchTransfers();
     } catch (err) {
-      notify.error(err.response?.data?.message || "Failed to reject transfer request.");
+      notify.error(
+        err.response?.data?.message || "Failed to reject transfer request.",
+      );
     }
   };
 
@@ -182,12 +203,16 @@ export default function TransferManagementPage() {
       <div className="page-header">
         <div>
           <div className="page-title">↔ Hospital Transfer Management</div>
-          <div className="page-subtitle">Approve reciprocal transfer pairs or reject individual requests</div>
+          <div className="page-subtitle">
+            Approve reciprocal transfer pairs or reject individual requests
+          </div>
         </div>
       </div>
 
       {loading ? (
-        <div className="loading-center"><div className="spinner" /></div>
+        <div className="loading-center">
+          <div className="spinner" />
+        </div>
       ) : transfers.length === 0 ? (
         <div className="empty-state">
           <div className="empty-state-icon">↔</div>
@@ -197,48 +222,125 @@ export default function TransferManagementPage() {
         <div style={{ display: "grid", gap: 18 }}>
           {pairs.map(({ a, b }) => (
             <div key={`${a._id}-${b._id}`} className="transfer-card">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                <div className="transfer-badge">Pair Match · {a.transferTimeframe}</div>
-                <div className="transfer-meta">Created {fmtDate(a.createdAt)}</div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 14,
+                }}
+              >
+                <div className="transfer-badge">
+                  Pair Match · {a.transferTimeframe}
+                </div>
+                <div className="transfer-meta">
+                  Created {fmtDate(a.createdAt)}
+                </div>
               </div>
 
               <div className="transfer-pair">
                 {[a, b].map((t) => (
-                  <div key={t._id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid var(--border)", borderRadius: 14, padding: 14 }}>
+                  <div
+                    key={t._id}
+                    style={{
+                      background: "rgba(255,255,255,0.02)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 14,
+                      padding: 14,
+                    }}
+                  >
                     <div className="transfer-user">
-                      <div className="transfer-avatar">{t.requester?.name?.charAt(0)?.toUpperCase()}</div>
+                      <div className="transfer-avatar">
+                        {t.requester?.name?.charAt(0)?.toUpperCase()}
+                      </div>
                       <div>
-                        <div style={{ fontWeight: 700 }}>{t.requester?.name}</div>
-                        <div className="transfer-meta">{t.requester?.nic || "—"}</div>
+                        <div style={{ fontWeight: 700 }}>
+                          {t.requester?.name}
+                        </div>
+                        <div className="transfer-meta">
+                          {t.requester?.nic || "—"}
+                        </div>
                       </div>
                     </div>
                     <div style={{ marginTop: 10 }}>
-                      <div className="transfer-route">{t.currentHospital} → {t.desiredHospital}</div>
-                      <div className="transfer-meta">Current Ward: {t.currentWard || "—"}</div>
+                      <div className="transfer-route">
+                        {t.currentHospital} → {t.desiredHospital}
+                      </div>
+                      <div className="transfer-meta">
+                        Current Ward: {t.currentWard || "—"}
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
 
               <div className="transfer-actions" style={{ marginTop: 14 }}>
-                <button className="btn btn-primary" onClick={() => handleApprovePair(a._id, b._id)}>Approve Pair</button>
-                <button className="btn btn-ghost" onClick={() => handleReject(a._id, a.requester?.name || "Requester")}>Reject {a.requester?.name || "A"}</button>
-                <button className="btn btn-ghost" onClick={() => handleReject(b._id, b.requester?.name || "Requester")}>Reject {b.requester?.name || "B"}</button>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => handleApprovePair(a._id, b._id)}
+                >
+                  Approve Pair
+                </button>
+                <button
+                  className="btn btn-ghost"
+                  onClick={() =>
+                    handleReject(a._id, a.requester?.name || "Requester")
+                  }
+                >
+                  Reject {a.requester?.name || "A"}
+                </button>
+                <button
+                  className="btn btn-ghost"
+                  onClick={() =>
+                    handleReject(b._id, b.requester?.name || "Requester")
+                  }
+                >
+                  Reject {b.requester?.name || "B"}
+                </button>
               </div>
             </div>
           ))}
 
           {singles.length > 0 && (
-            <div className="card" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-              <div style={{ fontWeight: 800, marginBottom: 14 }}>Unmatched Requests</div>
+            <div
+              className="card"
+              style={{
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+              }}
+            >
+              <div style={{ fontWeight: 800, marginBottom: 14 }}>
+                Unmatched Requests
+              </div>
               <div style={{ display: "grid", gap: 12 }}>
                 {singles.map((t) => (
-                  <div key={t._id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: 12, border: "1px solid var(--border)", borderRadius: 12 }}>
+                  <div
+                    key={t._id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 16,
+                      padding: 12,
+                      border: "1px solid var(--border)",
+                      borderRadius: 12,
+                    }}
+                  >
                     <div>
                       <div style={{ fontWeight: 700 }}>{t.requester?.name}</div>
-                      <div className="transfer-meta">{t.currentHospital} → {t.desiredHospital} · {t.transferTimeframe}</div>
+                      <div className="transfer-meta">
+                        {t.currentHospital} → {t.desiredHospital} ·{" "}
+                        {t.transferTimeframe}
+                      </div>
                     </div>
-                    <button className="btn btn-ghost" onClick={() => handleReject(t._id, t.requester?.name || "Requester")}>Reject</button>
+                    <button
+                      className="btn btn-ghost"
+                      onClick={() =>
+                        handleReject(t._id, t.requester?.name || "Requester")
+                      }
+                    >
+                      Reject
+                    </button>
                   </div>
                 ))}
               </div>

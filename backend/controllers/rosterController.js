@@ -235,8 +235,13 @@ const getAllRosters = async (req, res) => {
 
     const roster = rosterDocs.map((entry) => {
       const obj = entry.toObject();
-      if (!obj.nurse && obj.nurseName) {
-        obj.nurse = { name: obj.nurseName };
+      if (!obj.nurse) {
+        // If populate fails, we retrieve the original ID used for population
+        const originalId = entry.populated("nurse");
+        obj.nurse = { 
+          _id: originalId, 
+          name: obj.nurseName || "Unknown Nurse" 
+        };
       }
       return obj;
     });
@@ -300,6 +305,41 @@ const deleteRoster = async (req, res) => {
 
     await entry.deleteOne();
     res.json({ message: "Roster entry deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @DELETE /api/roster/nurse/:id?month=YYYY-MM
+const deleteRosterForNurseMonth = async (req, res) => {
+  const { id } = req.params;
+  const { month } = req.query;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: "Invalid nurse ID" });
+  }
+  if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+    return res.status(400).json({ message: "Month must be in YYYY-MM format" });
+  }
+
+  try {
+    const result = await Roster.deleteMany({ nurse: id, month });
+
+    const delNotif = await Notification.create({
+      recipient: id,
+      message: `Your roster for ${month} has been removed by admin.`,
+      type: "roster",
+    });
+
+    try {
+      getIO().to("user:" + id.toString()).emit("notification:new", delNotif);
+      getIO().to("user:" + id.toString()).emit("roster:updated");
+      getIO().to("admin").emit("roster:updated");
+    } catch (err) {
+      console.error("Socket emit error:", err.message);
+    }
+
+    res.json({ message: "Monthly roster removed", deletedCount: result.deletedCount });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -396,6 +436,7 @@ module.exports = {
   getWardRoster,
   getWardNames,
   deleteRoster,
+  deleteRosterForNurseMonth,
   getDashboardSummary,
   getNurseRoster,
 };

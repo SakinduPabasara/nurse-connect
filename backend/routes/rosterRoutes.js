@@ -8,6 +8,7 @@ const {
   getWardRoster,
   getWardNames,
   deleteRoster,
+  deleteRosterForNurseMonth,
   getDashboardSummary,
   getNurseRoster,
 } = require("../controllers/rosterController");
@@ -21,6 +22,7 @@ router.get("/all", protect, adminOnly, getAllRosters);
 router.get("/wards", protect, getWardNames);
 router.get("/nurse/:id", protect, getNurseRoster);
 router.get("/ward/:ward", protect, getWardRoster);
+router.delete("/nurse/:id", protect, adminOnly, deleteRosterForNurseMonth);
 router.delete("/:id", protect, adminOnly, deleteRoster);
 
 module.exports = router;

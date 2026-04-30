@@ -1,23 +1,36 @@
-const TransferRequest = require('../models/TransferRequest');
-const Notification = require('../models/Notification');
-const mongoose = require('mongoose');
-const { getIO } = require('../utils/socketManager');
-const User = require('../models/User');
-const Roster = require('../models/Roster');
-const SwapRequest = require('../models/SwapRequest');
-const Leave = require('../models/Leave');
-const Overtime = require('../models/Overtime');
+const TransferRequest = require("../models/TransferRequest");
+const Notification = require("../models/Notification");
+const mongoose = require("mongoose");
+const { getIO } = require("../utils/socketManager");
+const User = require("../models/User");
+const Roster = require("../models/Roster");
+const SwapRequest = require("../models/SwapRequest");
+const Leave = require("../models/Leave");
+const Overtime = require("../models/Overtime");
 
-const VALID_STATUSES = ['open', 'approved', 'rejected', 'cancelled'];
+const VALID_STATUSES = ["open", "approved", "rejected", "cancelled"];
 
-const todayISO = () => new Date().toISOString().split('T')[0];
+const todayISO = () => new Date().toISOString().split("T")[0];
 // @POST /api/transfers  — Nurse posts a transfer request
 const createTransfer = async (req, res) => {
-  const { currentHospital, currentWard, desiredHospital, desiredWard, transferTimeframe, reason } = req.body;
+  const {
+    currentHospital,
+    currentWard,
+    desiredHospital,
+    desiredWard,
+    transferTimeframe,
+    reason,
+  } = req.body;
 
-  if (!currentHospital || !currentWard || !desiredHospital || !transferTimeframe) {
+  if (
+    !currentHospital ||
+    !currentWard ||
+    !desiredHospital ||
+    !transferTimeframe
+  ) {
     return res.status(400).json({
-      message: 'Please provide currentHospital, currentWard, desiredHospital, and transferTimeframe',
+      message:
+        "Please provide currentHospital, currentWard, desiredHospital, and transferTimeframe",
     });
   }
 
@@ -27,32 +40,41 @@ const createTransfer = async (req, res) => {
       currentHospital: currentHospital.trim(),
       currentWard: currentWard.trim(),
       desiredHospital: desiredHospital.trim(),
-      desiredWard: desiredWard ? desiredWard.trim() : '',
+      desiredWard: desiredWard ? desiredWard.trim() : "",
       transferTimeframe: transferTimeframe.trim(),
-      reason: reason || '',
+      reason: reason || "",
     });
 
-    const populated = await transfer.populate('requester', 'name email ward hospital');
+    const populated = await transfer.populate(
+      "requester",
+      "name email ward hospital",
+    );
 
     // Notify admins about new transfer requests
-    const admins = await User.find({ role: 'admin' }).select('_id');
+    const admins = await User.find({ role: "admin" }).select("_id");
     const adminNotifs = admins.map((a) => ({
       recipient: a._id,
       message: `${req.user.name} requested a hospital transfer to ${transfer.desiredHospital} (${transfer.transferTimeframe}).`,
-      type: 'transfer',
+      type: "transfer",
     }));
     if (adminNotifs.length > 0) {
       await Notification.insertMany(adminNotifs);
     }
 
     try {
-      getIO().to('all_users').emit('transfer:updated');
-      getIO().to('admin').emit('transfer:updated');
+      getIO().to("all_users").emit("transfer:updated");
+      getIO().to("admin").emit("transfer:updated");
       adminNotifs.forEach((n) => {
-        getIO().to('admin').emit('notification:new', { ...n, isRead: false, createdAt: new Date() });
+        getIO()
+          .to("admin")
+          .emit("notification:new", {
+            ...n,
+            isRead: false,
+            createdAt: new Date(),
+          });
       });
     } catch (err) {
-      console.error('Socket emit error:', err.message);
+      console.error("Socket emit error:", err.message);
     }
 
     res.status(201).json(populated);
@@ -70,8 +92,8 @@ const getMyTransfers = async (req, res) => {
     }
 
     const transfers = await TransferRequest.find(filter)
-      .populate('requester', 'name email ward hospital')
-      .populate('matchedWith', 'name email ward hospital')
+      .populate("requester", "name email ward hospital")
+      .populate("matchedWith", "name email ward hospital")
       .sort({ createdAt: -1 });
     res.json(transfers);
   } catch (error) {
@@ -86,12 +108,12 @@ const getAllTransfers = async (req, res) => {
     if (req.query.status && VALID_STATUSES.includes(req.query.status)) {
       filter.status = req.query.status;
     } else {
-      filter.status = 'open'; // Default: only show open requests
+      filter.status = "open"; // Default: only show open requests
     }
 
     const transfers = await TransferRequest.find(filter)
-      .populate('requester', 'name email ward hospital')
-      .populate('matchedWith', 'name email ward hospital')
+      .populate("requester", "name email ward hospital")
+      .populate("matchedWith", "name email ward hospital")
       .sort({ createdAt: -1 });
     res.json(transfers);
   } catch (error) {
@@ -108,7 +130,7 @@ const getMatchingTransfers = async (req, res) => {
     // Get the current nurse's open transfer requests
     const myRequests = await TransferRequest.find({
       requester: req.user._id,
-      status: 'open',
+      status: "open",
     });
 
     if (myRequests.length === 0) {
@@ -121,13 +143,13 @@ const getMatchingTransfers = async (req, res) => {
       // Find others who want to go where I am, and are currently where I want to go
       const potentialMatches = await TransferRequest.find({
         requester: { $ne: req.user._id },
-        status: 'open',
+        status: "open",
         currentHospital: myReq.desiredHospital,
         desiredHospital: myReq.currentHospital,
         transferTimeframe: myReq.transferTimeframe,
-      }).populate('requester', 'name email ward hospital');
+      }).populate("requester", "name email ward hospital");
 
-      potentialMatches.forEach(m => matchSet.set(m._id.toString(), m));
+      potentialMatches.forEach((m) => matchSet.set(m._id.toString(), m));
     }
 
     res.json([...matchSet.values()]);
@@ -141,36 +163,45 @@ const updateTransferStatus = async (req, res) => {
   const { status } = req.body;
 
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-    return res.status(400).json({ message: 'Invalid transfer request ID' });
+    return res.status(400).json({ message: "Invalid transfer request ID" });
   }
-  if (!status || !['cancelled'].includes(status)) {
-    return res.status(400).json({ message: 'Status must be: cancelled' });
+  if (!status || !["cancelled"].includes(status)) {
+    return res.status(400).json({ message: "Status must be: cancelled" });
   }
 
   try {
-    const transfer = await TransferRequest.findById(req.params.id).populate('requester', 'name');
-    if (!transfer) return res.status(404).json({ message: 'Transfer request not found' });
+    const transfer = await TransferRequest.findById(req.params.id).populate(
+      "requester",
+      "name",
+    );
+    if (!transfer)
+      return res.status(404).json({ message: "Transfer request not found" });
 
-    const isOwner = transfer.requester._id.toString() === req.user._id.toString();
+    const isOwner =
+      transfer.requester._id.toString() === req.user._id.toString();
     if (!isOwner) {
-      return res.status(403).json({ message: 'Not authorized to update this transfer request' });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to update this transfer request" });
     }
-    if (transfer.status !== 'open') {
-      return res.status(400).json({ message: `This request is already ${transfer.status}` });
+    if (transfer.status !== "open") {
+      return res
+        .status(400)
+        .json({ message: `This request is already ${transfer.status}` });
     }
 
-    transfer.status = 'cancelled';
+    transfer.status = "cancelled";
     transfer.cancelledAt = new Date();
     await transfer.save();
 
     try {
-      getIO().to('all_users').emit('transfer:updated');
-      getIO().to('admin').emit('transfer:updated');
+      getIO().to("all_users").emit("transfer:updated");
+      getIO().to("admin").emit("transfer:updated");
     } catch (err) {
-      console.error('Socket emit error:', err.message);
+      console.error("Socket emit error:", err.message);
     }
 
-    res.json({ message: 'Transfer request cancelled', transfer });
+    res.json({ message: "Transfer request cancelled", transfer });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -180,35 +211,55 @@ const updateTransferStatus = async (req, res) => {
 const approveTransferPair = async (req, res) => {
   const { requestAId, requestBId } = req.body;
 
-  if (!mongoose.Types.ObjectId.isValid(requestAId) || !mongoose.Types.ObjectId.isValid(requestBId)) {
-    return res.status(400).json({ message: 'Invalid transfer request ID(s)' });
+  if (
+    !mongoose.Types.ObjectId.isValid(requestAId) ||
+    !mongoose.Types.ObjectId.isValid(requestBId)
+  ) {
+    return res.status(400).json({ message: "Invalid transfer request ID(s)" });
   }
   if (requestAId === requestBId) {
-    return res.status(400).json({ message: 'Pair must contain two different requests' });
+    return res
+      .status(400)
+      .json({ message: "Pair must contain two different requests" });
   }
 
   try {
     const [reqA, reqB] = await Promise.all([
-      TransferRequest.findById(requestAId).populate('requester', 'name hospital ward'),
-      TransferRequest.findById(requestBId).populate('requester', 'name hospital ward'),
+      TransferRequest.findById(requestAId).populate(
+        "requester",
+        "name hospital ward",
+      ),
+      TransferRequest.findById(requestBId).populate(
+        "requester",
+        "name hospital ward",
+      ),
     ]);
 
-    if (!reqA || !reqB) return res.status(404).json({ message: 'Transfer request not found' });
-    if (reqA.status !== 'open' || reqB.status !== 'open') {
-      return res.status(400).json({ message: 'Both requests must be open to approve' });
+    if (!reqA || !reqB)
+      return res.status(404).json({ message: "Transfer request not found" });
+    if (reqA.status !== "open" || reqB.status !== "open") {
+      return res
+        .status(400)
+        .json({ message: "Both requests must be open to approve" });
     }
     if (reqA.requester._id.toString() === reqB.requester._id.toString()) {
-      return res.status(400).json({ message: 'Cannot approve two requests from the same user' });
+      return res
+        .status(400)
+        .json({ message: "Cannot approve two requests from the same user" });
     }
     if (reqA.transferTimeframe !== reqB.transferTimeframe) {
-      return res.status(400).json({ message: 'Requests must have the same timeframe to match' });
+      return res
+        .status(400)
+        .json({ message: "Requests must have the same timeframe to match" });
     }
 
     const reciprocal =
       reqA.currentHospital === reqB.desiredHospital &&
       reqB.currentHospital === reqA.desiredHospital;
     if (!reciprocal) {
-      return res.status(400).json({ message: 'Requests are not reciprocal between hospitals' });
+      return res
+        .status(400)
+        .json({ message: "Requests are not reciprocal between hospitals" });
     }
 
     const now = new Date();
@@ -216,8 +267,12 @@ const approveTransferPair = async (req, res) => {
 
     // Update both users
     await Promise.all([
-      User.findByIdAndUpdate(reqA.requester._id, { $set: { hospital: reqA.desiredHospital, ward: '' } }),
-      User.findByIdAndUpdate(reqB.requester._id, { $set: { hospital: reqB.desiredHospital, ward: '' } }),
+      User.findByIdAndUpdate(reqA.requester._id, {
+        $set: { hospital: reqA.desiredHospital, ward: "" },
+      }),
+      User.findByIdAndUpdate(reqB.requester._id, {
+        $set: { hospital: reqB.desiredHospital, ward: "" },
+      }),
     ]);
 
     // Cleanup future rosters
@@ -229,7 +284,7 @@ const approveTransferPair = async (req, res) => {
     // Cancel pending swap requests involving either user
     await SwapRequest.updateMany(
       {
-        status: 'pending',
+        status: "pending",
         $or: [
           { requester: reqA.requester._id },
           { targetNurse: reqA.requester._id },
@@ -237,31 +292,31 @@ const approveTransferPair = async (req, res) => {
           { targetNurse: reqB.requester._id },
         ],
       },
-      { $set: { status: 'rejected' } },
+      { $set: { status: "rejected" } },
     );
 
     // Cancel pending leave requests
     await Leave.updateMany(
-      { nurse: reqA.requester._id, status: 'pending' },
-      { $set: { status: 'rejected', reviewedBy: req.user._id } },
+      { nurse: reqA.requester._id, status: "pending" },
+      { $set: { status: "rejected", reviewedBy: req.user._id } },
     );
     await Leave.updateMany(
-      { nurse: reqB.requester._id, status: 'pending' },
-      { $set: { status: 'rejected', reviewedBy: req.user._id } },
+      { nurse: reqB.requester._id, status: "pending" },
+      { $set: { status: "rejected", reviewedBy: req.user._id } },
     );
 
     // Remove pending overtime entries
-    await Overtime.deleteMany({ nurse: reqA.requester._id, status: 'pending' });
-    await Overtime.deleteMany({ nurse: reqB.requester._id, status: 'pending' });
+    await Overtime.deleteMany({ nurse: reqA.requester._id, status: "pending" });
+    await Overtime.deleteMany({ nurse: reqB.requester._id, status: "pending" });
 
     // Approve the pair
-    reqA.status = 'approved';
+    reqA.status = "approved";
     reqA.matchedWith = reqB.requester._id;
     reqA.approvedAt = now;
     reqA.decidedBy = req.user._id;
     await reqA.save();
 
-    reqB.status = 'approved';
+    reqB.status = "approved";
     reqB.matchedWith = reqA.requester._id;
     reqB.approvedAt = now;
     reqB.decidedBy = req.user._id;
@@ -271,54 +326,76 @@ const approveTransferPair = async (req, res) => {
     await TransferRequest.updateMany(
       {
         requester: { $in: [reqA.requester._id, reqB.requester._id] },
-        status: 'open',
+        status: "open",
         _id: { $nin: [reqA._id, reqB._id] },
       },
-      { $set: { status: 'cancelled', cancelledAt: now, decidedBy: req.user._id } },
+      {
+        $set: {
+          status: "cancelled",
+          cancelledAt: now,
+          decidedBy: req.user._id,
+        },
+      },
     );
 
     // Notify the two users
     const notifA = await Notification.create({
       recipient: reqA.requester._id,
       message: `Your transfer to ${reqA.desiredHospital} has been approved. Your ward assignment will be updated by an admin shortly.`,
-      type: 'transfer',
+      type: "transfer",
     });
     const notifB = await Notification.create({
       recipient: reqB.requester._id,
       message: `Your transfer to ${reqB.desiredHospital} has been approved. Your ward assignment will be updated by an admin shortly.`,
-      type: 'transfer',
+      type: "transfer",
     });
 
     // Notify the approving admin
     const adminNotif = await Notification.create({
       recipient: req.user._id,
-      message: `Transfer approved: ${reqA.requester.name} ↔ ${reqB.requester.name} (${reqA.currentHospital} ⇄ ${reqA.desiredHospital}).`,
-      type: 'transfer',
+      message: `Transfer approved: ${reqA.requester.name} ↔ ${reqB.requester.name} (${reqA.currentHospital} ⇄ ${reqA.desiredHospital}). Assign new wards for both users.`,
+      type: "transfer",
     });
 
     try {
-      getIO().to('user:' + reqA.requester._id.toString()).emit('notification:new', notifA);
-      getIO().to('user:' + reqB.requester._id.toString()).emit('notification:new', notifB);
-      getIO().to('user:' + req.user._id.toString()).emit('notification:new', adminNotif);
+      getIO()
+        .to("user:" + reqA.requester._id.toString())
+        .emit("notification:new", notifA);
+      getIO()
+        .to("user:" + reqB.requester._id.toString())
+        .emit("notification:new", notifB);
+      getIO()
+        .to("user:" + req.user._id.toString())
+        .emit("notification:new", adminNotif);
 
-      getIO().to('user:' + reqA.requester._id.toString()).emit('transfer:updated');
-      getIO().to('user:' + reqB.requester._id.toString()).emit('transfer:updated');
-      getIO().to('admin').emit('transfer:updated');
-      getIO().to('all_users').emit('transfer:updated');
+      getIO()
+        .to("user:" + reqA.requester._id.toString())
+        .emit("transfer:updated");
+      getIO()
+        .to("user:" + reqB.requester._id.toString())
+        .emit("transfer:updated");
+      getIO().to("admin").emit("transfer:updated");
+      getIO().to("all_users").emit("transfer:updated");
 
       const [userA, userB] = await Promise.all([
-        User.findById(reqA.requester._id).select('-password'),
-        User.findById(reqB.requester._id).select('-password'),
+        User.findById(reqA.requester._id).select("-password"),
+        User.findById(reqB.requester._id).select("-password"),
       ]);
-      if (userA) getIO().to('user:' + userA._id.toString()).emit('user:updated', userA);
-      if (userB) getIO().to('user:' + userB._id.toString()).emit('user:updated', userB);
-      getIO().to('admin').emit('user:updated', userA);
-      getIO().to('admin').emit('user:updated', userB);
+      if (userA)
+        getIO()
+          .to("user:" + userA._id.toString())
+          .emit("user:updated", userA);
+      if (userB)
+        getIO()
+          .to("user:" + userB._id.toString())
+          .emit("user:updated", userB);
+      getIO().to("admin").emit("user:updated", userA);
+      getIO().to("admin").emit("user:updated", userB);
     } catch (err) {
-      console.error('Socket emit error:', err.message);
+      console.error("Socket emit error:", err.message);
     }
 
-    res.json({ message: 'Transfer pair approved', approved: [reqA, reqB] });
+    res.json({ message: "Transfer pair approved", approved: [reqA, reqB] });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -327,17 +404,23 @@ const approveTransferPair = async (req, res) => {
 // @PUT /api/transfers/:id/reject  — Admin rejects a single request
 const rejectTransfer = async (req, res) => {
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-    return res.status(400).json({ message: 'Invalid transfer request ID' });
+    return res.status(400).json({ message: "Invalid transfer request ID" });
   }
 
   try {
-    const transfer = await TransferRequest.findById(req.params.id).populate('requester', 'name');
-    if (!transfer) return res.status(404).json({ message: 'Transfer request not found' });
-    if (transfer.status !== 'open') {
-      return res.status(400).json({ message: `This request is already ${transfer.status}` });
+    const transfer = await TransferRequest.findById(req.params.id).populate(
+      "requester",
+      "name",
+    );
+    if (!transfer)
+      return res.status(404).json({ message: "Transfer request not found" });
+    if (transfer.status !== "open") {
+      return res
+        .status(400)
+        .json({ message: `This request is already ${transfer.status}` });
     }
 
-    transfer.status = 'rejected';
+    transfer.status = "rejected";
     transfer.rejectedAt = new Date();
     transfer.decidedBy = req.user._id;
     await transfer.save();
@@ -345,25 +428,29 @@ const rejectTransfer = async (req, res) => {
     const notif = await Notification.create({
       recipient: transfer.requester._id,
       message: `Your transfer request to ${transfer.desiredHospital} has been rejected by admin.`,
-      type: 'transfer',
+      type: "transfer",
     });
 
     const adminNotif = await Notification.create({
       recipient: req.user._id,
       message: `Transfer rejected: ${transfer.requester.name} → ${transfer.desiredHospital}.`,
-      type: 'transfer',
+      type: "transfer",
     });
 
     try {
-      getIO().to('user:' + transfer.requester._id.toString()).emit('notification:new', notif);
-      getIO().to('user:' + req.user._id.toString()).emit('notification:new', adminNotif);
-      getIO().to('admin').emit('transfer:updated');
-      getIO().to('all_users').emit('transfer:updated');
+      getIO()
+        .to("user:" + transfer.requester._id.toString())
+        .emit("notification:new", notif);
+      getIO()
+        .to("user:" + req.user._id.toString())
+        .emit("notification:new", adminNotif);
+      getIO().to("admin").emit("transfer:updated");
+      getIO().to("all_users").emit("transfer:updated");
     } catch (err) {
-      console.error('Socket emit error:', err.message);
+      console.error("Socket emit error:", err.message);
     }
 
-    res.json({ message: 'Transfer request rejected', transfer });
+    res.json({ message: "Transfer request rejected", transfer });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
