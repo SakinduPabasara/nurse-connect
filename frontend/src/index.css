@@ -2,6 +2,13 @@
 
 /* ── Reset ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+button {
+  font-family: inherit;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 
 /* ── Design Tokens ── */
 :root {
@@ -442,6 +449,7 @@ body {
 .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
   padding: 9px 18px;
   border-radius: var(--radius);
@@ -456,6 +464,7 @@ body {
   letter-spacing: -0.01em;
   position: relative;
   overflow: hidden;
+  line-height: 1;
 }
 
 .btn::after {

@@ -310,6 +310,7 @@ export default function LoginPage() {
           justify-content: center;
           gap: 9px;
           transition: all .2s ease;
+          line-height: 1;
           background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
           color: #fff;
           box-shadow: 0 4px 24px rgba(37,99,235,.45);

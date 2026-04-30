@@ -316,6 +316,7 @@ export default function RegisterPage() {
           padding: 12px 22px; border:none; border-radius:11px;
           font-family:'Inter',sans-serif; font-size:0.88rem; font-weight:700;
           cursor:pointer; transition:all 0.2s ease; letter-spacing:0.01em;
+          line-height: 1;
         }
         .reg-btn-primary {
           background:linear-gradient(135deg,#2563eb,#1d4ed8); color:#fff;

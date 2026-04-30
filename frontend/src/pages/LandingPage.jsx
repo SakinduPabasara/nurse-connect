@@ -67,6 +67,7 @@ export default function LandingPage() {
           display: inline-flex;
           align-items: center;
           gap: 8px;
+          line-height: 1;
         }
 
         .btn-ghost {
