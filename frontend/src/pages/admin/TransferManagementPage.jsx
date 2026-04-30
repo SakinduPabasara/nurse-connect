@@ -198,6 +198,12 @@ export default function TransferManagementPage() {
           gap: 10px;
           justify-content: flex-end;
         }
+        @media (max-width: 768px) {
+          .transfer-pair { grid-template-columns: 1fr !important; }
+          .transfer-actions { flex-direction: column; width: 100%; }
+          .transfer-actions .btn { width: 100%; }
+          .unmatched-item { flex-direction: column !important; align-items: stretch !important; gap: 12px !important; }
+        }
       `}</style>
 
       <div className="page-header">
@@ -316,6 +322,7 @@ export default function TransferManagementPage() {
                 {singles.map((t) => (
                   <div
                     key={t._id}
+                    className="unmatched-item"
                     style={{
                       display: "flex",
                       alignItems: "center",
