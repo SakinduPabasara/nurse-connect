@@ -14,10 +14,18 @@ const transferRequestSchema = new mongoose.Schema({
   reason: { type: String, default: '' },
   status: {
     type: String,
-    enum: ['open', 'matched', 'closed'],
+    enum: ['open', 'approved', 'rejected', 'cancelled'],
     default: 'open',
   },
   matchedWith: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+  },
+  approvedAt: { type: Date, default: null },
+  rejectedAt: { type: Date, default: null },
+  cancelledAt: { type: Date, default: null },
+  decidedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     default: null,

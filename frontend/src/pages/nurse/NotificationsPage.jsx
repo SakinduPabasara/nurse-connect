@@ -33,6 +33,7 @@ function resolveNotificationLink(message, type, role) {
       return "/admin/leave";
 
     if (t === "swap" || m.includes("swap request")) return "/admin/swaps";
+    if (t === "transfer" || m.includes("transfer")) return "/admin/transfers";
 
     if (
       m.includes("verification") ||

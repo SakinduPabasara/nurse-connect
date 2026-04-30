@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import API from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import useToastMessage from '../../hooks/useToastMessage';
@@ -6,9 +6,10 @@ import SearchableSelect from '../../components/SearchableSelect';
 import * as Ic from '../../components/icons';
 
 const STATUS_CFG = {
-  open:    { color: '#34d399', bg: 'rgba(52,211,153,0.12)',   border: 'rgba(52,211,153,0.25)',   label: 'Open'    },
-  matched: { color: '#22d3ee', bg: 'rgba(34,211,238,0.12)',   border: 'rgba(34,211,238,0.25)',   label: 'Matched' },
-  closed:  { color: '#94a3b8', bg: 'rgba(148,163,184,0.12)', border: 'rgba(148,163,184,0.25)',  label: 'Closed'  },
+  open:      { color: '#34d399', bg: 'rgba(52,211,153,0.12)',   border: 'rgba(52,211,153,0.25)',   label: 'Open' },
+  approved:  { color: '#22c55e', bg: 'rgba(34,197,94,0.12)',    border: 'rgba(34,197,94,0.25)',    label: 'Approved' },
+  rejected:  { color: '#f87171', bg: 'rgba(239,68,68,0.12)',    border: 'rgba(239,68,68,0.25)',    label: 'Rejected' },
+  cancelled: { color: '#94a3b8', bg: 'rgba(148,163,184,0.12)', border: 'rgba(148,163,184,0.25)', label: 'Cancelled' },
 };
 
 export default function TransferPage() {

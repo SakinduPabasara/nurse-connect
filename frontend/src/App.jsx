@@ -44,6 +44,7 @@ import UsersManagementPage from "./pages/admin/UsersManagementPage";
 import WardManagementPage from "./pages/admin/WardManagementPage";
 import HospitalManagementPage from "./pages/admin/HospitalManagementPage";
 import SwapManagementPage from "./pages/admin/SwapManagementPage";
+import TransferManagementPage from "./pages/admin/TransferManagementPage";
 import LandingPage from "./pages/LandingPage";
 
 const AppLayout = ({ children }) => (
@@ -150,6 +151,10 @@ function App() {
           element={N("admin", HospitalManagementPage)}
         />
         <Route path="/admin/swaps" element={N("admin", SwapManagementPage)} />
+        <Route
+          path="/admin/transfers"
+          element={N("admin", TransferManagementPage)}
+        />
 
         <Route path="/landing" element={<LandingPage />} />
 
