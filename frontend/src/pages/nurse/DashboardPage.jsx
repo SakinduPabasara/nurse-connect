@@ -512,20 +512,6 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Modern Bento Grid ── */}
-      <div className="bento-grid dashboard-bento">
-        
-        {/* Column 1: Readiness & Stats */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <div className="bento-cell hero-card" style={{ 
-        padding: '24px 28px', background: 'linear-gradient(145deg, rgba(15,23,42,0.9), rgba(30,27,75,0.6))', 
-        border: `1px solid ${diffHours < 2 ? THEME.danger + '66' : 'rgba(255,255,255,0.08)'}`,
-        position: 'relative', overflow: 'hidden', minHeight: 460
-      }}>
-        {/* Animated Background Pulse */}
-        <div style={{ 
-          position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%',
-          background: `radial-gradient(circle, ${status.color}10 0%, transparent 60%)`,
-          animation: 'cd-rota      {/* ── Modern Bento Grid ── */}
       <div className="bento-grid">
         
         {/* Column 1: Readiness & Stats */}
@@ -631,12 +617,6 @@ export default function DashboardPage() {
             </div>
             <p className="page-subtitle" style={{ fontSize: '0.78rem', lineHeight: 1.6 }}>
               {readiness > 85 ? "Your circadian rhythm alignment is optimal for the current week." : "High night shift density detected. Recommend 90min morning rest."}
-            </p>
-          </div>
-        </div>
-
-      </div>
-. Recommend 90min morning rest."}
             </p>
           </div>
         </div>
