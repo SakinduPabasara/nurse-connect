@@ -6,7 +6,6 @@ import { useConfirm } from "../../context/ConfirmContext";
 import SearchableSelect from "../../components/SearchableSelect";
 import * as Ic from "../../components/icons";
 import { getSocket } from "../../utils/socketClient";
-import { useAuth } from "../../context/AuthContext";
 
 const SHIFTS = ["7AM-1PM", "1PM-7PM", "7AM-7PM", "7PM-7AM"];
 const SHIFT_MAP = {
@@ -41,13 +40,12 @@ const SHIFT_MAP = {
 };
 
 export default function RosterManagementPage() {
-  const { user } = useAuth();
   const confirm = useConfirm();
   const [nurses, setNurses] = useState([]);
   const [wards, setWards] = useState([]);
   const [roster, setRoster] = useState([]);
   const [rosterWard, setRosterWard] = useState("");
-  const [rosterHospital, setRosterHospital] = useState(user?.hospital || "");
+  const [rosterHospital, setRosterHospital] = useState(""); // NEW: hospital filter for view tab
   const [tab, setTab] = useState("view");
   const now = new Date();
   const [month, setMonth] = useState(
@@ -107,7 +105,7 @@ export default function RosterManagementPage() {
     setLoading(true);
     try {
       const { data } = await API.get(
-        `/roster/all?month=${month}&ward=${rosterWard}&hospital=${rosterHospital}`,
+        `/roster/all?month=${month}&ward=${rosterWard}`,
       );
       setRoster(data);
     } catch {
@@ -119,7 +117,7 @@ export default function RosterManagementPage() {
 
   useEffect(() => {
     fetchRoster();
-  }, [rosterWard, rosterHospital, month]);
+  }, [rosterWard, month]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -176,31 +174,22 @@ export default function RosterManagementPage() {
   // Wards available in the view filter — when a hospital is selected, only show wards
   // that have at least one nurse belonging to that hospital.
   const viewWards = useMemo(() => {
-    const uniqueWards = [...new Set(wards)];
-    if (!rosterHospital) return uniqueWards;
-    
-    // Filter wards to only show those that have nurses in the selected hospital
-    // OR are explicitly registered to that hospital in the wards collection.
+    if (!rosterHospital) return wards;
     const wardsInHospital = new Set(
       nurses
         .filter((n) => n.hospital === rosterHospital)
         .map((n) => n.ward)
         .filter(Boolean),
     );
-    
-    return uniqueWards.filter((w) => wardsInHospital.has(w));
+    return wards.filter((w) => wardsInHospital.has(w));
   }, [rosterHospital, nurses, wards]);
 
   const groupedRoster = useMemo(() => {
     const g = {};
     roster
-      .filter((r) => {
-        if (!rosterHospital) return true;
-        const entryHospital = r.hospital || r.nurse?.hospital || "";
-        return entryHospital.trim() === rosterHospital.trim();
-      })
+      .filter((r) => !rosterHospital || r.nurse?.hospital === rosterHospital)
       .forEach((r) => {
-        const nurseId = r.nurse?._id || (typeof r.nurse === "string" ? r.nurse : null) || "unknown";
+        const nurseId = r.nurse?._id || r.nurse || "unknown";
         const name = r.nurse?.name || r.nurseName || "Unknown Nurse";
         if (!g[nurseId]) g[nurseId] = { name, days: {} };
         const day = parseInt(r.date.split("-").pop());
@@ -210,10 +199,6 @@ export default function RosterManagementPage() {
   }, [roster, rosterHospital]);
 
   const handleDeleteNurseMonth = async (nurseId, nurseName) => {
-    if (!nurseId || nurseId === "unknown") {
-      notify.error("Cannot resolve target nurse identity.");
-      return;
-    }
     const isConfirmed = await confirm({
       title: "Delete Monthly Roster",
       message: `Delete all roster entries for ${nurseName} in ${month}?`,
@@ -225,7 +210,9 @@ export default function RosterManagementPage() {
       fetchRoster();
       notify.success("Monthly roster removed.");
     } catch (err) {
-      notify.error(err.response?.data?.message || "Failed to remove monthly roster.");
+      notify.error(
+        err.response?.data?.message || "Failed to remove monthly roster.",
+      );
     }
   };
 
@@ -271,47 +258,9 @@ export default function RosterManagementPage() {
            z-index: 5;
            text-align: left !important;
            padding-left: 16px !important;
-           padding-right: 12px !important;
            font-weight: 700;
-           width: 200px;
+           width: 180px;
            border-right: 2px solid var(--border) !important;
-        }
-        .nurse-cell-content {
-           display: flex;
-           align-items: center;
-           justify-content: space-between;
-           gap: 12px;
-           width: 100%;
-        }
-        .nurse-name-text {
-           white-space: nowrap;
-           overflow: hidden;
-           text-overflow: ellipsis;
-           flex: 1;
-           font-size: 0.85rem;
-           color: var(--text1);
-        }
-        .nurse-delete-btn {
-           opacity: 0.6;
-           transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-           color: #f43f5e;
-           background: rgba(244,63,94,0.08);
-           border: 1px solid rgba(244,63,94,0.15);
-           border-radius: 8px;
-           width: 28px;
-           height: 28px;
-           display: flex;
-           align-items: center;
-           justify-content: center;
-           cursor: pointer;
-           flex-shrink: 0;
-        }
-        .nurse-delete-btn:hover {
-           opacity: 1;
-           background: #f43f5e;
-           color: #fff;
-           box-shadow: 0 4px 12px rgba(244,63,94,0.3);
-           transform: scale(1.05);
         }
         .duty-marker {
            width: 24px;
@@ -349,11 +298,6 @@ export default function RosterManagementPage() {
             box-shadow: 0 4px 10px rgba(244,63,94,0.35);
           }
           .duty-cell:hover .duty-delete { display: flex; }
-          @media (max-width: 768px) {
-            .sticky-nurse { width: 120px !important; font-size: 0.75rem; padding-left: 10px !important; }
-            .roster-table th, .roster-table td { padding: 6px 4px; }
-            .roster-explorer { border-radius: 12px; }
-          }
       `}</style>
 
       <div className="page-header">
@@ -401,7 +345,13 @@ export default function RosterManagementPage() {
             Strategic Shift Allocation
           </h3>
           <form onSubmit={handleCreate} style={{ display: "grid", gap: 24 }}>
-            <div className="grid-2">
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 20,
+              }}
+            >
               <div className="form-group">
                 <label className="form-label">Medical Center Filter</label>
                 <SearchableSelect
@@ -438,7 +388,13 @@ export default function RosterManagementPage() {
               </div>
             </div>
 
-            <div className="grid-3">
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr 1fr",
+                gap: 20,
+              }}
+            >
               <div className="form-group">
                 <label className="form-label">Deployment Block (Ward)</label>
                 <SearchableSelect
@@ -540,7 +496,7 @@ export default function RosterManagementPage() {
       ) : (
         <>
           <div
-            className="filter-bar-premium mobile-stack"
+            className="filter-bar-premium"
             style={{
               background: "var(--surface)",
               padding: 16,
@@ -554,7 +510,7 @@ export default function RosterManagementPage() {
             }}
           >
             {/* Hospital filter */}
-            <div className="mobile-w-full" style={{ width: 220 }}>
+            <div style={{ width: 220 }}>
               <SearchableSelect
                 options={hospitals.map((h) => ({
                   value: h.name,
@@ -569,7 +525,7 @@ export default function RosterManagementPage() {
               />
             </div>
             {/* Ward filter — narrows to wards in selected hospital */}
-            <div className="mobile-w-full" style={{ width: 220 }}>
+            <div style={{ width: 220 }}>
               <SearchableSelect
                 options={viewWards.map((w) => ({ value: w, label: w }))}
                 value={rosterWard}
@@ -579,7 +535,7 @@ export default function RosterManagementPage() {
             </div>
             <input
               type="month"
-              className="form-input mobile-w-full"
+              className="form-input"
               value={month}
               onChange={(e) => setMonth(e.target.value)}
               style={{
@@ -594,7 +550,7 @@ export default function RosterManagementPage() {
               style={{
                 flex: 1,
                 display: "flex",
-                flexWrap: "wrap",
+                justifyContent: "flex-end",
                 gap: 12,
               }}
             >
@@ -670,17 +626,29 @@ export default function RosterManagementPage() {
                       .map(([nurseId, info]) => (
                         <tr key={nurseId}>
                           <td className="sticky-nurse">
-                            <div className="nurse-cell-content">
-                              <span className="nurse-name-text" title={info.name}>
-                                {info.name}
-                              </span>
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 8,
+                              }}
+                            >
+                              <span>{info.name}</span>
                               <button
                                 type="button"
-                                className="nurse-delete-btn"
-                                onClick={() => handleDeleteNurseMonth(nurseId, info.name)}
-                                title="Delete Monthly Roster"
+                                className="btn btn-ghost btn-xs"
+                                style={{
+                                  color: "#f43f5e",
+                                  border: "1px solid rgba(244,63,94,0.25)",
+                                  padding: "2px 8px",
+                                  borderRadius: 999,
+                                  fontSize: "0.65rem",
+                                }}
+                                onClick={() =>
+                                  handleDeleteNurseMonth(nurseId, info.name)
+                                }
                               >
-                                <Ic.Trash size={14} />
+                                Delete Month
                               </button>
                             </div>
                           </td>

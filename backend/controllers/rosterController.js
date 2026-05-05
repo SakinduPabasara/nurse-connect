@@ -30,7 +30,7 @@ const createRoster = async (req, res) => {
   // ------------------
 
   try {
-    const nurseUser = await User.findById(nurse).select("name hospital");
+    const nurseUser = await User.findById(nurse).select("name");
     if (!nurseUser) {
       return res.status(404).json({ message: "Nurse not found" });
     }
@@ -38,7 +38,6 @@ const createRoster = async (req, res) => {
     const entry = await Roster.create({
       nurse,
       nurseName: nurseUser.name,
-      hospital: nurseUser.hospital,
       ward,
       date,
       shift,
@@ -54,8 +53,12 @@ const createRoster = async (req, res) => {
     });
 
     try {
-      getIO().to("user:" + nurse.toString()).emit("notification:new", notif);
-      getIO().to("user:" + nurse.toString()).emit("roster:updated");
+      getIO()
+        .to("user:" + nurse.toString())
+        .emit("notification:new", notif);
+      getIO()
+        .to("user:" + nurse.toString())
+        .emit("roster:updated");
     } catch (err) {
       console.error("Socket emit error:", err.message);
     }
@@ -106,14 +109,13 @@ const createRosterBulk = async (req, res) => {
   }
 
   try {
-    const nurseUser = await User.findById(nurse).select("name hospital");
+    const nurseUser = await User.findById(nurse).select("name");
     if (!nurseUser) {
       return res.status(404).json({ message: "Nurse not found" });
     }
 
     const existing = await Roster.find({
       nurse,
-      hospital: nurseUser.hospital,
       ward,
       shift,
       month,
@@ -137,7 +139,6 @@ const createRosterBulk = async (req, res) => {
     const docs = toCreateDates.map((date) => ({
       nurse,
       nurseName: nurseUser.name,
-      hospital: nurseUser.hospital,
       ward: ward.trim(),
       date,
       shift,
@@ -158,8 +159,12 @@ const createRosterBulk = async (req, res) => {
     });
 
     try {
-      getIO().to("user:" + nurse.toString()).emit("notification:new", bulkNotif);
-      getIO().to("user:" + nurse.toString()).emit("roster:updated");
+      getIO()
+        .to("user:" + nurse.toString())
+        .emit("notification:new", bulkNotif);
+      getIO()
+        .to("user:" + nurse.toString())
+        .emit("roster:updated");
     } catch (err) {
       console.error("Socket emit error:", err.message);
     }
@@ -198,25 +203,22 @@ const getWardRoster = async (req, res) => {
   }
 
   try {
-    let hospitalFilter = req.user.hospital;
-    if (req.user.role === "admin" && req.query.hospital) {
-      hospitalFilter = req.query.hospital;
-    }
-
-    const filter = { hospital: hospitalFilter };
+    const filter = {};
     if (req.params.ward !== "all") {
       filter.ward = req.params.ward;
     }
     if (req.query.month) filter.month = req.query.month;
 
     const rosterDocs = await Roster.find(filter)
-      .populate("nurse", "name email hospital")
+      .populate("nurse", "name email")
       .sort({ date: 1 });
 
-    const roster = rosterDocs.filter(entry => {
-      // Strict hospital scoping
-      const entryHospital = entry.hospital || (entry.nurse && entry.nurse.hospital);
-      return entry.nurse && entryHospital === hospitalFilter;
+    const roster = rosterDocs.map((entry) => {
+      const obj = entry.toObject();
+      if (!obj.nurse && obj.nurseName) {
+        obj.nurse = { name: obj.nurseName };
+      }
+      return obj;
     });
 
     res.json(roster);
@@ -228,14 +230,7 @@ const getWardRoster = async (req, res) => {
 // @GET /api/roster/all
 const getAllRosters = async (req, res) => {
   try {
-    let hospitalFilter = req.user.hospital;
-
-    // Allow Admins to override the hospital filter if a specific one is requested
-    if (req.user.role === "admin" && req.query.hospital) {
-      hospitalFilter = req.query.hospital;
-    }
-
-    const filter = { hospital: hospitalFilter };
+    const filter = {};
     if (req.query.month) filter.month = req.query.month;
     if (req.query.ward) filter.ward = req.query.ward;
     if (req.query.nurse && mongoose.Types.ObjectId.isValid(req.query.nurse)) {
@@ -246,10 +241,12 @@ const getAllRosters = async (req, res) => {
       .populate("nurse", "name email hospital ward")
       .sort({ date: 1, ward: 1 });
 
-    const roster = rosterDocs.filter(entry => {
-      // Strict hospital scoping
-      const entryHospital = entry.hospital || (entry.nurse && entry.nurse.hospital);
-      return entry.nurse && entryHospital === hospitalFilter;
+    const roster = rosterDocs.map((entry) => {
+      const obj = entry.toObject();
+      if (!obj.nurse && obj.nurseName) {
+        obj.nurse = { name: obj.nurseName };
+      }
+      return obj;
     });
 
     res.json(roster);
@@ -261,17 +258,12 @@ const getAllRosters = async (req, res) => {
 // @GET /api/roster/wards
 const getWardNames = async (req, res) => {
   try {
-    let hospitalFilter = req.user.hospital;
-    if (req.user.role === "admin" && req.query.hospital) {
-      hospitalFilter = req.query.hospital;
-    }
-
     const [rosterWards, userWards, drugWards, equipmentWards] =
       await Promise.all([
-        Roster.distinct("ward", { hospital: hospitalFilter, ward: { $exists: true, $ne: null } }),
-        User.distinct("ward", { hospital: hospitalFilter, ward: { $exists: true, $ne: null } }),
-        Drug.distinct("ward", { hospital: hospitalFilter, ward: { $exists: true, $ne: null } }),
-        Equipment.distinct("ward", { hospital: hospitalFilter, ward: { $exists: true, $ne: null } }),
+        Roster.distinct("ward", { ward: { $exists: true, $ne: null } }),
+        User.distinct("ward", { ward: { $exists: true, $ne: null } }),
+        Drug.distinct("ward", { ward: { $exists: true, $ne: null } }),
+        Equipment.distinct("ward", { ward: { $exists: true, $ne: null } }),
       ]);
 
     const wards = [
@@ -308,8 +300,12 @@ const deleteRoster = async (req, res) => {
     });
 
     try {
-      getIO().to("user:" + entry.nurse.toString()).emit("notification:new", delNotif);
-      getIO().to("user:" + entry.nurse.toString()).emit("roster:updated");
+      getIO()
+        .to("user:" + entry.nurse.toString())
+        .emit("notification:new", delNotif);
+      getIO()
+        .to("user:" + entry.nurse.toString())
+        .emit("roster:updated");
     } catch (err) {
       console.error("Socket emit error:", err.message);
     }
@@ -343,14 +339,21 @@ const deleteRosterForNurseMonth = async (req, res) => {
     });
 
     try {
-      getIO().to("user:" + id.toString()).emit("notification:new", delNotif);
-      getIO().to("user:" + id.toString()).emit("roster:updated");
+      getIO()
+        .to("user:" + id.toString())
+        .emit("notification:new", delNotif);
+      getIO()
+        .to("user:" + id.toString())
+        .emit("roster:updated");
       getIO().to("admin").emit("roster:updated");
     } catch (err) {
       console.error("Socket emit error:", err.message);
     }
 
-    res.json({ message: "Monthly roster removed", deletedCount: result.deletedCount });
+    res.json({
+      message: "Monthly roster removed",
+      deletedCount: result.deletedCount,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -425,10 +428,10 @@ const getDashboardSummary = async (req, res) => {
 const getNurseRoster = async (req, res) => {
   const { id } = req.params;
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({ message: 'Invalid nurse ID' });
+    return res.status(400).json({ message: "Invalid nurse ID" });
   }
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split("T")[0];
     const roster = await Roster.find({
       nurse: id,
       date: { $gte: today },
