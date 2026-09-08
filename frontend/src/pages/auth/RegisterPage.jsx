@@ -293,7 +293,7 @@ export default function RegisterPage() {
         @keyframes spin          { to{transform:rotate(360deg)} }
         @keyframes stepIn        { from{opacity:0;transform:translateX(18px)} to{opacity:1;transform:translateX(0)} }
         @keyframes stepBack      { from{opacity:0;transform:translateX(-18px)} to{opacity:1;transform:translateX(0)} }
-        .reg-root { height:100vh; display:flex; background:#060d1a; font-family:'Inter',sans-serif; overflow:hidden; }
+        .reg-root { min-height:100vh; min-height:100dvh; display:flex; background:#060d1a; font-family:'Inter',sans-serif; overflow-x:hidden; }
         .reg-brand {
           width: 380px; flex-shrink: 0;
           background: linear-gradient(155deg,#030a14 0%,#07112a 50%,#0b1c3a 100%);
@@ -334,8 +334,15 @@ export default function RegisterPage() {
         }
         .eyetoggle { background:transparent; border:none; cursor:pointer; color:rgba(100,116,139,0.55); display:flex; align-items:center; padding:4px; border-radius:6px; transition:color 0.15s; }
         .eyetoggle:hover { color:rgba(148,163,184,0.85); }
-        @media(max-width:900px) { .reg-brand { display:none; } }
-        @media(max-width:520px)  { .reg-form-panel { padding:24px 16px; } }
+        @media(max-width:900px) {
+          .reg-root { height: auto; min-height: 100vh; min-height: 100dvh; overflow-y: auto; }
+          .reg-brand { display:none; }
+          .reg-form-panel { height: auto; min-height: 100vh; min-height: 100dvh; padding: 32px 20px; }
+          .reg-card { padding: 20px 0; margin: 0; max-width: 100%; }
+        }
+        @media(max-width:520px) {
+          .reg-form-panel { padding: 20px 14px; }
+        }
       `}</style>
 
       <div className="reg-root">

@@ -408,7 +408,7 @@ export default function DashboardPage() {
       <div className="glass-card-premium" style={{ marginBottom: 28 }}>
         <div className="mesh-bg" />
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24, position: 'relative', zIndex: 1, marginBottom: 32 }}>
+        <div className="hero-header-row" style={{ display: 'flex', alignItems: 'center', gap: 24, position: 'relative', zIndex: 1, marginBottom: 32 }}>
           <div className="topbar-avatar" style={{ 
             width: 80, height: 80, fontSize: '2rem', 
             background: user?.profilePic ? `url(http://localhost:5000${user.profilePic}) center/cover` : undefined 
@@ -664,14 +664,18 @@ export default function DashboardPage() {
           .hero-card-container { flex-direction: column; align-items: stretch; gap: 24px; padding: 24px; }
           .hero-metrics-grid { flex-direction: column; }
           .hero-metrics-grid > div { min-width: 0 !important; }
+          .quick-actions-grid { grid-template-columns: repeat(3, 1fr); }
         }
         @media (max-width: 768px) {
           .hero-card-container { padding: 20px 16px; border-radius: 20px; }
           .hero-name { font-size: 1.4rem !important; }
-          .quick-actions-grid { grid-template-columns: repeat(2, 1fr); }
+          .quick-actions-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        }
+        @media (max-width: 640px) {
+          .hero-header-row { flex-direction: column; align-items: flex-start !important; gap: 16px; margin-bottom: 20px !important; }
         }
         @media (max-width: 480px) {
-          .quick-actions-grid { grid-template-columns: 1fr; }
+          .quick-actions-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
         }
       `}</style>
     </div>

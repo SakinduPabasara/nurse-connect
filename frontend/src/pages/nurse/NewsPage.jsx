@@ -82,9 +82,25 @@ export default function NewsPage() {
         />
       </div>
 
+      <style>{`
+        @media (max-width: 768px) {
+          .news-card-featured {
+            flex-direction: column !important;
+            padding: 24px 20px !important;
+            gap: 20px !important;
+          }
+          .news-card-featured .news-card-media {
+            width: 100% !important;
+          }
+          .news-card {
+            padding: 20px 16px !important;
+          }
+        }
+      `}</style>
+
       {/* ── Magazine-style Grid ── */}
       {loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 32 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: 32 }}>
           {Array.from({ length: 6 }).map((_, i) => <div key={i} className="skeleton-card" style={{ height: 280, borderRadius: 28 }} />)}
         </div>
       ) : filtered.length === 0 ? (
@@ -93,7 +109,7 @@ export default function NewsPage() {
           <div style={{ fontSize: '1rem', color: '#94a3b8' }}>No intelligence reports found.</div>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 32 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: 32 }}>
           {filtered.map((n, idx) => {
             const cfg = getCat(n.category);
             const isFeatured = idx === 0 && cat === 'all' && !search;
@@ -101,6 +117,7 @@ export default function NewsPage() {
             return (
               <div 
                 key={n._id} 
+                className={`news-card ${isFeatured ? 'news-card-featured' : ''}`}
                 style={{ 
                   gridColumn: isFeatured ? '1 / -1' : 'span 1',
                   background: 'rgba(30, 41, 59, 0.4)', border: '1px solid rgba(255,255,255,0.06)', 
@@ -119,7 +136,7 @@ export default function NewsPage() {
                   zIndex: 0, pointerEvents: 'none'
                 }} />
 
-                <div style={{ width: isFeatured ? '40%' : '100%', position: 'relative', zIndex: 1 }}>
+                <div className="news-card-media" style={{ width: isFeatured ? '40%' : '100%', position: 'relative', zIndex: 1 }}>
                    <div style={{ 
                      width: isFeatured ? 80 : 56, height: isFeatured ? 80 : 56, 
                      borderRadius: 18, background: `${cfg.color}15`, 

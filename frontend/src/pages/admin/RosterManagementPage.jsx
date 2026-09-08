@@ -226,12 +226,15 @@ export default function RosterManagementPage() {
            background: var(--surface);
            border: 1px solid var(--border);
            border-radius: 24px;
-           overflow: hidden;
+           overflow-x: auto;
+           -webkit-overflow-scrolling: touch;
            margin-top: 24px;
            backdrop-filter: blur(20px);
+           width: 100%;
         }
         .roster-table {
            width: 100%;
+           min-width: 800px;
            border-collapse: collapse;
            font-size: 0.8rem;
         }
@@ -260,7 +263,14 @@ export default function RosterManagementPage() {
            padding-left: 16px !important;
            font-weight: 700;
            width: 180px;
+           min-width: 160px;
            border-right: 2px solid var(--border) !important;
+        }
+        @media (max-width: 768px) {
+           .filter-bar-premium { flex-direction: column !important; align-items: stretch !important; gap: 12px !important; }
+           .filter-bar-premium > div { width: 100% !important; }
+           .filter-bar-premium input[type="month"] { width: 100% !important; }
+           .roster-legend { flex-wrap: wrap !important; justify-content: flex-start !important; width: 100% !important; gap: 8px !important; }
         }
         .duty-marker {
            width: 24px;
@@ -547,6 +557,7 @@ export default function RosterManagementPage() {
             />
 
             <div
+              className="roster-legend"
               style={{
                 flex: 1,
                 display: "flex",

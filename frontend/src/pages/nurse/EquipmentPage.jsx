@@ -87,6 +87,12 @@ export default function EquipmentPage() {
 
   return (
     <div style={{ animation: 'screen-entry 0.4s ease-out' }}>
+      <style>{`
+        @media (max-width: 768px) {
+          .filter-bar-responsive { flex-direction: column !important; align-items: stretch !important; }
+          .filter-bar-responsive > div, .filter-bar-responsive > select { width: 100% !important; min-width: 0 !important; }
+        }
+      `}</style>
       
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 32 }}>
         <div>
@@ -128,7 +134,7 @@ export default function EquipmentPage() {
       </div>
 
       {/* ── Search & Filters ── */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
+      <div className="filter-bar-responsive" style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', flex: 1, minWidth: 280 }}>
           <Ic.Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
           <input 

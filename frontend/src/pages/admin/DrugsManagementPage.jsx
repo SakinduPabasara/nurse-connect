@@ -335,9 +335,9 @@ export default function DrugsManagementPage() {
           background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)',
           animation: 'fadeIn 0.3s ease'
         }} onClick={() => setIsDrawerOpen(false)}>
-          <div style={{ 
-            width: '100%', maxWidth: 450, background: '#0f172a', height: '100%', 
-            padding: '40px', display: 'flex', flexDirection: 'column', 
+          <div className="admin-drawer" style={{ 
+            width: '100%', maxWidth: 450, background: '#0f172a', height: '100%', maxHeight: '100vh',
+            overflowY: 'auto', padding: '40px', display: 'flex', flexDirection: 'column', 
             boxShadow: '-20px 0 50px rgba(0,0,0,0.5)', borderLeft: '1px solid rgba(255,255,255,0.1)',
             animation: 'slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
           }} onClick={e => e.stopPropagation()}>

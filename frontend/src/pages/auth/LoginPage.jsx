@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import API from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 
@@ -19,9 +19,13 @@ const FEATURES = [
 export default function LoginPage() {
   const { login }  = useAuth();
   const navigate   = useNavigate();
+  const location   = useLocation();
   const inputRef   = useRef(null);
 
-  const [form,        setForm]        = useState({ nic: '', password: '' });
+  const [form,        setForm]        = useState({
+    nic: location.state?.demoNic || '',
+    password: location.state?.demoPassword || ''
+  });
   const [showPass,    setShowPass]    = useState(false);
   const [nicFocus,    setNicFocus]    = useState(false);
   const [passFocus,   setPassFocus]   = useState(false);
@@ -49,6 +53,15 @@ export default function LoginPage() {
     setForm(f => ({ ...f, [name]: value }));
     if (errors[name]) setErrors(e => ({ ...e, [name]: '' }));
     if (globalErr)    setGlobalErr('');
+  };
+
+  const handleFillAdminDemo = () => {
+    setForm({
+      nic: 'ADMIN000000',
+      password: 'Admin@1234'
+    });
+    setErrors({});
+    setGlobalErr('');
   };
 
   const validate = () => {
@@ -99,9 +112,10 @@ export default function LoginPage() {
 
         /* ── Layout ── */
         .lp-root {
-          height: 100vh;
+          min-height: 100vh;
+          min-height: 100dvh;
           display: flex;
-          overflow: hidden;
+          overflow-x: hidden;
           font-family: 'Inter', sans-serif;
           background: #05080f;
         }
@@ -376,8 +390,24 @@ export default function LoginPage() {
         }
 
         /* ── Responsive ── */
-        @media (max-width: 860px) { .lp-brand { display: none !important; } }
-        @media (max-width: 480px) { .lp-form-panel { padding: 20px 24px; } }
+        @media (max-width: 860px) {
+          .lp-root {
+            height: auto !important;
+            min-height: 100vh !important;
+            min-height: 100dvh !important;
+            overflow-y: auto !important;
+          }
+          .lp-brand { display: none !important; }
+          .lp-form-panel {
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding: 32px 20px;
+          }
+        }
+        @media (max-width: 480px) {
+          .lp-form-panel { padding: 24px 16px; }
+          .lp-card { max-width: 100%; }
+        }
       `}</style>
 
       <div className="lp-root">
@@ -492,6 +522,53 @@ export default function LoginPage() {
                 {globalErr}
               </div>
             )}
+
+            {/* ── Admin Demo Quick-Fill Banner (Portfolio Evaluation) ── */}
+            <div style={{
+              marginBottom: 24,
+              padding: '12px 16px',
+              borderRadius: 14,
+              background: 'linear-gradient(135deg, rgba(37,99,235,0.14), rgba(14,165,233,0.08))',
+              border: '1px solid rgba(59,130,246,0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              flexWrap: 'wrap'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: '1.25rem', lineHeight: 1 }}>🛡️</span>
+                <div>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#93c5fd', letterSpacing: '0.01em' }}>
+                    Admin Demo Access (Portfolio Review)
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: 'rgba(226,232,240,0.78)', marginTop: 2 }}>
+                    NIC: <code style={{ color: '#67e8f9', background: 'rgba(0,0,0,0.25)', padding: '1px 5px', borderRadius: 4, fontFamily: 'monospace', fontWeight: 600 }}>ADMIN000000</code> &bull; Pass: <code style={{ color: '#67e8f9', background: 'rgba(0,0,0,0.25)', padding: '1px 5px', borderRadius: 4, fontFamily: 'monospace', fontWeight: 600 }}>Admin@1234</code>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleFillAdminDemo}
+                style={{
+                  padding: '7px 13px',
+                  borderRadius: 8,
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                  color: '#ffffff',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 2px 8px rgba(37,99,235,0.35)'
+                }}
+              >
+                Auto-fill Admin
+              </button>
+            </div>
 
             {/* ── Form ── */}
             <form onSubmit={handleSubmit} noValidate>

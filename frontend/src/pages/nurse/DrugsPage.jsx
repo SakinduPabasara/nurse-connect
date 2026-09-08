@@ -64,6 +64,12 @@ export default function DrugsPage() {
 
   return (
     <div style={{ animation: 'screen-entry 0.4s ease-out' }}>
+      <style>{`
+        @media (max-width: 768px) {
+          .filter-bar-responsive { flex-direction: column !important; align-items: stretch !important; }
+          .filter-bar-responsive > div, .filter-bar-responsive > select { width: 100% !important; min-width: 0 !important; }
+        }
+      `}</style>
       
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 32 }}>
         <div>
@@ -80,8 +86,9 @@ export default function DrugsPage() {
       {/* ── Security Stats ── */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 32, overflowX: 'auto', paddingBottom: 8 }}>
         {[
-          { label: 'Total Inventory', value: drugs.length, color: '#6366f1', Icon: Ic.Inbox },
-          { label: 'Critical Expiring', value: stats.expiringSoon, color: '#fb923c', Icon: Ic.AlertTriangle },
+          { label: 'Formulary Total', value: stats.total, color: '#ec4899', Icon: Ic.Inbox },
+          { label: 'Adequate Stock', value: stats.available, color: '#10b981', Icon: Ic.Check },
+          { label: 'Low Reserves', value: stats.lowStock, color: '#f59e0b', Icon: Ic.AlertTriangle },
           { label: 'Expired SKUs', value: stats.expired, color: '#f43f5e', Icon: Ic.X },
         ].map(s => (
           <div 
@@ -102,7 +109,7 @@ export default function DrugsPage() {
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
+      <div className="filter-bar-responsive" style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', flex: 1, minWidth: 280 }}>
           <Ic.Search size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
           <input 

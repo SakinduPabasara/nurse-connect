@@ -119,14 +119,15 @@ export default function AdminDashboardPage() {
         }
         @media (max-width: 768px) {
           .admin-welcome-banner { padding: 16px !important; }
-          .admin-welcome-banner div[style*="margin-left: auto"] { margin-left: 0 !important; margin-top: 10px; width: 100%; }
+          .admin-welcome-inner { flex-direction: column !important; align-items: flex-start !important; gap: 14px !important; }
+          .admin-welcome-inner div[style*="margin-left: auto"] { margin-left: 0 !important; width: 100%; }
         }
       `}</style>
 
       {/* Welcome */}
-      <div className="glass-card-premium" style={{ marginBottom: 28, padding: '24px 32px' }}>
+      <div className="glass-card-premium admin-welcome-banner" style={{ marginBottom: 28, padding: '24px 32px' }}>
         <div className="mesh-bg" />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20, position: 'relative', zIndex: 1 }}>
+        <div className="admin-welcome-inner" style={{ display: 'flex', alignItems: 'center', gap: 20, position: 'relative', zIndex: 1 }}>
           <AdminCross />
           <div>
             <div className="page-title" style={{ fontSize: '1.4rem' }}>Operational Command Center</div>

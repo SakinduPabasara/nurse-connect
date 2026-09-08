@@ -98,7 +98,7 @@ export default function NoticeBoardPage() {
 
       {/* ── Masonry-style Grid ── */}
       {loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: 24 }}>
           {Array.from({ length: 6 }).map((_, i) => <div key={i} className="skeleton-card" style={{ height: 200, borderRadius: 24 }} />)}
         </div>
       ) : filtered.length === 0 ? (
@@ -107,7 +107,7 @@ export default function NoticeBoardPage() {
           <div style={{ fontSize: '1rem', color: '#94a3b8' }}>No communications found.</div>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 24, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: 24, alignItems: 'start' }}>
           {filtered.map((n, idx) => {
             const cfg = getType(n.category);
             const isAlert = n.category === 'alert';

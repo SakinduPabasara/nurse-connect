@@ -103,7 +103,7 @@ export default function OpportunitiesPage() {
             onChange={e => setSearch(e.target.value)} 
           />
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, maxWidth: '100%' }}>
           {['all', 'international', 'local', 'training'].map(t => {
             const active = type === t;
             const cfg = t === 'all' ? { color: '#fff', label: 'All Pathways' } : getType(t);
@@ -113,7 +113,7 @@ export default function OpportunitiesPage() {
                 onClick={() => setType(t)}
                 style={{ 
                   all: 'unset', cursor: 'pointer', padding: '0 20px', height: 52, borderRadius: 16,
-                  fontSize: '0.82rem', fontWeight: 700,
+                  fontSize: '0.82rem', fontWeight: 700, flexShrink: 0,
                   background: active ? '#f59e0b15' : 'rgba(255,255,255,0.02)',
                   color: active ? '#f59e0b' : '#94a3b8',
                   border: `1px solid ${active ? '#f59e0b44' : 'rgba(255,255,255,0.06)'}`,
@@ -129,7 +129,7 @@ export default function OpportunitiesPage() {
 
       {/* ── Opportunities Grid ── */}
       {loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: 24 }}>
           {Array.from({ length: 6 }).map((_, i) => <div key={i} className="skeleton-card" style={{ height: 260, borderRadius: 24 }} />)}
         </div>
       ) : filtered.length === 0 ? (
@@ -138,7 +138,7 @@ export default function OpportunitiesPage() {
           <div style={{ fontSize: '1rem', color: '#94a3b8' }}>No opportunities found in this archive.</div>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: 24 }}>
           {filtered.map(o => {
             const cfg = getType(o.type);
             const dl = deadlineInfo(o.deadline);

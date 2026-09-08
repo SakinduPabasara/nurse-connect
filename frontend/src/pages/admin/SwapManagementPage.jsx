@@ -100,6 +100,12 @@ export default function SwapManagementPage() {
           padding: 12px 14px;
           flex: 1;
         }
+        @media (max-width: 768px) {
+          .swap-card { padding: 16px; }
+          .swap-arrow { transform: rotate(90deg); margin: 8px auto; width: 100%; text-align: center; }
+          .swap-meta-col { min-width: unset !important; width: 100% !important; text-align: left !important; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+          .swap-meta-col > div { margin-bottom: 0 !important; }
+        }
       `}</style>
 
       <div className="page-header">
@@ -169,7 +175,7 @@ export default function SwapManagementPage() {
                 </div>
 
                 {/* Status & Options */}
-                <div style={{ minWidth: 180, textAlign: 'right' }}>
+                <div className="swap-meta-col" style={{ minWidth: 180, textAlign: 'right' }}>
                   <div style={{
                     display: 'inline-flex', alignItems: 'center', gap: 6,
                     padding: '6px 14px', borderRadius: 99, fontSize: '0.75rem', fontWeight: 700,
