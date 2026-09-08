@@ -156,23 +156,20 @@ function App() {
           element={N("admin", TransferManagementPage)}
         />
 
-        <Route path="/landing" element={<LandingPage />} />
-
         <Route
           path="/"
           element={
-            <Navigate
-              to={
-                user
-                  ? user.role === "admin"
-                    ? "/admin"
-                    : "/dashboard"
-                  : "/landing"
-              }
-              replace
-            />
+            user ? (
+              <Navigate
+                to={user.role === "admin" ? "/admin" : "/dashboard"}
+                replace
+              />
+            ) : (
+              <LandingPage />
+            )
           }
         />
+        <Route path="/landing" element={<LandingPage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
