@@ -14,38 +14,29 @@
         {
             "source": "/api/(.*)",
             "destination": {
+                "type": "service",
                 "service": "backend"
             }
         },
         {
             "source": "/api",
             "destination": {
+                "type": "service",
                 "service": "backend"
             }
         },
         {
             "source": "/uploads/(.*)",
             "destination": {
+                "type": "service",
                 "service": "backend"
-            }
-        },
-        {
-            "source": "/assets/(.*)",
-            "destination": {
-                "service": "frontend"
-            }
-        },
-        {
-            "source": "/(.*\\.[a-zA-Z0-9]+)",
-            "destination": {
-                "service": "frontend"
             }
         },
         {
             "source": "/(.*)",
             "destination": {
-                "service": "frontend",
-                "path": "/index.html"
+                "type": "service",
+                "service": "frontend"
             }
         }
     ]
