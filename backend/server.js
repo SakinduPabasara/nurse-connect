@@ -5,13 +5,17 @@ const path = require("path");
 const http = require("http");
 const connectDB = require("./config/db");
 const socketManager = require("./utils/socketManager");
-const dns = require("node:dns"); // Changed from import to require
-dns.setServers(["1.1.1.1", "8.8.8.8"]); // This helps resolve the MongoDB SRV record
+try {
+  const dns = require("node:dns");
+  dns.setServers(["1.1.1.1", "8.8.8.8"]);
+} catch (e) {
+  // Ignore in environments where custom DNS cannot be bound
+}
 
 // Load env variables
 dotenv.config();
 
-// Connect to MongoDB
+// Initial database connection and migrations
 connectDB().then(async () => {
   // Simple migration to ensure all wards have a hospital
   try {
@@ -56,6 +60,16 @@ app.use(cors());
 app.use(express.json()); // allows reading JSON from requests
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+// Ensure database is connected before processing requests
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    res.status(500).json({ message: "Database connection failed. Please check MONGO_URI." });
+  }
+});
+
 // Routes
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/roster", require("./routes/rosterRoutes"));
@@ -83,6 +97,10 @@ const server = http.createServer(app);
 socketManager.init(server);
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+if (require.main === module && !process.env.VERCEL) {
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+module.exports = app;
