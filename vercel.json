@@ -1,4 +1,5 @@
 {
+    "cleanUrls": true,
     "services": {
         "frontend": {
             "root": "frontend",
@@ -14,51 +15,25 @@
         {
             "source": "/api/(.*)",
             "destination": {
-                "type": "service",
                 "service": "backend"
             }
         },
         {
             "source": "/api",
             "destination": {
-                "type": "service",
                 "service": "backend"
             }
         },
         {
             "source": "/uploads/(.*)",
             "destination": {
-                "type": "service",
                 "service": "backend"
-            }
-        },
-        {
-            "source": "/assets/(.*)",
-            "destination": {
-                "type": "service",
-                "service": "frontend"
-            }
-        },
-        {
-            "source": "/favicon.svg",
-            "destination": {
-                "type": "service",
-                "service": "frontend"
-            }
-        },
-        {
-            "source": "/icons.svg",
-            "destination": {
-                "type": "service",
-                "service": "frontend"
             }
         },
         {
             "source": "/(.*)",
             "destination": {
-                "type": "service",
-                "service": "frontend",
-                "path": "/index.html"
+                "service": "frontend"
             }
         }
     ]
