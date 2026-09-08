@@ -283,10 +283,69 @@ export default function LandingPage() {
         }
 
         @media (max-width: 640px) {
-          .landing-nav, .hero, .section, .cta-banner, .footer { padding-left: 6vw; padding-right: 6vw; }
-          .hero-metrics { grid-template-columns: 1fr; }
-          .panel-grid { grid-template-columns: 1fr; }
-          .nav-actions { flex-direction: column; }
+          .landing-nav {
+            padding: 12px 4vw;
+            gap: 10px;
+          }
+          .brand {
+            font-size: 0.95rem;
+          }
+          .brand-badge {
+            width: 30px;
+            height: 30px;
+            font-size: 0.85rem;
+          }
+          .nav-actions {
+            flex-direction: row;
+            gap: 8px;
+          }
+          .nav-actions .btn {
+            padding: 8px 12px;
+            font-size: 0.78rem;
+          }
+          .hero, .section, .footer {
+            padding-left: 4vw;
+            padding-right: 4vw;
+          }
+          .hero {
+            padding-top: 36px;
+            padding-bottom: 30px;
+            gap: 28px;
+          }
+          .hero-title {
+            font-size: clamp(1.75rem, 6.5vw, 2.5rem);
+            line-height: 1.15;
+          }
+          .hero-sub {
+            font-size: 0.92rem;
+            line-height: 1.5;
+          }
+          .hero-cta {
+            flex-direction: column;
+            width: 100%;
+          }
+          .hero-cta .btn {
+            width: 100%;
+            justify-content: center;
+          }
+          .hero-metrics {
+            grid-template-columns: 1fr;
+            gap: 10px;
+          }
+          .panel-grid {
+            grid-template-columns: 1fr;
+          }
+          .cta-banner {
+            margin: 30px 4vw 60px;
+            padding: 24px 18px;
+          }
+          .footer {
+            flex-direction: column;
+            text-align: center;
+            gap: 8px;
+            padding-top: 24px;
+            padding-bottom: 24px;
+          }
         }
       `}</style>
 

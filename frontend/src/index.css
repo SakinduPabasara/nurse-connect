@@ -1859,4 +1859,42 @@ img, video, canvas, svg { max-width: 100%; height: auto; }
   .action-card { flex-direction: column; align-items: flex-start !important; gap: 12px !important; }
   .action-card-icon { margin-bottom: 4px; }
   .action-card > div:last-child { width: 100%; text-align: left !important; display: flex; justify-content: space-between; align-items: center; }
+
+  /* Shift cards on mobile */
+  .shift-card-row {
+    flex-wrap: wrap !important;
+    padding: 14px 16px !important;
+    gap: 12px !important;
+  }
+  .shift-actions {
+    width: 100% !important;
+    justify-content: space-between !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+    padding-top: 10px !important;
+    margin-top: 4px !important;
+  }
+
+  /* Responsive table wrapper */
+  .table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 12px;
+  }
+
+  /* Full-width touch friendly buttons */
+  .mobile-full-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* Search and filters stack */
+  .filter-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  .filter-bar input, .filter-bar select {
+    width: 100% !important;
+  }
 }
